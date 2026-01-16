@@ -1,0 +1,11 @@
+{
+  "allowed_accounts": [
+    "promotion_oleg_petrov",
+    "promotion_anna_truncher",
+    "promotion_artur_biggest",
+    "promotion_andrey_virgin"
+  ],
+  "description": "Конфигурация аккаунтов для системы Bali - аккаунты для постинга",
+  "allowed_accounts_description": "Список session_name аккаунтов, которые ДОЛЖНЫ использоваться в системе Bali для постинга",
+  "last_updated": "2026-01-10"
+}

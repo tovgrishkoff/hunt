@@ -1,0 +1,15 @@
+# Cron для ежедневной рассылки апартаментов Kammora
+# Запуск каждый день в 10:00 по времени контейнера (Asia/Jakarta)
+0 10 * * * cd /app && /usr/local/bin/python3 send_kammora_today.py >> /app/logs/kammora_cron.log 2>&1
+
+
+
+
+
+
+
+
+
+
+
+

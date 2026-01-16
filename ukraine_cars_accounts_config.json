@@ -1,0 +1,8 @@
+{
+  "excluded_accounts": [
+    "promotion_alex_ever"
+  ],
+  "description": "Конфигурация аккаунтов для ниши ukraine_cars",
+  "excluded_accounts_description": "Список session_name аккаунтов, которые НЕ должны использоваться для рассылки в украинские группы",
+  "last_updated": "2026-01-04T03:59:58.934589"
+}

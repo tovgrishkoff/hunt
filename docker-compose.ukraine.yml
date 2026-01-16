@@ -1,0 +1,200 @@
+version: '3.8'
+
+# Универсальный docker-compose.yml для запуска проектов Bali и Ukraine
+# Использует переменные окружения (загружаются из .env файла через export или source)
+# 
+# Запуск:
+#   export $(cat .env.bali | xargs) && docker-compose -f docker-compose.template.yml up -d
+#   или
+#   source .env.bali && docker-compose -f docker-compose.template.yml up -d
+#   или используйте helper скрипты: ./run-bali.sh / ./run-ukraine.sh
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ukraine-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ukraine_db
+      POSTGRES_USER: telegram_user_ukraine
+      POSTGRES_PASSWORD: telegram_password_ukraine
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5439:5432"
+    volumes:
+      - ./data/ukraine/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telegram_user_ukraine -d ukraine_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ukraine-network
+
+  account-manager:
+    build:
+      context: .
+      dockerfile: services/account-manager/Dockerfile
+    container_name: ukraine-account-manager
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # БД настройки (используем синхронный драйвер psycopg2 для совместимости с session.py)
+      DATABASE_URL: postgresql://telegram_user_ukraine:telegram_password_ukraine@postgres:5432/ukraine_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: telegram_user_ukraine
+      POSTGRES_PASSWORD: telegram_password_ukraine
+      POSTGRES_DB: ukraine_db
+      
+      # Проект настройки
+      PROJECT_NAME: ukraine
+      NICHE: ukraine_cars
+      
+      # Telegram настройки (если нужны)
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      # Монтируем код сервисов для hot-reload (без пересборки)
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./scripts:/app/scripts:ro
+      
+      # Конфигурационные файлы
+      - ./config:/app/config:ro
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./ukraine_accounts_config.json:/app/ukraine_accounts_config.json:ro
+      
+      # Данные проекта (сессии, логи)
+      - ./data/ukraine/sessions:/app/sessions:rw
+      - ./data/ukraine/logs:/app/logs:rw
+      - ./data/ukraine/assets:/app/assets:rw
+      
+      # Черные списки и прочее (если есть)
+      - ./blacklist.txt:/app/blacklist.txt:ro
+    # working_dir удален - используется WORKDIR из Dockerfile (/app/services/account-manager)
+    # command удален - используется CMD из Dockerfile (python main.py)
+    # Теперь работает как daemon (while True цикл внутри scheduler.py)
+    networks:
+      - ukraine-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  marketer:
+    build:
+      context: .
+      dockerfile: services/marketer/Dockerfile
+    container_name: ukraine-marketer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://telegram_user_ukraine:telegram_password_ukraine@postgres:5432/ukraine_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: telegram_user_ukraine
+      POSTGRES_PASSWORD: telegram_password_ukraine
+      POSTGRES_DB: ukraine_db
+      PROJECT_NAME: ukraine
+      NICHE: ukraine_cars
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./config:/app/config:ro
+      - ./lexus_assets:/app/lexus_assets:ro
+      - ./data/ukraine/sessions:/app/sessions:ro
+      - ./data/ukraine/logs:/app/logs:rw
+      - ./data/ukraine/assets:/app/assets:ro
+    networks:
+      - ukraine-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  secretary:
+    build:
+      context: .
+      dockerfile: services/secretary/Dockerfile
+    container_name: ukraine-secretary
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://telegram_user_ukraine:telegram_password_ukraine@postgres:5432/ukraine_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: telegram_user_ukraine
+      POSTGRES_PASSWORD: telegram_password_ukraine
+      POSTGRES_DB: ukraine_db
+      PROJECT_NAME: ukraine
+      NICHE: ukraine_cars
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./config:/app/config:ro
+      - ./data/ukraine/sessions:/app/sessions:ro
+      - ./data/ukraine/logs:/app/logs:rw
+      - ./blacklist.txt:/app/blacklist.txt:ro
+    networks:
+      - ukraine-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  activity:
+    build:
+      context: .
+      dockerfile: services/activity/Dockerfile
+    container_name: ukraine-activity
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://telegram_user_ukraine:telegram_password_ukraine@postgres:5432/ukraine_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: telegram_user_ukraine
+      POSTGRES_PASSWORD: telegram_password_ukraine
+      POSTGRES_DB: ukraine_db
+      PROJECT_NAME: ukraine
+      NICHE: ukraine_cars
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./data/ukraine/sessions:/app/sessions:ro
+      - ./data/ukraine/logs:/app/logs:rw
+    networks:
+      - ukraine-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  ukraine-network:
+    driver: bridge
+    name: ukraine-network

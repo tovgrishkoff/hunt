@@ -1,0 +1,2 @@
+# Blacklist file
+# One username or ID per line

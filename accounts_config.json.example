@@ -1,0 +1,38 @@
+[
+  {
+    "phone": "+10000000000",
+    "api_id": 123456,
+    "api_hash": "YOUR_API_HASH",
+    "session_name": "example_session_1",
+    "nickname": "Example User 1",
+    "bio": "Example bio",
+    "string_session": "YOUR_STRING_SESSION_HERE",
+    "proxy": "http://username:password@1.2.3.4:8080"
+  },
+  {
+    "phone": "+10000000001",
+    "api_id": 123457,
+    "api_hash": "YOUR_API_HASH",
+    "session_name": "example_session_2",
+    "nickname": "Example User 2",
+    "bio": "Example bio",
+    "string_session": "YOUR_STRING_SESSION_HERE",
+    "proxy": {
+      "type": "socks5",
+      "host": "5.6.7.8",
+      "port": 1080,
+      "username": "user2",
+      "password": "pass2"
+    }
+  },
+  {
+    "phone": "+10000000002",
+    "api_id": 123458,
+    "api_hash": "YOUR_API_HASH",
+    "session_name": "example_session_3",
+    "nickname": "Example User 3",
+    "bio": "Example bio",
+    "string_session": "YOUR_STRING_SESSION_HERE"
+  }
+]
+

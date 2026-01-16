@@ -1,0 +1,84 @@
+{
+  "name": "bali_debug",
+  "display_name": "Бали DEBUG - быстрый тест",
+  
+  "manager": {
+    "search_keywords": [
+      "bali rent",
+      "bali property",
+      "bali villa",
+      "аренда бали",
+      "недвижимость бали",
+      "вилла бали"
+    ]
+  },
+  
+  "marketer": {
+    "posting_schedule": {
+      "timezone": "Asia/Jakarta",
+      "slots": [
+        { "name": "debug_slot_1", "time": "08:00" },
+        { "name": "debug_slot_2", "time": "12:00" },
+        { "name": "debug_slot_3", "time": "16:00" },
+        { "name": "debug_slot_4", "time": "20:00" }
+      ]
+    },
+    "assets_path": "/app/bali_assets",
+    "photos": []
+  },
+  
+  "activity": {
+    "story_view_probability": 0.7,
+    "story_reaction_probability": 0.3,
+    "max_views_per_day": 50,
+    "min_views_per_day": 20,
+    "story_reactions": ["❤️", "🔥", "👍"],
+    "min_delay_between_views": 5,
+    "max_delay_between_views": 15,
+    "min_delay_between_reactions": 10,
+    "max_delay_between_reactions": 30,
+    "contacts_view_accounts": ["promotion_new_account"],
+    "contacts_dialogs_limit": 100
+  },
+  
+  "secretary": {
+    "system_prompt": "DEBUG режим для секретаря Бали. Поведение аналогично основной нише 'bali', но используется для тестов.",
+    "target_action": {
+      "bot_username": "@Lead_Hunbot",
+      "bot_link": "https://t.me/Lead_Hunbot",
+      "offer_message_template": "Кстати, у нас есть удобный бот @Lead_Hunbot, где собраны все актуальные предложения по {topic}. Там ты сможешь быстро найти варианты и связаться с продавцами. Очень рекомендую! 😊",
+      "min_messages_before_offer": 2,
+      "keywords_for_detection": [
+        "цена", "стоимость", "аренда", "вилла", "квартира", "дом", "недвижимость", "property", "rent", "villa"
+      ]
+    },
+    "conversation_history_limit": 10,
+    "typing_delay_min": 3,
+    "typing_delay_max": 8,
+    "response_style": {
+      "be_natural": true,
+      "use_emojis": true,
+      "max_length": 400,
+      "min_length": 10,
+      "ask_questions": true,
+      "show_interest": true
+    }
+  },
+  
+  "joining_schedule": {
+    "timezone": "Asia/Jakarta",
+    "slots": [
+      { "name": "debug_join_1", "time": "09:00" },
+      { "name": "debug_join_2", "time": "11:00" },
+      { "name": "debug_join_3", "time": "13:00" },
+      { "name": "debug_join_4", "time": "15:00" },
+      { "name": "debug_join_5", "time": "17:00" }
+    ]
+  },
+  
+  "limits": {
+    "posts_per_day_per_group": 5,
+    "warm_up_hours": 1,
+    "max_joins_per_day": 30
+  }
+}

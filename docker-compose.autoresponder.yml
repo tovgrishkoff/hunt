@@ -1,0 +1,45 @@
+version: '3.8'
+
+# Docker Compose конфигурация для автоответчика
+# Использование: docker-compose -f docker-compose.autoresponder.yml up -d
+
+services:
+  autoresponder:
+    build:
+      context: .
+      dockerfile: Dockerfile.autoresponder
+    container_name: telegram-autoresponder
+    restart: unless-stopped
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Сессии Telegram (критически важно!)
+      - ./sessions:/app/sessions:rw
+      # Логи
+      - ./logs:/app/logs:rw
+      # Конфигурация аккаунтов
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      # Черный список
+      - ./blacklist.txt:/app/blacklist.txt:ro
+      # Файл для отслеживания отправленных ответов (если БД недоступна)
+      - ./sent_responses.txt:/app/sent_responses.txt:rw
+      # Fallback ответы (если используется)
+      - ./dm_responses.txt:/app/dm_responses.txt:ro
+    command: ["python3", "-u", "smart_monitor_dms.py"]
+    network_mode: "host"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os; exit(0 if os.path.exists('/app/sessions') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

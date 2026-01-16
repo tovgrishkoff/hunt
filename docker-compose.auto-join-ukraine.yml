@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  auto-join-ukraine-cars:
+    build:
+      context: .
+      dockerfile: Dockerfile.auto_join_ukraine
+    container_name: auto-join-ukraine-cars
+    restart: unless-stopped
+    volumes:
+      # Монтируем конфигурационные файлы
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./lexus_accounts_config.json:/app/lexus_accounts_config.json:ro
+      - ./group_niches.json:/app/group_niches.json:ro
+      # Монтируем основной код для быстрого обновления
+      - ./auto_join_ukraine_cars_groups.py:/app/auto_join_ukraine_cars_groups.py:ro
+      - ./auto_join_ukraine_cars_groups_scheduler.py:/app/auto_join_ukraine_cars_groups_scheduler.py:ro
+      - ./promotion_system.py:/app/promotion_system.py:ro
+      # Монтируем директории с данными (для записи)
+      - ./logs:/app/logs
+      - ./sessions:/app/sessions
+    environment:
+      - TZ=Asia/Jakarta
+      - PYTHONUNBUFFERED=1
+    networks:
+      - telegram-promotion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  telegram-promotion:
+    driver: bridge
+

@@ -1,0 +1,14 @@
+{
+  "allowed_accounts": [
+    "promotion_andrey_virgin",
+    "promotion_lisa_soak",
+    "promotion_new_account_2",
+    "promotion_anna_truncher",
+    "promotion_artur_biggest",
+    "promotion_oleg_petrov"
+  ],
+  "description": "Конфигурация аккаунтов для системы Bali - аккаунты для постинга",
+  "allowed_accounts_description": "Список session_name аккаунтов, которые ДОЛЖНЫ использоваться в системе Bali для постинга",
+  "last_updated": "2026-01-13",
+  "note": "Все аккаунты успешно авторизованы через QR-код и готовы к работе!"
+}

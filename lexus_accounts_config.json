@@ -1,0 +1,10 @@
+{
+  "allowed_accounts": [
+    "promotion_dao_bro",
+    "promotion_rod_shaihutdinov",
+    "promotion_alex_ever"
+  ],
+  "description": "Конфигурация аккаунтов для системы Lexus (ukraine_cars)",
+  "allowed_accounts_description": "Список session_name аккаунтов, которые ДОЛЖНЫ использоваться для рассылки Lexus в украинские группы",
+  "last_updated": "2026-01-12"
+}

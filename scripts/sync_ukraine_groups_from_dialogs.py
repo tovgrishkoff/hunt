@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""
+Синхронизация групп из диалогов Ukraine аккаунтов в БД
+Получает группы, в которые уже вступили аккаунты, и добавляет их в БД для постинга
+"""
+import sys
+import os
+import asyncio
+import logging
+from pathlib import Path
+from datetime import datetime, timedelta
+from telethon.tl.types import Channel, Chat
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Устанавливаем переменные для Ukraine БД
+os.environ['DATABASE_URL'] = 'postgresql://telegram_user_ukraine:telegram_password_ukraine@localhost:5439/ukraine_db'
+os.environ['POSTGRES_HOST'] = 'localhost'
+os.environ['POSTGRES_PORT'] = '5439'
+os.environ['POSTGRES_USER'] = 'telegram_user_ukraine'
+os.environ['POSTGRES_PASSWORD'] = 'telegram_password_ukraine'
+os.environ['POSTGRES_DB'] = 'ukraine_db'
+
+from lexus_db.models import Account, Group as Target
+from lexus_db.session import AsyncSessionLocal
+from shared.telegram.client_manager import TelegramClientManager
+from sqlalchemy import select
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+async def sync_groups_from_dialogs():
+    """Синхронизация групп из диалогов аккаунтов"""
+    logger.info("=" * 80)
+    logger.info("🔄 СИНХРОНИЗАЦИЯ ГРУПП ИЗ ДИАЛОГОВ (UKRAINE)")
+    logger.info("=" * 80)
+    
+    # Ukraine аккаунты
+    ukraine_accounts = ['promotion_dao_bro', 'promotion_alex_ever', 'promotion_rod_shaihutdinov']
+    
+    async with AsyncSessionLocal() as session:
+        # Загружаем клиенты
+        client_manager = TelegramClientManager()
+        
+        # Временно устанавливаем DATABASE_URL для синхронного подключения к БД
+        # (для загрузки аккаунтов через client_manager)
+        import subprocess
+        result = subprocess.run(
+            ['docker', 'exec', 'ukraine-account-manager', 'python3', '-c', 
+             'import sys; sys.path.insert(0, "/app"); from shared.telegram.client_manager import TelegramClientManager; from shared.database.session import SessionLocal; import asyncio; async def load(): db = SessionLocal(); cm = TelegramClientManager(); await cm.load_accounts_from_db(db); print(len(cm.clients)); db.close(); asyncio.run(load())'],
+            capture_output=True, text=True, timeout=30
+        )
+        
+        # Альтернативный способ: получаем аккаунты напрямую из БД
+        result = await session.execute(select(Account).where(Account.session_name.in_(ukraine_accounts)))
+        accounts = result.scalars().all()
+        
+        if not accounts:
+            logger.error("❌ Ukraine аккаунты не найдены в БД")
+            return
+        
+        logger.info(f"✅ Найдено {len(accounts)} Ukraine аккаунтов")
+        
+        # Загружаем аккаунты в client_manager
+        # Создаем клиенты вручную, используя string_session из БД
+        from telethon import TelegramClient
+        from telethon.sessions import StringSession
+        
+        clients = {}
+        for account in accounts:
+            if not account.string_session:
+                logger.warning(f"⚠️ У {account.session_name} нет string_session, пропускаем")
+                continue
+            
+            try:
+                session_obj = StringSession(account.string_session.strip())
+                client = TelegramClient(
+                    session_obj,
+                    account.api_id,
+                    account.api_hash
+                )
+                await client.connect()
+                
+                if await client.is_user_authorized():
+                    clients[account.session_name] = (client, account.id)
+                    logger.info(f"✅ Подключен: {account.session_name}")
+                else:
+                    await client.disconnect()
+                    logger.warning(f"⚠️ {account.session_name} не авторизован")
+            except Exception as e:
+                logger.error(f"❌ Ошибка подключения {account.session_name}: {e}")
+        
+        if not clients:
+            logger.error("❌ Нет подключенных аккаунтов")
+            return
+        
+        total_added = 0
+        total_updated = 0
+        
+        # Получаем группы из диалогов каждого аккаунта
+        for session_name, (client, account_id) in clients.items():
+            try:
+                logger.info(f"\n📱 Обработка аккаунта: {session_name}")
+                
+                # Получаем диалоги
+                dialogs = await client.get_dialogs(limit=200)
+                groups_found = 0
+                
+                for dialog in dialogs:
+                    entity = dialog.entity
+                    
+                    # Нас интересуют только группы и каналы
+                    if not isinstance(entity, (Channel, Chat)):
+                        continue
+                    
+                    # Пропускаем, если мы вышли из группы
+                    if isinstance(entity, Channel):
+                        if getattr(entity, 'left', False) or getattr(entity, 'kicked', False):
+                            continue
+                    
+                    # Получаем username группы
+                    username = getattr(entity, 'username', None)
+                    if not username:
+                        continue
+                    
+                    username = f"@{username.lower()}"
+                    title = getattr(entity, 'title', 'No title')
+                    telegram_id = entity.id
+                    
+                    # Проверяем, существует ли группа в БД
+                    result = await session.execute(
+                        select(Target).where(
+                            (Target.username == username) | (Target.telegram_id == telegram_id)
+                        )
+                    )
+                    existing_group = result.scalar_one_or_none()
+                    
+                    if existing_group:
+                        # Обновляем существующую группу
+                        if existing_group.status != 'joined' or existing_group.assigned_account_id != account_id:
+                            existing_group.status = 'joined'
+                            existing_group.assigned_account_id = account_id
+                            existing_group.title = title
+                            existing_group.telegram_id = telegram_id
+                            existing_group.niche = 'ukraine_cars'
+                            existing_group.can_post = True
+                            existing_group.joined_at = datetime.utcnow()
+                            existing_group.warm_up_until = datetime.utcnow()  # Уже прогреты
+                            existing_group.updated_at = datetime.utcnow()
+                            total_updated += 1
+                    else:
+                        # Создаем новую группу
+                        new_group = Target(
+                            username=username,
+                            title=title,
+                            telegram_id=telegram_id,
+                            niche='ukraine_cars',
+                            status='joined',
+                            assigned_account_id=account_id,
+                            can_post=True,
+                            joined_at=datetime.utcnow(),
+                            warm_up_until=datetime.utcnow(),  # Уже прогреты
+                            created_at=datetime.utcnow(),
+                            updated_at=datetime.utcnow()
+                        )
+                        session.add(new_group)
+                        total_added += 1
+                        groups_found += 1
+                
+                await session.commit()
+                logger.info(f"✅ {session_name}: найдено {groups_found} новых групп")
+                
+            except Exception as e:
+                logger.error(f"❌ Ошибка при обработке {session_name}: {e}", exc_info=True)
+                await session.rollback()
+            finally:
+                try:
+                    await client.disconnect()
+                except:
+                    pass
+        
+        logger.info("")
+        logger.info("=" * 80)
+        logger.info(f"✅ СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА")
+        logger.info("=" * 80)
+        logger.info(f"📊 Добавлено новых групп: {total_added}")
+        logger.info(f"📊 Обновлено существующих: {total_updated}")
+        logger.info("=" * 80)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(sync_groups_from_dialogs())
+    except KeyboardInterrupt:
+        logger.info("\n🛑 Прервано пользователем")
+    except Exception as e:
+        logger.error(f"\n❌ Критическая ошибка: {e}", exc_info=True)

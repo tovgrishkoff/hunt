@@ -1,0 +1,42 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Устанавливаем системные зависимости, включая cron
+RUN apt-get update && apt-get install -y \
+    gcc \
+    cron \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копируем requirements.txt
+COPY requirements.txt .
+
+# Устанавливаем Python зависимости
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем необходимые файлы
+COPY auto_group_manager.py .
+COPY search_rental_groups.py .
+COPY join_found_groups.py .
+COPY promotion_system.py .
+COPY crontab.auto_groups .
+COPY docker-entrypoint-auto-groups.sh .
+
+# Делаем entrypoint исполняемым
+RUN chmod +x docker-entrypoint-auto-groups.sh
+
+# Создаем директории
+RUN mkdir -p /app/sessions /app/logs
+
+# Устанавливаем timezone (Asia/Jakarta для Бали)
+ENV TZ=Asia/Jakarta
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENTRYPOINT ["/app/docker-entrypoint-auto-groups.sh"]
+
+
+
+
+
+

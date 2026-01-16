@@ -1,0 +1,56 @@
+{
+  "bali": [
+    {
+      "text": "🏠 Villa for rent in Canggu! 3 BR, Pool. DM for details.",
+      "image": null
+    },
+    {
+      "text": "🔥 Hot deal! 1 BR Loft in Pererenan. $1500/mo.",
+      "image": null
+    },
+    {
+      "text": "🌴 Beautiful villa in Seminyak. 2 BR, Ocean view. Available now!",
+      "image": null
+    },
+    {
+      "text": "Привет! Кто знает где найти видеографа на Бали? Нужна быстрая съемка",
+      "image": null
+    },
+    {
+      "text": "Всем доброго времени! Ищу фотографа с хорошим обслуживанием. Кто посоветует?",
+      "image": null
+    },
+    {
+      "text": "Ищу дизайнера для фирменного стиля, нужен профессионал",
+      "image": null
+    }
+  ],
+  "bali_rent": [
+    {
+      "text": "🏠 Villa for rent in Canggu! 3 BR, Pool. DM for details.",
+      "image": "/app/assets/villa1.jpg"
+    },
+    {
+      "text": "🔥 Hot deal! 1 BR Loft in Pererenan. $1500/mo.",
+      "image": "/app/assets/loft.jpg"
+    },
+    {
+      "text": "🌴 Beautiful villa in Seminyak. 2 BR, Ocean view. Available now!",
+      "image": null
+    }
+  ],
+  "ukraine_cars": [
+    {
+      "text": "🚗 Продам Lexus IS 250, 2015 год. 157к км. Белая пленка, сигнализация. 15000$. Пишите в ЛС.",
+      "image": "/app/assets/lexus_variant_1.jpg"
+    },
+    {
+      "text": "🚙 Продается Lexus IS 250 Executive. Отличное состояние. Киев. Подробности в ЛС.",
+      "image": "/app/assets/lexus_variant_2.jpg"
+    },
+    {
+      "text": "🚗 Lexus IS 250, 2015. Пленка Oracal, Призрак 840, два комплекта резины. Проверки приветствуются. 15000$.",
+      "image": null
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  lexus-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.lexus
+    container_name: lexus-scheduler
+    restart: unless-stopped
+    volumes:
+      # Монтируем конфигурационные файлы
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./targets.txt:/app/targets.txt:ro
+      - ./group_niches.json:/app/group_niches.json:ro
+      - ./lexus_accounts_config.json:/app/lexus_accounts_config.json:ro
+      - ./ukraine_cars_accounts_config.json:/app/ukraine_cars_accounts_config.json:ro
+      # Монтируем основной код для быстрого обновления
+      - ./promotion_system.py:/app/promotion_system.py:ro
+      - ./lexus_scheduler.py:/app/lexus_scheduler.py:ro
+      - ./chatgpt_response_generator.py:/app/chatgpt_response_generator.py:ro
+      # Монтируем директории с данными (для записи)
+      - ./lexus_assets:/app/lexus_assets:ro
+      - ./logs:/app/logs
+      - ./sessions:/app/sessions
+    env_file:
+      - .env.lexus
+    networks:
+      - telegram-promotion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  lexus-secretary:
+    build:
+      context: .
+      dockerfile: Dockerfile.lexus-secretary
+    container_name: lexus-secretary
+    restart: unless-stopped
+    volumes:
+      # Монтируем конфигурационные файлы
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./lexus_accounts_config.json:/app/lexus_accounts_config.json:ro
+      - ./ukraine_cars_accounts_config.json:/app/ukraine_cars_accounts_config.json:ro
+      - ./config:/app/config:ro
+      # Монтируем основной код для быстрого обновления
+      - ./lexus_secretary.py:/app/lexus_secretary.py:ro
+      - ./services/secretary/gpt_handler.py:/app/services/secretary/gpt_handler.py:ro
+      - ./shared/config/loader.py:/app/shared/config/loader.py:ro
+      # Монтируем директории с данными
+      - ./logs:/app/logs
+      - ./sessions:/app/sessions:rw
+      - ./blacklist.txt:/app/blacklist.txt:ro
+    env_file:
+      - .env.lexus
+    environment:
+      # Только специфичные переменные, которых нет в .env.lexus
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - telegram-promotion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  telegram-promotion:
+    driver: bridge
+

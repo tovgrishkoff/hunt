@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  auto-join-bali-groups:
+    build:
+      context: .
+      dockerfile: Dockerfile.auto_join_bali
+    container_name: auto-join-bali-groups
+    restart: unless-stopped
+    volumes:
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./targets.txt:/app/targets.txt
+      - ./group_niches.json:/app/group_niches.json
+      - ./logs:/app/logs
+      - ./sessions:/app/sessions
+    environment:
+      - TZ=Asia/Jakarta
+      - PYTHONUNBUFFERED=1
+    networks:
+      - telegram-promotion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  telegram-promotion:
+    driver: bridge
+

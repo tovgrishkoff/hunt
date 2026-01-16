@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Устанавливаем системные зависимости, включая cron
+RUN apt-get update && apt-get install -y \
+    gcc \
+    cron \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копируем requirements.txt
+COPY requirements.txt .
+
+# Устанавливаем Python зависимости
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем необходимые файлы
+COPY send_kammora_today.py .
+COPY promotion_system.py .
+COPY chatgpt_response_generator.py .
+COPY crontab.kammora .
+COPY docker-entrypoint-kammora.sh .
+
+# Делаем entrypoint исполняемым
+RUN chmod +x docker-entrypoint-kammora.sh
+
+# Создаем директории
+RUN mkdir -p /app/sessions /app/logs /app/kammora_assets
+
+# Устанавливаем timezone (Asia/Jakarta для Бали)
+ENV TZ=Asia/Jakarta
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENTRYPOINT ["/app/docker-entrypoint-kammora.sh"]
+

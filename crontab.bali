@@ -1,0 +1,14 @@
+# ==========================================
+# 🌴 ПРОЕКТ: BALI (Работает с базой 5438)
+# ==========================================
+# Установка: crontab crontab.bali
+# Или добавьте содержимое в существующий crontab: crontab -e
+
+# 1. Разведка (Scout) - Каждые 6 часов в 00 минут
+0 */6 * * * cd /home/tovgrishkoff/PIAR/telegram_promotion_system_bali && docker exec bali-account-manager python3 /app/services/account-manager/scout.py bali_rent >> data/bali/logs/scout_cron.log 2>&1
+
+# 2. Вступление (Joiner) - Каждые 2 часа в 15 минут (даем время после разведки)
+15 */2 * * * cd /home/tovgrishkoff/PIAR/telegram_promotion_system_bali && docker exec bali-account-manager python3 /app/services/account-manager/smart_joiner.py bali_rent 5 >> data/bali/logs/joiner_cron.log 2>&1
+
+# 3. Постинг (Marketer) - В 10:00 и 16:00 ежедневно
+0 10,16 * * * cd /home/tovgrishkoff/PIAR/telegram_promotion_system_bali && docker exec bali-marketer python3 /app/services/marketer/poster.py bali_rent 5 >> data/bali/logs/poster_cron.log 2>&1

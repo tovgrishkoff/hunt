@@ -1,0 +1,29 @@
+{
+  "name": "general",
+  "display_name": "Общая ниша",
+  "search_keywords": [
+    "барахолка",
+    "частные объявления",
+    "продажа",
+    "куплю",
+    "продам"
+  ],
+  "posting_schedule": {
+    "timezone": "Europe/Kiev",
+    "slots": [
+      {"name": "morning", "time": "10:00"},
+      {"name": "evening", "time": "18:00"}
+    ]
+  },
+  "joining_schedule": {
+    "timezone": "Asia/Jakarta",
+    "slots": [
+      {"name": "morning", "time": "08:00"}
+    ]
+  },
+  "limits": {
+    "posts_per_day_per_group": 1,
+    "warm_up_hours": 24
+  }
+}
+

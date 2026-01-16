@@ -1,0 +1,69 @@
+{
+  "name": "test_debug",
+  "display_name": "Тестовый режим (Debug)",
+  
+  "manager": {
+    "search_keywords": [
+      "test_group_verification_123",
+      "test_telegram_group_debug",
+      "verify_bot_system_test"
+    ]
+  },
+  
+  "marketer": {
+    "posting_schedule": {
+      "timezone": "Europe/Kiev",
+      "slots": [
+        {"name": "test", "time": "00:00"}
+      ]
+    },
+    "assets_path": "/app/lexus_assets",
+    "photos": [
+      "lexus_collage.jpg"
+    ],
+    "test_message": "🔔 Это тестовое сообщение системы. Система работает корректно! ✅"
+  },
+  
+  "activity": {
+    "story_view_probability": 1.0,
+    "story_reaction_probability": 0.0,
+    "max_views_per_day": 10,
+    "min_views_per_day": 5,
+    "story_reactions": ["❤️"],
+    "min_delay_between_views": 5,
+    "max_delay_between_views": 10,
+    "min_delay_between_reactions": 5,
+    "max_delay_between_reactions": 10
+  },
+  
+  "secretary": {
+    "system_prompt": "Ты тестовый бот. На любое сообщение отвечай только словом PONG.",
+    "target_action": {
+      "main_account": "@grishkoff",
+      "promotional_message": "PONG - это тест системы",
+      "triggers": []
+    },
+    "conversation_history_limit": 1,
+    "typing_delay_min": 1,
+    "typing_delay_max": 2,
+    "response_style": {
+      "be_natural": false,
+      "use_emojis": false,
+      "max_length": 10,
+      "min_length": 4
+    }
+  },
+  
+  "joining_schedule": {
+    "timezone": "Asia/Jakarta",
+    "slots": [
+      {"name": "test", "time": "00:00"}
+    ]
+  },
+  
+  "limits": {
+    "posts_per_day_per_group": 999,
+    "warm_up_hours": 0
+  }
+}
+

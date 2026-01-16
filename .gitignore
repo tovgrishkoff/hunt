@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Sessions
+*.session
+sessions/
+temp_sessions/
+*_session.txt
+new_session_*.txt
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Data
+data/
+*.db
+*.sqlite
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+!.env.*.example
+
+# Secrets / credentials
+accounts_config*.json
+!accounts_config.json.example
+accounts_config_stories.json
+accounts_config_autoresponder.json
+real_config.json
+server_accounts_config.json
+new_account_*_config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+*_backup_*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+

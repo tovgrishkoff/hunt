@@ -1,0 +1,198 @@
+version: '3.8'
+
+# Универсальный docker-compose.yml для запуска проектов Bali и Ukraine
+# Использует переменные окружения (загружаются из .env файла через export или source)
+# 
+# Запуск:
+#   export $(cat .env.bali | xargs) && docker-compose -f docker-compose.template.yml up -d
+#   или
+#   source .env.bali && docker-compose -f docker-compose.template.yml up -d
+#   или используйте helper скрипты: ./run-bali.sh / ./run-ukraine.sh
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ${PROJECT_NAME}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - ./data/${PROJECT_NAME}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ${PROJECT_NAME}-network
+
+  account-manager:
+    build:
+      context: .
+      dockerfile: services/account-manager/Dockerfile
+    container_name: ${PROJECT_NAME}-account-manager
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # БД настройки
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      
+      # Проект настройки
+      PROJECT_NAME: ${PROJECT_NAME}
+      NICHE: ${NICHE}
+      
+      # Telegram настройки (если нужны)
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      # Монтируем код сервисов для hot-reload (без пересборки)
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./scripts:/app/scripts:ro
+      
+      # Конфигурационные файлы
+      - ./config:/app/config:ro
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./${PROJECT_NAME}_accounts_config.json:/app/${PROJECT_NAME}_accounts_config.json:ro
+      
+      # Данные проекта (сессии, логи)
+      - ./data/${PROJECT_NAME}/sessions:/app/sessions:rw
+      - ./data/${PROJECT_NAME}/logs:/app/logs:rw
+      - ./data/${PROJECT_NAME}/assets:/app/assets:rw
+      
+      # Черные списки и прочее (если есть)
+      - ./blacklist.txt:/app/blacklist.txt:ro
+    working_dir: /app
+    command: tail -f /dev/null  # Оставляем контейнер запущенным для cron-задач
+    networks:
+      - ${PROJECT_NAME}-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  marketer:
+    build:
+      context: .
+      dockerfile: services/marketer/Dockerfile
+    container_name: ${PROJECT_NAME}-marketer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PROJECT_NAME: ${PROJECT_NAME}
+      NICHE: ${NICHE}
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./config:/app/config:ro
+      - ./data/${PROJECT_NAME}/sessions:/app/sessions:ro
+      - ./data/${PROJECT_NAME}/logs:/app/logs:rw
+      - ./data/${PROJECT_NAME}/assets:/app/assets:ro
+    networks:
+      - ${PROJECT_NAME}-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  secretary:
+    build:
+      context: .
+      dockerfile: services/secretary/Dockerfile
+    container_name: ${PROJECT_NAME}-secretary
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PROJECT_NAME: ${PROJECT_NAME}
+      NICHE: ${NICHE}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./config:/app/config:ro
+      - ./data/${PROJECT_NAME}/sessions:/app/sessions:ro
+      - ./data/${PROJECT_NAME}/logs:/app/logs:rw
+      - ./blacklist.txt:/app/blacklist.txt:ro
+    networks:
+      - ${PROJECT_NAME}-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  activity:
+    build:
+      context: .
+      dockerfile: services/activity/Dockerfile
+    container_name: ${PROJECT_NAME}-activity
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PROJECT_NAME: ${PROJECT_NAME}
+      NICHE: ${NICHE}
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./data/${PROJECT_NAME}/sessions:/app/sessions:ro
+      - ./data/${PROJECT_NAME}/logs:/app/logs:rw
+    networks:
+      - ${PROJECT_NAME}-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  ${PROJECT_NAME}-network:
+    driver: bridge
+    name: ${PROJECT_NAME}-network
