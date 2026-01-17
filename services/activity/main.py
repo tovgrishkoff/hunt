@@ -11,6 +11,8 @@ from pathlib import Path
 # Добавляем корень проекта в PYTHONPATH
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+logging.getLogger("telethon").setLevel(logging.WARNING)
+
 from shared.telegram.client_manager import TelegramClientManager
 from shared.database.session import SessionLocal
 from shared.config.loader import ConfigLoader
@@ -52,7 +54,12 @@ class ActivityService:
         # Инициализация клиентов
         db = SessionLocal()
         try:
-            await self.client_manager.load_accounts_from_db(db)
+            # Для activity используем ВСЕ активные аккаунты, включая те, которые
+            # не входят в Bali whitelist (например, account для контактов/сторис).
+            await self.client_manager.load_accounts_from_db(
+                db,
+                exclude_lexus_accounts=False,
+            )
             logger.info(f"✅ Loaded {len(self.client_manager.clients)} accounts")
         except Exception as e:
             logger.error(f"❌ Failed to load accounts: {e}")

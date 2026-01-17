@@ -30,6 +30,15 @@ joiner_module = importlib.util.module_from_spec(joiner_spec)
 joiner_spec.loader.exec_module(joiner_module)
 GroupJoiner = joiner_module.GroupJoiner
 
+# Импорт keywords
+keywords_spec = importlib.util.spec_from_file_location(
+    "keywords", Path(__file__).parent / "keywords.py"
+)
+keywords_module = importlib.util.module_from_spec(keywords_spec)
+keywords_spec.loader.exec_module(keywords_module)
+build_search_keywords_from_messages = keywords_module.build_search_keywords_from_messages
+SearchKeywordsConfig = keywords_module.SearchKeywordsConfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,6 +51,8 @@ class AccountManagerScheduler:
         self.finder = None
         self.joiner = None
         self._last_reset_date = None
+        # True = режим "поддержки" (работаем по слотам), False = "быстрая обработка" (есть очередь new)
+        self._slot_processing_mode = True
     
     async def initialize(self):
         """Инициализация компонентов"""
@@ -202,10 +213,30 @@ class AccountManagerScheduler:
                 
                 # Получаем ключевые слова из секции manager
                 manager_config = niche_config.get('manager', {})
-                search_keywords = manager_config.get('search_keywords', [])
+                config_keywords = manager_config.get('search_keywords', []) or []
+
+                # Автогенерация ключевых слов из нишевых сообщений (messages.json с source_file)
+                # Если в конфиге пусто — всё равно ищем по нишам.
+                messages = self.config_loader.load_messages(niche)
+                auto_keywords = build_search_keywords_from_messages(
+                    messages=messages,
+                    cfg=SearchKeywordsConfig(),
+                )
+
+                # Объединяем (конфиг + авто), без дублей
+                search_keywords = []
+                for kw in [*config_keywords, *auto_keywords]:
+                    kw = (kw or "").strip()
+                    if kw and kw not in search_keywords:
+                        search_keywords.append(kw)
+
                 if not search_keywords:
-                    logger.warning("⚠️ No search keywords in config, skipping search")
+                    logger.warning("⚠️ No search keywords available (config + auto), skipping search")
                 else:
+                    logger.info(
+                        f"🔎 Search keywords: {len(search_keywords)} total "
+                        f"(config={len(config_keywords)}, auto={len(auto_keywords)})"
+                    )
                     # Используем первый доступный клиент для поиска
                     if not self.client_manager.clients:
                         logger.error("❌ No clients available for search")

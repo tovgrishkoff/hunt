@@ -9,10 +9,12 @@ import logging
 from datetime import datetime, timedelta, time as dtime
 from pathlib import Path
 import pytz
+from typing import Optional
 
 from shared.database.session import get_db, init_db
 from shared.config.loader import ConfigLoader
 from shared.telegram.client_manager import TelegramClientManager
+from sqlalchemy import text
 from services.marketer.poster import SmartPoster as Poster
 
 logger = logging.getLogger(__name__)
@@ -25,6 +27,7 @@ class MarketerScheduler:
         self.config_loader = ConfigLoader()
         self.client_manager = TelegramClientManager()
         self.poster = None
+        self.niche: Optional[str] = None
         self._last_reset_date = None
     
     async def initialize(self):
@@ -63,13 +66,40 @@ class MarketerScheduler:
         # Используем переменную окружения NICHE или имя из конфига
         poster_niche = os.getenv('NICHE') or niche_config.get('name', 'bali')
         self.poster = Poster(poster_niche)
+        self.niche = poster_niche
         logger.info(f"📝 Poster initialized for niche: {poster_niche}")
         # await self.poster.initialize()  # SmartPoster не имеет метода initialize
     
     def reset_daily_counters_if_needed(self, today):
         """Сброс дневных счетчиков в полночь"""
         if self._last_reset_date != today:
-            logger.info(f"🔄 New day: {today}, counters will be reset on next post")
+            # В БД Bali дневной лимит хранится в groups.daily_posts_count.
+            # Без сброса этот счетчик "накапливается навсегда", из-за чего постинг
+            # со временем прекращается (get_groups_ready_for_posting фильтрует < 2).
+            try:
+                niche = self.niche or "bali"
+                db_gen = get_db()
+                db = next(db_gen)
+                try:
+                    result = db.execute(
+                        text(
+                            "UPDATE groups "
+                            "SET daily_posts_count = 0 "
+                            "WHERE niche = :niche AND COALESCE(daily_posts_count, 0) <> 0"
+                        ),
+                        {"niche": niche},
+                    )
+                    db.commit()
+                    updated = getattr(result, "rowcount", None)
+                    logger.info(
+                        f"🔄 New day: {today}. Reset daily_posts_count for niche '{niche}' "
+                        f"(updated={updated})"
+                    )
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.error(f"❌ Failed to reset daily counters for {today}: {e}", exc_info=True)
+
             self._last_reset_date = today
     
     async def run(self):

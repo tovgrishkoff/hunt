@@ -1,5 +1,5 @@
 {
-  "@onerealestatebali": "bali_it_bots",
+  "@onerealestatebali": "sale_property",
   "@real_estate_balii": "bali_rent",
   "@bali_new_sale": "sale_property",
   "@bali_rents": "sale_property",
@@ -179,5 +179,18 @@
   "@bali_digitalnomads": "bali_it_bots",
   "@bali_vloggers": "bali_it_bots",
   "@bali_job_board": "bali_it_bots",
-  "@bali_real_estate_news": "bali_rent"
+  "@bali_real_estate_news": "bali_rent",
+  "@AutoProdaja_ua": "ukraine_cars",
+  "@auto_amerika_europa": "ukraine_cars",
+  "@autobazar_com_ua": "ukraine_cars",
+  "@autobazar_uaua": "ukraine_cars",
+  "@avto_swup": "ukraine_cars",
+  "@avtorynok_ua": "ukraine_cars",
+  "@bazaravtoukr": "ukraine_cars",
+  "@cryptoinfotop": "ukraine_cars",
+  "@gruzhelp": "ukraine_cars",
+  "@prodaj_avto": "ukraine_cars",
+  "@razborkaukraina": "ukraine_cars",
+  "@sellautoukraine": "ukraine_cars",
+  "@ua_autobazar": "ukraine_cars"
 }

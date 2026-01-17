@@ -119,6 +119,30 @@ class MessageResponder:
         """Пометить, что мы ответили пользователю"""
         self.recent_responses[(account_id, user_id)] = datetime.utcnow()
     
+    def should_forward_to_owner(self, message_text: str) -> bool:
+        """
+        Проверка, нужно ли перевести на владельца (@grishkoff) по триггерам
+        
+        Args:
+            message_text: Текст сообщения
+        
+        Returns:
+            True если нужно перевести
+        """
+        # Получаем триггеры из конфигурации
+        forward_keywords = self.gpt_handler.config.get('target_action', {}).get('forward_keywords', [])
+        if not forward_keywords:
+            return False
+        
+        message_lower = message_text.lower()
+        
+        for keyword in forward_keywords:
+            if keyword.lower() in message_lower:
+                logger.debug(f"  🔄 Forward trigger detected: '{keyword}' in message")
+                return True
+        
+        return False
+    
     async def check_if_active_conversation(self, client: TelegramClient, user: User) -> bool:
         """
         Проверка, идет ли активная переписка (есть ли ответы пользователя после нашего последнего сообщения)
@@ -440,6 +464,25 @@ class MessageResponder:
                         logger.warning(f"  ⚠️ Failed to forward message: {e}")
                         # Не прерываем выполнение, продолжаем отвечать
             
+            # Проверяем, нужно ли перевести на владельца по триггерам (встреча, цена, телефон и т.д.)
+            if self.should_forward_to_owner(combined_text):
+                logger.info(f"  🔄 Forward trigger detected in message from @{username} - forwarding to @{self.forward_to_username}")
+                if event:
+                    try:
+                        await self.forward_message_to_grishkoff(
+                            client=client,
+                            event=event,
+                            account=account,
+                            sender=sender,
+                            username=username,
+                            user_id=user_id,
+                            message_text=combined_text,
+                            has_media=bool(event.message.media) if event else False
+                        )
+                    except Exception as e:
+                        logger.warning(f"  ⚠️ Failed to forward message: {e}")
+                # Продолжаем отвечать через GPT (не прерываем выполнение)
+            
             # ВСЕГДА отвечаем через GPT (не выходим из функции)
             # Это позволяет боту вести диалог для квалификации и продажи
             # Получаем расширенную историю переписки (10-15 сообщений для контекста)
@@ -561,11 +604,10 @@ class MessageResponder:
                 logger.info(f"  🚫 Blocked message from blacklisted user: @{username}")
                 return
             
-            # ВРЕМЕННО ОТКЛЮЧЕНО для тестирования: Проверяем, не отвечали ли мы недавно (избежание рекурсии)
-            # if self.recently_responded(account.id, user_id):
-            #     logger.debug(f"  ⏭️ Skipping - recently responded to @{username}")
-            #     return
-            logger.debug(f"  ✅ [TEST] Проверка recently_responded временно отключена для тестирования")
+            # Проверяем, не отвечали ли мы недавно (избежание рекурсии)
+            if self.recently_responded(account.id, user_id):
+                logger.debug(f"  ⏭️ Skipping - recently responded to @{username}")
+                return
             
             # Проверяем в БД, не отвечали ли мы совсем недавно (за последнюю секунду)
             db = SessionLocal()
@@ -672,42 +714,6 @@ class MessageResponder:
             if not account:
                 logger.warning(f"  ⚠️ Account {account_name} not found in DB, skipping handler")
                 continue
-            
-            # === ТЕСТ: Ping-Pong для проверки работы Telethon ===
-            # Используем функцию-фабрику для правильного замыкания
-            def create_ping_handler(cli, acc_name):
-                # ДИАГНОСТИКА: ловим ВСЕ входящие сообщения (private и non-private)
-                @cli.on(NewMessage(incoming=True))
-                async def debug_all_messages(event):
-                    try:
-                        text = (
-                            getattr(event.message, "message", None)
-                            or getattr(event.message, "text", None)
-                            or "(no text)"
-                        )
-                        sender = await event.get_sender()
-                        sender_id = sender.id if sender else "Unknown"
-                        sender_username = getattr(sender, "username", None) if sender else None
-                        logger.info(
-                            f"🔍 [DEBUG] {acc_name} получил сообщение "
-                            f"от {sender_username or sender_id}: {text[:50]} "
-                            f"(is_private={event.is_private})"
-                        )
-
-                        # Отвечаем на /ping только в личке
-                        if event.is_private and text.strip().lower() == "/ping":
-                            logger.info(f"🏓 [PING] PONG received on {acc_name}!")
-                            await event.reply(f"Pong! Я работаю на {acc_name}")
-                            logger.info(f"🏓 [PING] Ответ отправлен с {acc_name}")
-                    except Exception as e:
-                        logger.error(f"🔍 [DEBUG] Ошибка в debug_all_messages для {acc_name}: {e}")
-                        import traceback
-                        logger.error(f"🔍 [DEBUG] Traceback:\n{traceback.format_exc()}")
-
-                return debug_all_messages
-
-            create_ping_handler(client, account_name)
-            # ====================================================
             
             # КРИТИЧНО: Создаем правильное замыкание для каждого обработчика
             # Используем функцию-фабрику, чтобы каждая итерация цикла создавала свои переменные

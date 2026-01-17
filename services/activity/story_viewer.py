@@ -8,7 +8,12 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 from sqlalchemy import func, and_
 
-from telethon.tl.functions.stories import GetPeerStoriesRequest, SendReactionRequest
+from telethon.tl.functions.stories import (
+    GetPeerStoriesRequest,
+    IncrementStoryViewsRequest,
+    ReadStoriesRequest,
+    SendReactionRequest,
+)
 from telethon.tl.types import ReactionEmoji
 from telethon.errors import (
     FloodWaitError,
@@ -244,6 +249,34 @@ class StoryViewer:
                         
                         # Пропускаем с вероятностью
                         if random.random() > self.STORY_VIEW_PROBABILITY:
+                            continue
+
+                        # Фикс: получение stories НЕ означает просмотр.
+                        # Явно инкрементим просмотры и помечаем как прочитанные.
+                        try:
+                            await client(
+                                IncrementStoryViewsRequest(
+                                    peer=user,
+                                    id=[story.id],
+                                )
+                            )
+                            await client(ReadStoriesRequest(peer=user, max_id=story.id))
+                        except FloodWaitError as e:
+                            wait_seconds = min(e.seconds, 300)
+                            logger.warning(
+                                f"    ⏳ FloodWait {wait_seconds} секунд для просмотра Story"
+                            )
+                            await asyncio.sleep(wait_seconds)
+                            continue
+                        except RPCError as e:
+                            logger.debug(
+                                f"    ⚠️ Не удалось отметить просмотр Story: {str(e)[:80]}"
+                            )
+                            continue
+                        except Exception as e:
+                            logger.debug(
+                                f"    ⚠️ Не удалось отметить просмотр Story: {str(e)[:80]}"
+                            )
                             continue
                         
                         # Просматриваем Story (автоматически при получении через GetPeerStoriesRequest)
@@ -493,19 +526,37 @@ class StoryViewer:
                 logger.warning("⚠️ Нет активных аккаунтов")
                 return 0, 0
             
+            # Сначала прогоняем аккаунты для контактов/сторис, чтобы активность
+            # была "видимой" быстрее, а затем остальные.
+            contacts_accounts = [
+                a for a in accounts if a.session_name in self.contacts_view_accounts
+            ]
+            other_accounts = [
+                a for a in accounts if a.session_name not in self.contacts_view_accounts
+            ]
+            ordered_accounts = [*contacts_accounts, *other_accounts]
+
             logger.info(f"📋 Обработка {len(accounts)} активных аккаунтов...")
             
             total_viewed = 0
             total_reactions = 0
             
-            for account in accounts:
+            for account in ordered_accounts:
                 try:
+                    # Если клиент не загрузился (часто из-за AuthKeyDuplicatedError),
+                    # пропускаем без задержек.
+                    if account.session_name not in self.client_manager.clients:
+                        logger.warning(
+                            f"⚠️ Клиент {account.session_name} не загружен, пропускаем"
+                        )
+                        continue
+
                     viewed, reactions = await self.process_account(account)
                     total_viewed += viewed
                     total_reactions += reactions
                     
-                    # Большая задержка между аккаунтами
-                    await asyncio.sleep(random.randint(120, 300))
+                    # Задержка между аккаунтами (умеренная, т.к. внутри уже есть задержки)
+                    await asyncio.sleep(random.randint(30, 90))
                     
                 except Exception as e:
                     logger.error(f"❌ Ошибка при обработке аккаунта {account.session_name}: {e}", exc_info=True)

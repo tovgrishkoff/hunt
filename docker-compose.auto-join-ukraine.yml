@@ -15,13 +15,17 @@ services:
       # Монтируем основной код для быстрого обновления
       - ./auto_join_ukraine_cars_groups.py:/app/auto_join_ukraine_cars_groups.py:ro
       - ./auto_join_ukraine_cars_groups_scheduler.py:/app/auto_join_ukraine_cars_groups_scheduler.py:ro
+      - ./auto_join_lexus_groups_smart.py:/app/auto_join_lexus_groups_smart.py:ro
       - ./promotion_system.py:/app/promotion_system.py:ro
       # Монтируем директории с данными (для записи)
       - ./logs:/app/logs
       - ./sessions:/app/sessions
+      # Монтируем entrypoint скрипт для обновления без пересборки
+      - ./docker-entrypoint-auto-join-ukraine.sh:/app/docker-entrypoint-auto-join-ukraine.sh:ro
     environment:
       - TZ=Asia/Jakarta
       - PYTHONUNBUFFERED=1
+    command: ["python3", "/app/auto_join_lexus_groups_smart.py"]
     networks:
       - telegram-promotion
     logging:

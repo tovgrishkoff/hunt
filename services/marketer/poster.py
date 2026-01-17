@@ -18,6 +18,7 @@ sys.path.insert(0, '/app')
 
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.errors import (
     FloodWaitError,
     ChatWriteForbiddenError,
@@ -28,7 +29,7 @@ from telethon.errors import (
 from lexus_db.session import AsyncSessionLocal
 from lexus_db.models import Account, Target
 from lexus_db.db_manager import DbManager
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, text
 
 logging.basicConfig(
     level=logging.INFO,
@@ -432,11 +433,25 @@ class SmartPoster:
             db_manager = DbManager(session)
             
             try:
-                # ШАГ 1: Получаем группы, готовые для постинга
-                ready_groups = await db_manager.get_groups_ready_for_posting(
-                    niche=self.niche,
-                    limit=batch_size
+                # ШАГ 1: Получаем группы, готовые для постинга (НЕ привязываемся к assigned_account_id:
+                # будем выбирать аккаунт динамически с учетом блоклиста связок).
+                now = datetime.utcnow()
+                stmt = (
+                    select(Target)
+                    .where(
+                        and_(
+                            Target.niche == self.niche,
+                            Target.status == "active",
+                            or_(Target.warm_up_until.is_(None), Target.warm_up_until <= now),
+                            or_(Target.can_post.is_(None), Target.can_post.is_(True)),
+                            or_(Target.daily_posts_count.is_(None), Target.daily_posts_count < 2),
+                        )
+                    )
+                    .order_by(Target.last_post_at.asc().nullsfirst())
+                    .limit(batch_size)
                 )
+                result = await session.execute(stmt)
+                ready_groups = result.scalars().all()
             except Exception as e:
                 logger.error(f"❌ Error getting groups ready for posting: {e}", exc_info=True)
                 await session.rollback()
@@ -458,244 +473,404 @@ class SmartPoster:
                 logger.info(f"\n{'='*60}")
                 logger.info(f"📋 [{idx}/{len(ready_groups)}] Группа: {group_username}")
                 logger.info(f"{'='*60}")
-                
-                # Проверяем привязку аккаунта
-                if not target.assigned_account_id:
-                    logger.warning(f"  ⚠️ Группа {target.link} не привязана к аккаунту, пропускаем")
+
+                # Выбираем контент для постинга один раз (для повторных попыток разными аккаунтами)
+                group_link = group_username
+                relevant_messages = self._get_relevant_messages(group_link)
+                if not relevant_messages:
+                    logger.error(f"  ❌ Нет релевантных сообщений для группы {target.link}")
                     error_count += 1
                     continue
-                
-                # Загружаем аккаунт (используем прямой SQL-запрос для БД Bali, чтобы избежать проблем с отсутствующими полями)
-                try:
-                    # Используем прямой SQL, чтобы загрузить только существующие поля
-                    from sqlalchemy import text
-                    account_sql = text("""
-                        SELECT id, phone, string_session, session_name, status, 
-                               api_id, api_hash, proxy, nickname, bio,
-                               created_at, updated_at
-                        FROM accounts 
-                        WHERE id = :account_id
-                    """)
-                    account_result = await session.execute(account_sql, {"account_id": target.assigned_account_id})
-                    account_row = account_result.fetchone()
-                    
-                    if account_row:
-                        # Создаем объект Account из результата
-                        account = Account(
-                            id=account_row[0],
-                            phone=account_row[1],
-                            string_session=account_row[2],
-                            session_name=account_row[3],
-                            status=account_row[4],
-                            api_id=account_row[5],
-                            api_hash=account_row[6],
-                            proxy=account_row[7],
-                            nickname=account_row[8],
-                            bio=account_row[9],
-                            created_at=account_row[10],
-                            updated_at=account_row[11]
-                        )
+
+                post_content = random.choice(relevant_messages)
+                text_msg = post_content.get('text', '')
+                image_path = post_content.get('image') or post_content.get('photo')
+
+                # Для Бали: если сообщение по недвижимости без фото — подставляем дефолтные изображения апартов
+                if not image_path and self.niche == "bali":
+                    source_file = post_content.get("source_file", "")
+                    if source_file in {
+                        "messages_rental_property.txt",
+                        "messages_sale_property.txt",
+                        "messages_housing.txt",
+                    }:
+                        default_apartment_photos = [
+                            "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+                            "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+                            "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+                            "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+                            "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+                        ]
+                        image_path = random.choice(default_apartment_photos)
+
+                if not text_msg:
+                    logger.warning("  ⚠️ Пустой текст поста, пропускаем")
+                    error_count += 1
+                    continue
+
+                logger.info(f"  📝 Текст поста: {text_msg[:50]}...")
+                if image_path:
+                    logger.info(f"  🖼️  Фото: {image_path}")
+
+                # РОТАЦИЯ ДО ПОБЕДНОГО: пробуем группу разными аккаунтами, пока не получится
+                attempt = 0
+                max_attempts = max(1, len(self.bali_allowed_accounts)) if self.niche == "bali" else 5
+                success_for_group = False
+
+                while attempt < max_attempts and not success_for_group:
+                    attempt += 1
+
+                    # Выбираем аккаунт для этой группы, исключая тех, кто уже в блоклисте
+                    preferred_id = getattr(target, "assigned_account_id", None)
+                    if self.niche == "bali" and self.bali_allowed_accounts:
+                        allowed_sessions = sorted(self.bali_allowed_accounts)
                     else:
-                        account = None
-                except Exception as e:
-                    logger.error(f"  ❌ Error loading account {target.assigned_account_id}: {e}")
-                    account = None
-                
-                if not account:
-                    logger.error(f"  ❌ Аккаунт {target.assigned_account_id} не найден в БД")
-                    error_count += 1
-                    continue
-                
-                # Проверяем, что аккаунт из whitelist для Бали (только для ниши 'bali')
-                if self.niche == 'bali' and self.bali_allowed_accounts and account.session_name not in self.bali_allowed_accounts:
-                    logger.warning(f"  ⚠️ Аккаунт {account.session_name} не в whitelist для Бали, пропускаем")
-                    error_count += 1
-                    continue
-                
-                # Для Ukraine используем только Ukraine аккаунты
-                if self.niche == 'ukraine_cars':
-                    ukraine_accounts = ['promotion_dao_bro', 'promotion_alex_ever', 'promotion_rod_shaihutdinov']
-                    if account.session_name not in ukraine_accounts:
-                        logger.warning(f"  ⚠️ Аккаунт {account.session_name} не является Ukraine аккаунтом, пропускаем")
+                        allowed_sessions = None  # все active
+
+                    account_sql = text(
+                        """
+                        SELECT a.id, a.phone, a.string_session, a.session_name, a.status,
+                               a.api_id, a.api_hash, a.proxy, a.nickname, a.bio,
+                               a.created_at, a.updated_at
+                        FROM accounts a
+                        WHERE a.status = 'active'
+                          AND (
+                            :allowed_sessions_is_null
+                            OR a.session_name = ANY(CAST(:allowed_sessions AS TEXT[]))
+                          )
+                          AND NOT EXISTS (
+                            SELECT 1
+                            FROM account_group_blocklist b
+                            WHERE b.group_id = :group_id AND b.account_id = a.id
+                          )
+                        ORDER BY
+                          CASE
+                            WHEN CAST(:preferred_id AS INTEGER) IS NOT NULL
+                              AND a.id = CAST(:preferred_id AS INTEGER)
+                            THEN 0
+                            ELSE 1
+                          END,
+                          a.id
+                        LIMIT 1
+                        """
+                    )
+
+                    params = {
+                        "group_id": target.id,
+                        "preferred_id": preferred_id,
+                        "allowed_sessions_is_null": allowed_sessions is None,
+                        "allowed_sessions": allowed_sessions or [],
+                    }
+                    account_row = (await session.execute(account_sql, params)).fetchone()
+                    if not account_row:
+                        logger.warning(
+                            f"  ⚠️ Нет доступных аккаунтов для группы {group_username} "
+                            f"(все в блоклисте). Перевожу группу в 'no_accounts_left'."
+                        )
+                        target.status = "no_accounts_left"
+                        target.updated_at = datetime.utcnow()
+                        await session.commit()
+                        error_count += 1
+                        break
+
+                    account = Account(
+                        id=account_row[0],
+                        phone=account_row[1],
+                        string_session=account_row[2],
+                        session_name=account_row[3],
+                        status=account_row[4],
+                        api_id=account_row[5],
+                        api_hash=account_row[6],
+                        proxy=account_row[7],
+                        nickname=account_row[8],
+                        bio=account_row[9],
+                        created_at=account_row[10],
+                        updated_at=account_row[11],
+                    )
+
+                    logger.info(
+                        f"  👤 Попытка {attempt}/{max_attempts}: аккаунт {account.session_name} (id={account.id})"
+                    )
+
+                    # Для Ukraine используем только Ukraine аккаунты
+                    if self.niche == "ukraine_cars":
+                        ukraine_accounts = [
+                            "promotion_dao_bro",
+                            "promotion_alex_ever",
+                            "promotion_rod_shaihutdinov",
+                        ]
+                        if account.session_name not in ukraine_accounts:
+                            logger.warning(
+                                f"  ⚠️ Аккаунт {account.session_name} не является Ukraine аккаунтом, "
+                                "пробуем следующий"
+                            )
+                            # баним связку, чтобы не выбирать его снова для этой группы
+                            await session.execute(
+                                text(
+                                    "INSERT INTO account_group_blocklist (group_id, account_id, reason) "
+                                    "VALUES (:gid, :aid, :reason) "
+                                    "ON CONFLICT (group_id, account_id) DO NOTHING"
+                                ),
+                                {"gid": target.id, "aid": account.id, "reason": "ukraine_account_not_allowed"},
+                            )
+                            await session.commit()
+                            continue
+
+                    client = await self.create_client(account)
+                    if not client:
+                        logger.error(f"  ❌ Не удалось создать клиент для {account.session_name}")
+                        await session.execute(
+                            text(
+                                "INSERT INTO account_group_blocklist (group_id, account_id, reason) "
+                                "VALUES (:gid, :aid, :reason) "
+                                "ON CONFLICT (group_id, account_id) DO NOTHING"
+                            ),
+                            {"gid": target.id, "aid": account.id, "reason": "client_create_failed"},
+                        )
+                        await session.commit()
                         error_count += 1
                         continue
-                
-                logger.info(f"  👤 Используем аккаунт: {account.session_name} (id={account.id})")
-                
-                # Создаем клиент
-                client = await self.create_client(account)
-                if not client:
-                    logger.error(f"  ❌ Не удалось создать клиент для {account.session_name}")
-                    error_count += 1
-                    continue
-                
-                try:
-                    # ШАГ 3: Выбираем релевантный пост для группы
-                    # Используем username напрямую, чтобы избежать lazy loading
-                    group_link = group_username
-                    relevant_messages = self._get_relevant_messages(group_link)
-                    
-                    if not relevant_messages:
-                        logger.error(f"  ❌ Нет релевантных сообщений для группы {target.link}")
-                        error_count += 1
-                        continue
-                    
-                    post_content = random.choice(relevant_messages)
-                    text = post_content.get('text', '')
-                    image_path = post_content.get('image') or post_content.get('photo')
-                    
-                    if not text:
-                        logger.warning(f"  ⚠️ Пустой текст поста, пропускаем")
-                        error_count += 1
-                        continue
-                    
-                    logger.info(f"  📝 Текст поста: {text[:50]}...")
-                    if image_path:
-                        logger.info(f"  🖼️  Фото: {image_path}")
-                    
-                    # ШАГ 4: Отправка поста
-                    group_link = target.link
-                    username = group_link.lstrip('@')
-                    
+
                     try:
-                        # Обрабатываем путь к фото (может быть относительным, например lexus_assets/lexus_variant_1.jpg)
+                        username = group_username.lstrip("@")
+
+                        # ВАЖНО: сначала вступаем (если аккаунт еще не участник)
+                        try:
+                            await client(JoinChannelRequest(username))
+                        except Exception:
+                            pass
+
+                        # Обрабатываем путь к фото
                         full_image_path = None
                         if image_path:
-                            # Если путь абсолютный и существует
+                            # Bali: никогда не используем lexus_assets (иногда попадали ошибочно в messages.json)
+                            if self.niche == "bali" and str(image_path).startswith("lexus_assets/"):
+                                logger.warning(
+                                    f"  ⚠️ Ignoring lexus photo for Bali: {image_path}"
+                                )
+                                image_path = None
+
                             if Path(image_path).exists():
                                 full_image_path = image_path
                             else:
-                                # Ищем в различных местах
-                                possible_paths = [
-                                    Path(image_path),  # Оригинальный путь
-                                    Path('/app') / image_path,  # В контейнере
-                                    Path('/app/lexus_assets') / image_path.replace('lexus_assets/', ''),  # В lexus_assets
-                                    Path('/app/assets') / image_path.replace('lexus_assets/', ''),  # В assets
-                                    Path('/app/data/ukraine/assets') / image_path.replace('lexus_assets/', ''),  # В ukraine assets
-                                ]
-                                
-                                for path in possible_paths:
-                                    if path.exists():
-                                        full_image_path = str(path)
+                                # Важно: для Bali ищем только в bali_assets/assets; для Ukraine допускаем lexus_assets.
+                                possible_paths = [Path(image_path), Path("/app") / image_path]
+
+                                if self.niche == "bali":
+                                    possible_paths.extend(
+                                        [
+                                            Path("/app/bali_assets") / str(image_path).replace("bali_assets/", ""),
+                                            Path("/app/assets") / str(image_path).replace("bali_assets/", ""),
+                                        ]
+                                    )
+                                else:
+                                    possible_paths.extend(
+                                        [
+                                            Path("/app/lexus_assets")
+                                            / str(image_path).replace("lexus_assets/", ""),
+                                            Path("/app/assets")
+                                            / str(image_path).replace("lexus_assets/", ""),
+                                            Path("/app/data/ukraine/assets")
+                                            / str(image_path).replace("lexus_assets/", ""),
+                                        ]
+                                    )
+                                for pth in possible_paths:
+                                    if pth.exists():
+                                        full_image_path = str(pth)
                                         logger.info(f"  🔍 Found photo at: {full_image_path}")
                                         break
-                                
                                 if not full_image_path:
-                                    logger.warning(f"  ⚠️ Photo not found: {image_path}, sending text only")
-                        
+                                    logger.warning(
+                                        f"  ⚠️ Photo not found: {image_path}, sending text only"
+                                    )
+
                         if full_image_path:
-                            # Отправляем с фото
-                            await client.send_file(username, full_image_path, caption=text)
-                            logger.info(f"  ✅ Пост с фото отправлен в {group_link}")
+                            await client.send_file(username, full_image_path, caption=text_msg)
                         else:
-                            # Отправляем только текст
-                            await client.send_message(username, text)
-                            logger.info(f"  ✅ Пост отправлен в {group_link}")
-                        
-                        # ШАГ 5: Записываем в историю и обновляем счетчики
-                        # record_post() автоматически обновляет:
-                        # - account.daily_posts_count += 1
-                        # - target.daily_posts_in_group += 1
-                        # - target.last_post_at = NOW()
+                            await client.send_message(username, text_msg)
+
+                        logger.info(
+                            f"  ✅ Пост отправлен в {group_username} (account={account.session_name})"
+                        )
+
                         await db_manager.record_post(
                             account_id=account.id,
                             target_id=target.id,
-                            message_content=text[:1000],  # Ограничиваем длину
+                            message_content=text_msg[:1000],
                             photo_path=image_path,
-                            status='success'
+                            status="success",
                         )
-                        
+
+                        # Обновляем "последний успешный" аккаунт для группы
+                        target.assigned_account_id = account.id
+                        target.updated_at = datetime.utcnow()
+
                         await session.commit()
                         posted_count += 1
-                        
-                        # Пауза между постами (30-60 секунд)
+                        success_for_group = True
+
                         pause_seconds = random.randint(30, 60)
-                        logger.info(f"  ⏸️  Пауза {pause_seconds} сек перед следующим постом...")
+                        logger.info(
+                            f"  ⏸️  Пауза {pause_seconds} сек перед следующим постом..."
+                        )
                         await asyncio.sleep(pause_seconds)
-                        
+
                     except FloodWaitError as e:
                         wait_seconds = e.seconds
-                        logger.warning(f"  ⏳ FloodWait {wait_seconds} сек для аккаунта {account.session_name}")
-                        
-                        # Устанавливаем FloodWait для аккаунта
-                        wait_until = datetime.utcnow() + timedelta(seconds=wait_seconds)
-                        await db_manager.set_account_flood_wait(account.id, wait_until)
-                        
-                        # Записываем в историю
+                        logger.warning(
+                            f"  ⏳ FloodWait {wait_seconds} сек для аккаунта {account.session_name}"
+                        )
                         await db_manager.record_post(
                             account_id=account.id,
                             target_id=target.id,
-                            message_content=text[:1000] if text else None,
-                            status='flood_wait',
-                            error_message=f"FloodWait: {wait_seconds} seconds"
+                            message_content=text_msg[:1000] if text_msg else None,
+                            status="flood_wait",
+                            error_message=f"FloodWait: {wait_seconds} seconds",
                         )
-                        
+                        await session.commit()
                         error_count += 1
-                        
-                        # Пауза перед следующим постом
                         await asyncio.sleep(60)
-                    
+
                     except (ChatWriteForbiddenError, UserBannedInChannelError) as e:
                         error_msg = f"Запрещено писать в группе: {str(e)}"
                         logger.error(f"  🚫 {error_msg}")
-                        
-                        # САМООЧИЩЕНИЕ БД: Помечаем группу как read_only и can_post=False
-                        target.status = 'read_only'
-                        target.can_post = False
-                        target.updated_at = datetime.utcnow()
-                        logger.info(f"  🔄 Группа {group_username} помечена как read_only, can_post=False (самоочищение БД)")
-                        
-                        # Записываем в историю
+
+                        await session.execute(
+                            text(
+                                "INSERT INTO account_group_blocklist (group_id, account_id, reason) "
+                                "VALUES (:gid, :aid, :reason) "
+                                "ON CONFLICT (group_id, account_id) DO NOTHING"
+                            ),
+                            {"gid": target.id, "aid": account.id, "reason": error_msg[:500]},
+                        )
+
                         await db_manager.record_post(
                             account_id=account.id,
                             target_id=target.id,
-                            status='error',
-                            error_message=error_msg
+                            status="error",
+                            error_message=error_msg,
                         )
-                        
                         await session.commit()
                         error_count += 1
-                        await asyncio.sleep(30)
-                    
+                        await asyncio.sleep(5)
+
                     except RPCError as e:
                         error_msg = f"RPC Error: {str(e)}"
+                        logger.error(f"  ❌ {error_msg}")
+
                         error_str = str(e).lower()
                         
-                        # Проверяем, является ли это ошибкой "You can't write in this chat"
-                        if "can't write" in error_str or "write forbidden" in error_str or "chatwriteforbidden" in error_str:
-                            logger.error(f"  🚫 {error_msg}")
-                            
-                            # САМООЧИЩЕНИЕ БД: Помечаем группу как read_only и can_post=False
-                            target.status = 'read_only'
+                        # Блокирующие ошибки - группа недоступна для постинга ВООБЩЕ
+                        blocking_errors = [
+                            "allow_payment_required",  # Требуется оплата
+                            "chat_send_plain_forbidden",  # Текстовые сообщения запрещены
+                            "topic_closed",  # Топики закрыты (для форумов)
+                        ]
+                        
+                        is_blocking_error = any(
+                            blocking_err in error_str for blocking_err in blocking_errors
+                        )
+                        
+                        # Ошибки для блоклиста аккаунта (можно попробовать другой аккаунт)
+                        account_blocklist_errors = [
+                            "can't write" in error_str,
+                            "write forbidden" in error_str,
+                            "chatwriteforbidden" in error_str,
+                            "you're banned" in error_str,
+                        ]
+                        
+                        # Если это блокирующая ошибка - помечаем группу как недоступную
+                        if is_blocking_error:
+                            logger.warning(
+                                f"  🚫 Блокирующая ошибка для группы {target.username}: "
+                                f"перевожу в статус 'inaccessible'"
+                            )
+                            target.status = "inaccessible"
                             target.can_post = False
                             target.updated_at = datetime.utcnow()
-                            logger.info(f"  🔄 Группа {group_username} помечена как read_only, can_post=False (самоочищение БД из RPCError)")
-                        else:
-                            logger.error(f"  ❌ {error_msg}")
+                            await session.commit()
+                            
+                            # Записываем ошибку
+                            await db_manager.record_post(
+                                account_id=account.id,
+                                target_id=target.id,
+                                status="error",
+                                error_message=error_msg,
+                            )
+                            await session.commit()
+                            error_count += 1
+                            # Прерываем попытки для этой группы
+                            success_for_group = False
+                            break
                         
+                        # Если это ошибка для конкретного аккаунта - добавляем в блоклист
+                        elif any(account_blocklist_errors):
+                            await session.execute(
+                                text(
+                                    "INSERT INTO account_group_blocklist (group_id, account_id, reason) "
+                                    "VALUES (:gid, :aid, :reason) "
+                                    "ON CONFLICT (group_id, account_id) DO NOTHING"
+                                ),
+                                {"gid": target.id, "aid": account.id, "reason": error_msg[:500]},
+                            )
+
                         await db_manager.record_post(
                             account_id=account.id,
                             target_id=target.id,
-                            status='error',
-                            error_message=error_msg
+                            status="error",
+                            error_message=error_msg,
                         )
-                        
                         await session.commit()
                         error_count += 1
-                        await asyncio.sleep(30)
-                
-                except Exception as e:
-                    logger.error(f"  ❌ Неожиданная ошибка при постинге: {e}", exc_info=True)
-                    error_count += 1
-                    await asyncio.sleep(30)
-                
-                finally:
-                    # Закрываем клиент
-                    try:
-                        if client and client.is_connected():
-                            await client.disconnect()
-                    except:
-                        pass
+                        await asyncio.sleep(5)
+
+                    except Exception as e:
+                        logger.error(
+                            f"  ❌ Неожиданная ошибка при постинге: {e}", exc_info=True
+                        )
+                        error_count += 1
+                        await asyncio.sleep(5)
+
+                    finally:
+                        try:
+                            if client and client.is_connected():
+                                await client.disconnect()
+                        except Exception:
+                            pass
+
+                # Если не получилось ни с одним аккаунтом — помечаем группу
+                if not success_for_group and target.status == "active":
+                    # Проверяем, есть ли еще незабаненные аккаунты для группы
+                    remain_sql = text(
+                        """
+                        SELECT COUNT(*)
+                        FROM accounts a
+                        WHERE a.status = 'active'
+                          AND (
+                            :allowed_sessions_is_null
+                            OR a.session_name = ANY(CAST(:allowed_sessions AS TEXT[]))
+                          )
+                          AND NOT EXISTS (
+                            SELECT 1 FROM account_group_blocklist b
+                            WHERE b.group_id = :group_id AND b.account_id = a.id
+                          )
+                        """
+                    )
+                    allowed_sessions = sorted(self.bali_allowed_accounts) if (self.niche == "bali" and self.bali_allowed_accounts) else None
+                    remain = (
+                        await session.execute(
+                            remain_sql,
+                            {
+                                "group_id": target.id,
+                                "allowed_sessions_is_null": allowed_sessions is None,
+                                "allowed_sessions": allowed_sessions or [],
+                            },
+                        )
+                    ).scalar_one()
+                    if remain == 0:
+                        target.status = "no_accounts_left"
+                        target.updated_at = datetime.utcnow()
+                        await session.commit()
             
             logger.info("\n" + "=" * 80)
             logger.info(f"✅ БАТЧ ПОСТИНГА ЗАВЕРШЕН")
