@@ -23,3 +23,8 @@ export GIT_COMMITTER_EMAIL="autosave@local"
 
 git add -A
 git commit -m "chore: autosave $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >/dev/null
+
+# Push if remote is configured
+if git remote get-url origin >/dev/null 2>&1; then
+  git push origin main >> "${LOG_DIR}/git_autosave.log" 2>&1 || true
+fi
