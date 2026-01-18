@@ -1,0 +1,37 @@
+#!/bin/bash
+# Команды для работы с Docker контейнером user-monitor
+
+echo "=== КОМАНДЫ ДЛЯ DOCKER КОНТЕЙНЕРА user-monitor ==="
+echo ""
+echo "📊 1. СТАТУС КОНТЕЙНЕРА:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker ps --filter 'name=bali-user-monitor'"
+echo ""
+echo "📋 2. ЛОГИ В РЕАЛЬНОМ ВРЕМЕНИ:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker logs -f bali-user-monitor"
+echo ""
+echo "📄 3. ПОСЛЕДНИЕ 50 СТРОК ЛОГОВ:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker logs bali-user-monitor --tail 50"
+echo ""
+echo "🚫 4. ЛОГИ С ФИЛЬТРАЦИЕЙ (только спам):"
+echo "cd /home/tovgrishkoff/mvp2105 && docker logs bali-user-monitor 2>&1 | grep --line-buffered -E '(КРИТИЧЕСКИЙ СПАМ|заблокирован|отфильтрован|🚫)'"
+echo ""
+echo "🔄 5. ПЕРЕЗАПУСК КОНТЕЙНЕРА:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker-compose restart user-monitor"
+echo ""
+echo "⏹️  6. ОСТАНОВКА КОНТЕЙНЕРА:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker-compose stop user-monitor"
+echo ""
+echo "▶️  7. ЗАПУСК КОНТЕЙНЕРА:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker-compose up -d user-monitor"
+echo ""
+echo "📊 8. СТАТИСТИКА КОНТЕЙНЕРА (CPU, память):"
+echo "cd /home/tovgrishkoff/mvp2105 && docker stats bali-user-monitor --no-stream"
+echo ""
+echo "🔍 9. ВЫПОЛНИТЬ КОМАНДУ В КОНТЕЙНЕРЕ:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker exec -it bali-user-monitor bash"
+echo ""
+echo "📝 10. ВСЕ ЛОГИ С НАЧАЛА:"
+echo "cd /home/tovgrishkoff/mvp2105 && docker logs bali-user-monitor"
+
+
+

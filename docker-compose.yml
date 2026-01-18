@@ -1,173 +1,110 @@
 version: '3.8'
 
 services:
-  # База данных PostgreSQL для Бали (отдельная БД!)
   postgres:
-    image: postgres:15-alpine
-    container_name: telegram-bali-postgres
+    image: postgres:15
+    container_name: bali-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-telegram_promotion_bali}
-      POSTGRES_USER: ${POSTGRES_USER:-telegram_user_bali}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telegram_password_bali}
+      POSTGRES_DB: bali_bot
+      POSTGRES_USER: grishkoff
+      POSTGRES_PASSWORD: testpass
     volumes:
-      - postgres_bali_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
     ports:
-      - "${POSTGRES_PORT:-5438}:5432"  # Другой порт!
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-telegram_user_bali}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "5434:5432"
     networks:
-      - bali-network
+      - bot-network
 
-  db-init:
-    build:
-      context: .
-      dockerfile: Dockerfile.base
-    container_name: telegram-bali-db-init
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
-    command: python -c "from shared.database.session import init_db; init_db()"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - bali-network
+  bot:
+    build: .
+    container_name: bali-bot
     restart: "no"
-
-  account-manager:
-    build:
-      context: .
-      dockerfile: services/account-manager/Dockerfile
-    container_name: telegram-bali-account-manager
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
-      - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
-      - TZ=Asia/Jakarta
+    env_file: .env.docker
+    command: python bot.py
     volumes:
-      - ./sessions:/app/sessions:rw
-      - ./config:/app/config:ro
-      - ./shared:/app/shared:ro
-      - ./services/account-manager:/app/services/account-manager:ro
-      - ./scripts:/app/scripts:ro
-      - ./data/logs:/app/logs:rw
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./patterns.py:/app/patterns.py
+      - ./backup_working_version/bot.py:/app/bot.py:ro
+      - ./backup_working_version/monitor.py:/app/monitor.py:ro
+      - ./backup_working_version/database.py:/app/database.py:ro
+      - ./backup_working_version/config.py:/app/config.py:ro
+      - ./backup_working_version/content.py:/app/content.py:ro
+      - ./backup_working_version/ai_classifier.py:/app/ai_classifier.py:ro
+      - ./backup_working_version/ai_sniper.py:/app/ai_sniper.py:ro
+      - ./backup_working_version/utils.py:/app/utils.py:ro
+      - ./backup_working_version/broadcast_niches.py:/app/broadcast_niches.py:ro
     depends_on:
-      postgres:
-        condition: service_healthy
-      db-init:
-        condition: service_completed_successfully
+      - postgres
     networks:
-      - bali-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - bot-network
 
-  marketer:
-    build:
-      context: .
-      dockerfile: services/marketer/Dockerfile
-    container_name: telegram-bali-marketer
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
-      - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
-      - TZ=Asia/Jakarta
+  user-monitor:
+    build: .
+    container_name: bali-user-monitor
+    restart: "no"
+    env_file: .env.monitor.docker
+    command: python user_monitor_bot.py
     volumes:
-      - ./sessions:/app/sessions:rw
-      - ./config:/app/config:ro
-      - ./shared:/app/shared:ro
-      - ./services:/app/services:ro
-      - ./lexus_db:/app/lexus_db:ro
-      - ./data/logs:/app/logs:rw
-      - ./bali_assets:/app/bali_assets:ro
-      - ./bali_assets:/app/assets:ro
-      - ./bali_accounts_config.json:/app/bali_accounts_config.json:ro
-      - ./group_niches.json:/app/group_niches.json:ro
-      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./monitor_session.session:/app/monitor_session.session
+      - ./patterns.py:/app/patterns.py:ro
+      - ./backup_working_version/user_monitor_bot.py:/app/user_monitor_bot.py:ro
+      - ./backup_working_version/monitor.py:/app/monitor.py:ro
+      - ./backup_working_version/database.py:/app/database.py:ro
+      - ./backup_working_version/config.py:/app/config.py:ro
+      - ./backup_working_version/content.py:/app/content.py:ro
+      - ./backup_working_version/ai_classifier.py:/app/ai_classifier.py:ro
+      - ./backup_working_version/ai_sniper.py:/app/ai_sniper.py:ro
+      - ./backup_working_version/gpt_judge.py:/app/gpt_judge.py:ro
     depends_on:
-      postgres:
-        condition: service_healthy
-      db-init:
-        condition: service_completed_successfully
+      - postgres
     networks:
-      - bali-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - bot-network
 
-  activity:
-    build:
-      context: .
-      dockerfile: services/activity/Dockerfile
-    container_name: telegram-bali-activity
+  reminders:
+    build: .
+    container_name: bali-reminders
     restart: unless-stopped
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
-      - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
+    env_file: .env.docker
+    command: python start_reminder_service.py
     volumes:
-      - ./sessions:/app/sessions:rw
-      - ./shared:/app/shared:ro
-      - ./config:/app/config:ro
-      - ./data/logs:/app/logs:rw
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./subscription_reminders.py:/app/subscription_reminders.py
+      - ./start_reminder_service.py:/app/start_reminder_service.py
+      - ./subscription_reminders.log:/app/subscription_reminders.log
+      - ./patterns.py:/app/patterns.py
     depends_on:
-      postgres:
-        condition: service_healthy
-      db-init:
-        condition: service_completed_successfully
+      - postgres
     networks:
-      - bali-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - bot-network
 
-  secretary:
-    build:
-      context: .
-      dockerfile: services/secretary/Dockerfile
-    container_name: telegram-bali-secretary
+  active-reminders:
+    build: .
+    container_name: bali-active-reminders
     restart: unless-stopped
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
+    env_file: .env.docker
+    command: python start_active_reminders.py
     volumes:
-      - ./sessions:/app/sessions:rw
-      - ./shared:/app/shared:ro
-      - ./config:/app/config:ro
-      - ./data/logs:/app/logs:rw
-      - ./blacklist.txt:/app/blacklist.txt:ro
-      - ./lexus_accounts_config.json:/app/lexus_accounts_config.json:ro
-      - ./bali_accounts_config.json:/app/bali_accounts_config.json:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./active_reminders.py:/app/active_reminders.py
+      - ./start_active_reminders.py:/app/start_active_reminders.py
+      - ./active_reminders.log:/app/active_reminders.log
+      - ./active_reminders_service.log:/app/active_reminders_service.log
     depends_on:
-      postgres:
-        condition: service_healthy
-      db-init:
-        condition: service_completed_successfully
+      - postgres
     networks:
-      - bali-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-networks:
-  bali-network:
-    driver: bridge
+      - bot-network
 
 volumes:
-  postgres_bali_data:
-    driver: local
+  postgres_data:
+
+networks:
+  bot-network:
+    driver: bridge
+

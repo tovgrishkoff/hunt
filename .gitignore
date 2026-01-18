@@ -1,72 +1,27 @@
-# Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+*.pyc
+*.pyo
+*.pyd
+
 venv/
-env/
-ENV/
-*.egg-info/
-dist/
-build/
+test_env/
 
-# Sessions
-*.session
-sessions/
-temp_sessions/
-*_session.txt
-new_session_*.txt
-
-# Logs
-*.log
 logs/
-*.log.*
+*.log
 
-# Data
 data/
-*.db
-*.sqlite
+backup_messages/
+backup_working_20260111_043440/
+backups/
+*.dump
+*.sql
+*.sql.gz
 
-# Environment
+monitor_session.session
+monitor_session.session-journal
+
 .env
-.env.local
 .env.*
-!.env.example
-!.env.*.example
+*.session
 
-# Secrets / credentials
-accounts_config*.json
-!accounts_config.json.example
-accounts_config_stories.json
-accounts_config_autoresponder.json
-real_config.json
-server_accounts_config.json
-new_account_*_config.json
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Backup files
-*.backup
-*.bak
-*_backup_*
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Archives
-*.zip
-*.tar.gz
-*.rar
-
+ai_learning.db
