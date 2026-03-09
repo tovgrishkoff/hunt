@@ -391,22 +391,16 @@ async def main():
             logger.info(f"\n✅ Worker {session_name} завершил работу:")
             logger.info(f"   Обработано: {worker_processed}, Вступили: {worker_joined}, Ошибок: {worker_errors}")
         
-        # Запускаем всех workers параллельно
-        tasks = []
+        # Запускаем workers последовательно, чтобы избежать конфликтов с DB-сессией
+        started = 0
         for session_name, account_id in account_ids.items():
             if session_name in clients and session_name in account_groups:
                 client = clients[session_name]
                 groups_queue = account_groups[session_name]
-                task = asyncio.create_task(
-                    account_worker(session_name, account_id, client, groups_queue)
-                )
-                tasks.append(task)
-        
-        logger.info(f"\n🚀 Запущено {len(tasks)} параллельных workers")
-        logger.info("="*60)
-        
-        # Ждем завершения всех workers
-        await asyncio.gather(*tasks, return_exceptions=True)
+                started += 1
+                logger.info(f"\n🚀 Запуск worker (последовательно): {session_name}")
+                logger.info("="*60)
+                await account_worker(session_name, account_id, client, groups_queue)
         
         # Закрываем все клиенты
         for client in clients.values():

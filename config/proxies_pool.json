@@ -1,0 +1,18 @@
+{
+  "description": "Пул прокси для аккаунтов. Формат URL: http://USER:PASS@HOST:PORT (для Telethon использовать http:// даже для HTTPS-прокси).",
+  "proxies": [
+    "http://FATKWa:bsJ7rQ@45.89.73.168:9547",
+    "http://FATKWa:bsJ7rQ@193.32.153.36:9383",
+    "http://FATKWa:bsJ7rQ@193.32.154.83:9968",
+    "http://FATKWa:bsJ7rQ@193.32.153.87:9526",
+    "http://nqzMyT:A2FFuy@181.177.86.184:9185",
+    "http://Vu9TDx:0zumuH@178.171.42.53:9735",
+    "http://Vu9TDx:0zumuH@212.102.146.159:9722",
+    "http://Vu9TDx:0zumuH@178.171.42.229:9540",
+    "http://pG0d5c:8LcpzP@45.89.75.94:9797",
+    "http://pG0d5c:8LcpzP@45.89.72.202:9136",
+    "http://pG0d5c:8LcpzP@45.89.73.114:9670",
+    "http://pG0d5c:8LcpzP@45.89.73.118:9835"
+  ],
+  "updated": "2026-02-08"
+}

@@ -15,7 +15,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5438}:5432"  # Другой порт!
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-telegram_user_bali}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-telegram_user_bali} -d ${POSTGRES_DB:-telegram_promotion_bali}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,6 +45,7 @@ services:
     restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
+      - NICHE=bali
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
       - TZ=Asia/Jakarta
@@ -52,6 +53,7 @@ services:
       - ./sessions:/app/sessions:rw
       - ./config:/app/config:ro
       - ./shared:/app/shared:ro
+      - ./bali_accounts_config.json:/app/bali_accounts_config.json:ro
       - ./services/account-manager:/app/services/account-manager:ro
       - ./scripts:/app/scripts:ro
       - ./data/logs:/app/logs:rw
@@ -79,6 +81,8 @@ services:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
       - TZ=Asia/Jakarta
+      - NICHE=bali
+      - RETREAT_ONLY_MODE=${RETREAT_ONLY_MODE:-true}
     volumes:
       - ./sessions:/app/sessions:rw
       - ./config:/app/config:ro
@@ -91,6 +95,7 @@ services:
       - ./bali_accounts_config.json:/app/bali_accounts_config.json:ro
       - ./group_niches.json:/app/group_niches.json:ro
       - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./run_priority_mailing_now.py:/app/run_priority_mailing_now.py:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -114,6 +119,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      - EXCLUDE_LEXUS_ACCOUNTS=true
+      - EXCLUDED_SESSIONS=promotion_alex_ever
     volumes:
       - ./sessions:/app/sessions:rw
       - ./shared:/app/shared:ro
@@ -151,6 +158,41 @@ services:
       - ./blacklist.txt:/app/blacklist.txt:ro
       - ./lexus_accounts_config.json:/app/lexus_accounts_config.json:ro
       - ./bali_accounts_config.json:/app/bali_accounts_config.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    networks:
+      - bali-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  conversation-pr:
+    build:
+      context: .
+      dockerfile: services/conversation-pr/Dockerfile
+    container_name: telegram-bali-conversation-pr
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-telegram_user_bali}:${POSTGRES_PASSWORD:-telegram_password_bali}@postgres:5432/${POSTGRES_DB:-telegram_promotion_bali}
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - EXCLUDE_LEXUS_ACCOUNTS=true
+      - NICHE=bali
+      - CONVERSATION_PR_INTERVAL_HOURS=12
+      - TZ=Asia/Jakarta
+    volumes:
+      - ./sessions:/app/sessions:rw
+      - ./shared:/app/shared:ro
+      - ./config:/app/config:ro
+      - ./services/conversation-pr:/app/services/conversation-pr:ro
+      - ./bali_accounts_config.json:/app/bali_accounts_config.json:ro
+      - ./data/logs:/app/logs:rw
+      - ./data:/app/data:rw
     depends_on:
       postgres:
         condition: service_healthy

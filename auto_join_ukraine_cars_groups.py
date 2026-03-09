@@ -52,7 +52,11 @@ def setup_logging():
     return logging.getLogger(__name__)
 
 async def check_can_post_in_group(client, entity):
-    """Проверка, можно ли постить в группе"""
+    """Проверка, можно ли постить в группе.
+
+    Важно: если не можем надежно проверить права, возвращаем False (консервативно),
+    чтобы не добавлять в рассылку группы без подтвержденного права на постинг.
+    """
     try:
         # Пробуем получить права текущего пользователя
         me = await client.get_me()
@@ -66,8 +70,8 @@ async def check_can_post_in_group(client, entity):
                 if hasattr(permissions, 'banned_rights') and permissions.banned_rights:
                     if hasattr(permissions.banned_rights, 'send_messages'):
                         return not permissions.banned_rights.send_messages
-        except:
-            pass
+        except Exception:
+            return False
         
         # Если не можем проверить права до вступления, проверяем через full_chat
         try:
@@ -81,14 +85,14 @@ async def check_can_post_in_group(client, entity):
                             return not banned_rights.send_messages
                     # Если нет ограничений, считаем что можно
                     return True
-        except:
-            pass
+        except Exception:
+            return False
         
-        # Если не можем проверить, считаем что можно (проверим после вступления)
-        return True
+        # Если не можем проверить, считаем что НЕЛЬЗЯ
+        return False
     except Exception as e:
-        # Если не можем проверить, считаем что можно (проверим после вступления)
-        return True
+        # Если не можем проверить, считаем что нельзя
+        return False
 
 async def join_group_with_check(client, account_name, group_info, logger):
     """Вступление в группу с проверкой возможности постить"""
@@ -124,7 +128,7 @@ async def join_group_with_check(client, account_name, group_info, logger):
             # Проверяем права постинга для уже участника
             can_post = await check_can_post_in_group(client, entity)
             if not can_post:
-                logger.warning(f"  ⚠️ Уже участник, но нельзя постить в {username}")
+                logger.warning(f"  ⚠️ Уже участник, но права постинга не подтверждены: {username}")
                 return False
             # Если уже участник и можно постить - сохраняем привязку и возвращаемся
             try:
@@ -139,7 +143,7 @@ async def join_group_with_check(client, account_name, group_info, logger):
             except Exception as e:
                 logger.warning(f"  ⚠️ Ошибка при сохранении привязки для уже участника: {e}")
             return True
-        except:
+        except Exception:
             pass
         
         # Вступаем в группу
@@ -171,8 +175,12 @@ async def join_group_with_check(client, account_name, group_info, logger):
                     can_send = True  # Группа доступна для постинга
         except Exception as e:
             logger.warning(f"  ⚠️ Не удалось проверить права после вступления: {e}")
-            # Если не можем проверить, оставляем группу (может быть можно постить)
-            can_send = True  # Оптимистично предполагаем, что можно постить
+            # Если не можем проверить, выходим и не назначаем
+            try:
+                await client.delete_dialog(entity)
+            except:
+                pass
+            return False
         
         # Если можно постить - сохраняем привязку аккаунта к группе
         if can_send:

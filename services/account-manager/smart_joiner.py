@@ -22,6 +22,7 @@ from telethon.errors import (
     ChannelPrivateError,
     ChatAdminRequiredError,
     InviteHashExpiredError,
+    InviteRequestSentError,
     ChatWriteForbiddenError,
     UserBannedInChannelError,
     RPCError
@@ -30,7 +31,7 @@ from telethon.errors import (
 from lexus_db.session import AsyncSessionLocal
 from lexus_db.models import Account, Target
 from lexus_db.db_manager import DbManager
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, func, case
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +46,15 @@ class FloodWaitDetected(Exception):
 class SmartJoiner:
     """Класс для безопасного вступления в группы с обработкой FloodWait"""
     
-    def __init__(self, accounts_config_path: str = 'accounts_config.json'):
+    def __init__(self, accounts_config_path: str = 'accounts_config.json', allowed_sessions: Optional[List[str]] = None):
         """
         Args:
             accounts_config_path: Путь к файлу конфигурации аккаунтов (JSON)
+            allowed_sessions: Список разрешенных session_name для вступления (например, для Lexus)
         """
         self.accounts_config_path = Path(accounts_config_path)
         self.accounts_config = self._load_accounts_config()
+        self.allowed_sessions = set(allowed_sessions or [])
     
     def _load_accounts_config(self) -> dict:
         """Загрузка конфигурации аккаунтов из JSON"""
@@ -76,6 +79,7 @@ class SmartJoiner:
         Условия:
         - status == 'active'
         - next_allowed_action_time < NOW() или NULL
+        - session_name в allowed_sessions (если задано)
         
         Args:
             session: AsyncSession БД
@@ -96,15 +100,35 @@ class SmartJoiner:
             )
         )
         
+        # Фильтруем по allowed_sessions, если задано
+        if self.allowed_sessions:
+            logger.debug(f"🔍 Filtering by allowed_sessions: {sorted(self.allowed_sessions)}")
+            stmt = stmt.where(Account.session_name.in_(self.allowed_sessions))
+        
         if exclude_account_ids:
+            logger.debug(f"🔍 Excluding account IDs: {exclude_account_ids}")
             stmt = stmt.where(~Account.id.in_(exclude_account_ids))
+        
+        # Ротация: выбираем среди доступных случайно (равномерное распределение по аккаунтам)
+        stmt = stmt.order_by(func.random())
         
         result = await session.execute(stmt)
         accounts = result.scalars().all()
         
         if not accounts:
+            # Логируем причину отсутствия аккаунтов
+            all_accounts_stmt = select(Account).where(Account.status == 'active')
+            all_result = await session.execute(all_accounts_stmt)
+            all_accounts = all_result.scalars().all()
+            logger.warning(
+                f"⚠️ No available accounts found. "
+                f"Total active accounts: {len(all_accounts)}, "
+                f"Allowed sessions: {sorted(self.allowed_sessions) if self.allowed_sessions else 'all'}, "
+                f"Excluded IDs: {exclude_account_ids or []}"
+            )
             return None
         
+        logger.debug(f"✅ Found {len(accounts)} available account(s), using: {accounts[0].session_name}")
         # Возвращаем первый доступный (можно добавить логику балансировки)
         return accounts[0]
     
@@ -120,19 +144,17 @@ class SmartJoiner:
         """
         session_name = account.session_name
         
-        # Получаем конфигурацию аккаунта
-        account_config = self.accounts_config.get(session_name)
-        if not account_config:
-            logger.error(f"❌ Account config not found for {session_name}")
-            return None
+        # Получаем конфигурацию аккаунта (из JSON или из БД)
+        account_config = self.accounts_config.get(session_name, {})
         
-        api_id = account_config.get('api_id')
-        api_hash = account_config.get('api_hash')
-        string_session = account.session_string or account_config.get('string_session')
-        proxy = account_config.get('proxy')
+        # Используем данные из БД, если они есть, иначе из конфига
+        api_id = account.api_id or account_config.get('api_id')
+        api_hash = account.api_hash or account_config.get('api_hash')
+        string_session = account.string_session or account_config.get('string_session')
+        proxy = account.proxy or account_config.get('proxy')
         
         if not all([api_id, api_hash, string_session]):
-            logger.error(f"❌ Missing required fields for {session_name}")
+            logger.error(f"❌ Missing required fields for {session_name} (api_id={bool(api_id)}, api_hash={bool(api_hash)}, string_session={bool(string_session)})")
             return None
         
         # Парсим прокси
@@ -232,9 +254,12 @@ class SmartJoiner:
         except (ChatWriteForbiddenError, UserBannedInChannelError):
             return False, "Запрещено отправлять сообщения"
         except Exception as e:
-            # Если не можем проверить, считаем что можно (попробуем постить)
+            err = str(e).lower()
+            if "not a member" in err or "getparticipant" in err:
+                logger.warning(f"  ⚠️ Пользователь не участник чата (get_permissions): {e}")
+                return False, "Not a member (verification failed)"
             logger.warning(f"  ⚠️ Не удалось проверить права: {e}")
-            return True, None
+            return False, str(e)
     
     async def join_group(
         self,
@@ -324,23 +349,29 @@ class SmartJoiner:
                     logger.warning(f"  ⚠️ {error_msg}")
                     return False, error_msg
                 
-                # Вступаем в группу
+                # Вступаем в группу (как в Bali joiner: проверка заявки и верификация участника)
                 try:
-                    await client(JoinChannelRequest(entity))
-                    logger.info(f"  ✅ Вступил в {group_link}")
-                    
-                    # Проверяем права на отправку сообщений после вступления
+                    updates = await client(JoinChannelRequest(entity))
+                    # Если в ответе чат с left=True — мы не вступили, только заявка отправлена
+                    if updates and getattr(updates, "chats", None):
+                        for c in updates.chats:
+                            if getattr(c, "left", False):
+                                logger.info(f"  📤 JoinChannelRequest: чат с left=True — заявка отправлена, ждём одобрения")
+                                return False, "Waiting for approval"
+                    # Проверяем, действительно ли мы участники (не попали в заявки)
                     can_post, post_error = await self.check_can_post(client, entity)
                     if not can_post:
-                        logger.warning(f"  ⚠️ НЕЛЬЗЯ ПОСТИТЬ в {group_link}: {post_error}")
+                        logger.warning(f"  ⚠️ НЕЛЬЗЯ ПОСТИТЬ / не участник в {group_link}: {post_error}")
                         return False, post_error
-                    
-                    logger.info(f"  ✅ МОЖНО ПОСТИТЬ в {group_link}")
+                    logger.info(f"  ✅ Вступил в {group_link}, можно постить")
                     return True, None
+                except InviteRequestSentError:
+                    logger.info(f"  📤 InviteRequestSentError: заявка на вступление отправлена в {group_link}")
+                    return False, "Waiting for approval"
                 except UserAlreadyParticipantError:
                     logger.info(f"  ℹ️ Уже участник {group_link}")
                     
-                    # Проверяем права на отправку сообщений
+                    # Проверяем права на отправку сообщений (и что мы реально участники)
                     can_post, post_error = await self.check_can_post(client, entity)
                     if not can_post:
                         logger.warning(f"  ⚠️ НЕЛЬЗЯ ПОСТИТЬ в {group_link}: {post_error}")
@@ -405,14 +436,23 @@ class SmartJoiner:
             db_manager = DbManager(session)
             
             # ШАГ 1: Получаем группы для вступления
+            # Берём: status='new' ИЛИ status='error' (повтор не раньше чем через 24 ч)
+            retry_after = datetime.utcnow() - timedelta(hours=24)
             stmt = (
                 select(Target)
                 .where(
                     and_(
-                        Target.status == 'new',
-                        Target.niche == niche
+                        Target.niche == niche,
+                        or_(
+                            Target.status == 'new',
+                            and_(
+                                Target.status == 'error',
+                                Target.updated_at < retry_after
+                            )
+                        )
                     )
                 )
+                .order_by(case((Target.status == 'new', 0), else_=1), Target.updated_at.asc())
                 .limit(batch_size)
             )
             
@@ -420,17 +460,26 @@ class SmartJoiner:
             targets = result.scalars().all()
             
             if not targets:
-                logger.info("✅ Нет групп для вступления (status='new')")
+                logger.info("✅ Нет групп для вступления (status='new' или 'error' для повтора)")
                 return
             
-            logger.info(f"📋 Найдено {len(targets)} групп для вступления")
+            new_count = sum(1 for t in targets if t.status == 'new')
+            error_retry_count = len(targets) - new_count
+            logger.info(
+                f"📋 Найдено {len(targets)} групп для вступления "
+                f"(new: {new_count}, повтор error: {error_retry_count})"
+            )
             
             # ШАГ 2: Цикл обработки групп
+            # Очищаем excluded_account_ids в начале каждого батча
             excluded_account_ids = []
             
             for idx, target in enumerate(targets, 1):
                 logger.info(f"\n{'='*60}")
-                logger.info(f"📋 [{idx}/{len(targets)}] Группа: {target.link}")
+                logger.info(
+                    f"📋 [{idx}/{len(targets)}] Группа: {target.link}"
+                    + (f" (повтор, был status=error)" if target.status == 'error' else "")
+                )
                 logger.info(f"{'='*60}")
                 
                 # Получаем доступный аккаунт
@@ -551,17 +600,21 @@ async def main():
     
     # Настройка логирования
     log_dir = Path('logs')
-    log_dir.mkdir(exist_ok=True)
-    
-    log_file = log_dir / 'smart_joiner.log'
+    try:
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / 'smart_joiner.log'
+        handlers = [
+            logging.FileHandler(log_file, encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    except (OSError, PermissionError):
+        # Если не можем создать директорию или файл, используем только консоль
+        handlers = [logging.StreamHandler()]
     
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file, encoding='utf-8'),
-            logging.StreamHandler()
-        ]
+        handlers=handlers
     )
     
     # Парсинг аргументов

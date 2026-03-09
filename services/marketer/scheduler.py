@@ -54,7 +54,10 @@ class MarketerScheduler:
         db_gen = get_db()
         db = next(db_gen)
         try:
-            await self.client_manager.load_accounts_from_db(db)
+            # Для Lexus используем exclude_lexus_accounts=False чтобы использовать whitelist
+            project_name = os.getenv('PROJECT_NAME', '').lower()
+            exclude_lexus = project_name != 'lexus'
+            await self.client_manager.load_accounts_from_db(db, exclude_lexus_accounts=exclude_lexus)
             logger.info(f"✅ Loaded {len(self.client_manager.clients)} accounts")
         except Exception as e:
             logger.error(f"❌ Failed to load accounts: {e}")
@@ -148,7 +151,7 @@ class MarketerScheduler:
             now = datetime.now(timezone)
             today = now.date()
             
-            # Сброс счетчиков в полночь
+            # Сброс счетчиков в полночь (чтобы ready_count был корректен с начала дня)
             self.reset_daily_counters_if_needed(today)
             
             # Находим следующий слот
@@ -164,24 +167,42 @@ class MarketerScheduler:
                     next_slot_dt = slot_dt
                     next_slot_name = name
             
-            # Ждем до следующего слота
-            wait_seconds = max(1, int((next_slot_dt - now).total_seconds()))
+            # Пробуждение в 00:01 по Jakarta только для сброса daily_posts_count (чтобы daily_check и постер видели готовые группы с начала дня)
+            midnight_dt = timezone.localize(datetime.combine(today, datetime.strptime("00:01", "%H:%M").time()))
+            if now < midnight_dt:
+                next_wake_dt = min(next_slot_dt, midnight_dt)
+            else:
+                next_midnight = timezone.localize(datetime.combine(today + timedelta(days=1), datetime.strptime("00:01", "%H:%M").time()))
+                next_wake_dt = min(next_slot_dt, next_midnight)
+            
+            # Ждем до следующего события (слот или полночь)
+            wait_seconds = max(1, int((next_wake_dt - now).total_seconds()))
             wait_hours = wait_seconds // 3600
             wait_minutes = (wait_seconds % 3600) // 60
             logger.info(
-                f"⏰ Next slot: {next_slot_name} at {next_slot_dt.strftime('%Y-%m-%d %H:%M:%S')} "
-                f"(in {wait_hours}h {wait_minutes}m)"
+                f"⏰ Next: {next_slot_name} at {next_slot_dt.strftime('%Y-%m-%d %H:%M:%S')} "
+                f"(in {wait_hours}h {wait_minutes}m)" + (" [сначала сброс в 00:01]" if (next_wake_dt.hour == 0 and next_wake_dt.minute == 1) else "")
             )
             await asyncio.sleep(wait_seconds)
             
+            run_day = datetime.now(timezone).date()
+            now_after = datetime.now(timezone)
+            # Проснулись в 00:01 только для сброса счётчиков — не постим
+            if (now_after.hour == 0 and now_after.minute <= 2) and next_wake_dt != next_slot_dt:
+                logger.info(f"🔄 Midnight reset wake: date={run_day}, counters reset at start of loop")
+                continue
+            
             # Время слота наступило
             slot_name = next_slot_name
-            run_day = datetime.now(timezone).date()
             logger.info(f"⏰ Woke up for slot: {slot_name}, date: {run_day}")
             
             if posted_slots_today.get(slot_name) == run_day:
                 logger.info(f"Slot {slot_name}: already posted today, skipping")
                 continue
+            
+            # Сброс дневных счётчиков ПЕРЕД постингом, чтобы группы снова стали "готовы"
+            # (иначе при первом проходе за день daily_posts_count ещё от вчера и постер видит 0 групп)
+            self.reset_daily_counters_if_needed(run_day)
             
             # Запускаем постинг
             try:

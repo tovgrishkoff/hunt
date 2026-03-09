@@ -6,6 +6,8 @@
 import sys
 import json
 import asyncio
+import argparse
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -60,7 +62,22 @@ def parse_proxy(proxy_string: str):
     return None
 
 
-async def reauth_account(account_data):
+def wait_for_file_value(path: Path, label: str, timeout_sec: int | None = None) -> str:
+    """Ожидает появления значения в файле."""
+    start = time.time()
+    while True:
+        if path.exists():
+            value = path.read_text(encoding="utf-8").strip()
+            if value:
+                # очищаем файл, чтобы значение не переиспользовалось
+                path.write_text("", encoding="utf-8")
+                return value
+        if timeout_sec is not None and (time.time() - start) > timeout_sec:
+            raise TimeoutError(f"Таймаут ожидания {label} ({timeout_sec}s)")
+        time.sleep(2)
+
+
+async def reauth_account(account_data, args):
     """Переавторизация одного аккаунта"""
     session_name = account_data['session_name']
     phone = account_data['phone']
@@ -93,7 +110,14 @@ async def reauth_account(account_data):
         logger.info("✅ Код отправлен! Проверьте Telegram/SMS")
         
         # Запрашиваем код у пользователя
-        code = input("✉️ Введите код из Telegram/SMS: ").strip()
+        if args.non_interactive:
+            logger.info(
+                "✉️ Ожидание кода в файле: %s",
+                args.code_file,
+            )
+            code = wait_for_file_value(Path(args.code_file), "code", args.wait_timeout)
+        else:
+            code = input("✉️ Введите код из Telegram/SMS: ").strip()
         
         if not code:
             logger.error("❌ Код не введен!")
@@ -106,12 +130,30 @@ async def reauth_account(account_data):
             logger.info("✅ Код подтвержден!")
         except SessionPasswordNeededError:
             logger.info("🔒 Требуется пароль 2FA")
-            password = input("🔒 Введите пароль 2FA: ").strip()
+            if args.non_interactive:
+                logger.info(
+                    "🔒 Ожидание пароля 2FA в файле: %s",
+                    args.password_file,
+                )
+                password = wait_for_file_value(
+                    Path(args.password_file), "2fa_password", args.wait_timeout
+                )
+            else:
+                password = input("🔒 Введите пароль 2FA: ").strip()
             await client.sign_in(password=password)
             logger.info("✅ Авторизация с 2FA успешна!")
         except Exception as e:
             if "password" in str(e).lower() or "two" in str(e).lower():
-                password = input("🔒 Введите пароль 2FA: ").strip()
+                if args.non_interactive:
+                    logger.info(
+                        "🔒 Ожидание пароля 2FA в файле: %s",
+                        args.password_file,
+                    )
+                    password = wait_for_file_value(
+                        Path(args.password_file), "2fa_password", args.wait_timeout
+                    )
+                else:
+                    password = input("🔒 Введите пароль 2FA: ").strip()
                 await client.sign_in(password=password)
                 logger.info("✅ Авторизация с 2FA успешна!")
             else:
@@ -185,6 +227,30 @@ async def update_config_file(session_name: str, string_session: str, config_path
 
 async def main():
     """Основная функция"""
+    parser = argparse.ArgumentParser(description="Переавторизация Ukraine аккаунтов")
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="Ожидать код/2FA в файлах без интерактивного ввода",
+    )
+    parser.add_argument(
+        "--code-file",
+        default="/tmp/ukraine_reauth_code.txt",
+        help="Файл для кода (используется с --non-interactive)",
+    )
+    parser.add_argument(
+        "--password-file",
+        default="/tmp/ukraine_reauth_2fa.txt",
+        help="Файл для пароля 2FA (используется с --non-interactive)",
+    )
+    parser.add_argument(
+        "--wait-timeout",
+        type=int,
+        default=None,
+        help="Таймаут ожидания кода/2FA в секундах (по умолчанию без таймаута)",
+    )
+    args = parser.parse_args()
+
     logger.info("=" * 80)
     logger.info("🔄 ПЕРЕАВТОРИЗАЦИЯ UKRAINE АККАУНТОВ")
     logger.info("=" * 80)
@@ -224,7 +290,8 @@ async def main():
     logger.info("   2. Ввести пароль 2FA (если требуется)")
     logger.info("=" * 80)
     
-    input("\nНажмите Enter для начала переавторизации...")
+    if not args.non_interactive:
+        input("\nНажмите Enter для начала переавторизации...")
     
     results = []
     
@@ -234,7 +301,7 @@ async def main():
             continue
         
         account_data = accounts_data[session_name]
-        result = await reauth_account(account_data)
+        result = await reauth_account(account_data, args)
         
         if result:
             # Обновляем конфиг
@@ -254,7 +321,8 @@ async def main():
         
         if session_name != accounts_to_reauth[-1]:
             logger.info("\n" + "=" * 80)
-            input("Нажмите Enter для перехода к следующему аккаунту...")
+            if not args.non_interactive:
+                input("Нажмите Enter для перехода к следующему аккаунту...")
     
     logger.info("\n" + "=" * 80)
     logger.info("✅ ПЕРЕАВТОРИЗАЦИЯ ЗАВЕРШЕНА")

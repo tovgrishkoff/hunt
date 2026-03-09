@@ -34,15 +34,20 @@ Activity Service (каждые 6 часов)
 
 ```json
 "activity": {
-  "story_view_probability": 0.7,        // 70% вероятность просмотра
-  "story_reaction_probability": 0.3,    // 30% вероятность реакции (от просмотренных)
-  "max_views_per_day": 200,             // Максимум просмотров в день на аккаунт
+  "story_view_probability": 0.92,       // 92% вероятность просмотра (активный режим)
+  "story_reaction_probability": 0.55,   // 55% вероятность реакции (от просмотренных)
+  "max_views_per_day": 320,             // Максимум просмотров в день на аккаунт
   "min_views_per_day": 100,             // Минимум (не используется сейчас)
   "story_reactions": ["❤️", "🔥", "👍", "😍", "💯"],  // Доступные реакции
-  "min_delay_between_views": 10,        // Минимальная задержка между просмотрами (сек)
-  "max_delay_between_views": 45,        // Максимальная задержка между просмотрами (сек)
-  "min_delay_between_reactions": 15,    // Минимальная задержка между реакциями (сек)
-  "max_delay_between_reactions": 60     // Максимальная задержка между реакциями (сек)
+  "min_delay_between_views": 8,        // Минимальная задержка между просмотрами (сек)
+  "max_delay_between_views": 35,       // Максимальная задержка между просмотрами (сек)
+  "min_delay_between_reactions": 12,   // Минимальная задержка между реакциями (сек)
+  "max_delay_between_reactions": 50,   // Максимальная задержка между реакциями (сек)
+  "contacts_view_accounts": ["promotion_new_account"],
+  "contacts_dialogs_limit": 300,
+  "story_view_exclude_usernames": [],  // Не смотреть и не лайкать этих пользователей
+  "story_view_priority_usernames": [], // Приоритет: смотрим всегда, макс. реакции, обрабатываются первыми
+  "story_view_priority_reaction_probability": 1.0  // Вероятность реакции для приоритетных (1.0 = всегда)
 }
 ```
 

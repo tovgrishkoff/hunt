@@ -1,0 +1,86 @@
+{
+  "name": "bali",
+  "display_name": "Спринт: Ретрит в Индию (трансформация, места силы)",
+
+  "manager": {
+    "search_keywords": [
+      "yoga bali", "meditation bali", "esoteric chat", "vipassana", "женский круг",
+      "human design", "психология", "ретрит", "духовное развитие", "India travel",
+      "Goa chat", "Rishikesh"
+    ],
+    "keyword_to_sub_niche": {}
+  },
+
+  "marketer": {
+    "batch_size": 20,
+    "posting_schedule": {
+      "timezone": "Asia/Jakarta",
+      "slots": [
+        {"name": "morning", "time": "08:00"},
+        {"name": "noon", "time": "12:00"},
+        {"name": "afternoon", "time": "15:00"},
+        {"name": "evening", "time": "18:00"}
+      ]
+    },
+    "assets_path": "/app/bali_assets",
+    "photos": [],
+    "system_prompt": "ТЫ — ОРГАНИЗАТОР ТРАНСФОРМАЦИОННОГО ПУТЕШЕСТВИЯ В ИНДИЮ (ГИМАЛАИ/КАЙЛАС).\nСТИЛЬ: Вдохновляющий, глубокий, манящий. Используй слова: энергия, поток, перезагрузка, место силы.\n\nОФФЕР: \"Собираем закрытую группу в экспедицию по местам силы Индии. Осталось 4 места. Это не просто туризм, это трансформация.\"\nПРИЗЫВ: \"Кому скинуть программу и даты? Пишите в личку.\"\nВАЖНО: Добавляй красивые эмодзи (✨🧘‍♂️🏔️).",
+    "active": true
+  },
+
+  "activity": {
+    "story_view_probability": 0.92,
+    "story_reaction_probability": 0.55,
+    "max_views_per_day": 320,
+    "min_views_per_day": 100,
+    "story_reactions": ["❤️", "🔥", "👍", "😍", "💯"],
+    "min_delay_between_views": 8,
+    "max_delay_between_views": 35,
+    "min_delay_between_reactions": 12,
+    "max_delay_between_reactions": 50,
+    "contacts_view_accounts": [
+      "promotion_lisa_soak", "promotion_artur_biggest", "promotion_anna_truncher",
+      "promotion_oleg_petrov", "promotion_Masha Sinugina", "promotion_lev_moiseev", "promotion_lera_katina"
+    ],
+    "contacts_dialogs_limit": 300,
+    "story_view_exclude_usernames": ["Luxury_Car9", "Elkozadefensis", "MargoMusaeva", "bykdasha"],
+    "story_view_priority_usernames": ["Andrey_Birzhin", "Alex_Abramov_Everest"],
+    "story_view_priority_reaction_probability": 1.0
+  },
+
+  "secretary": {
+    "system_prompt": "ТЫ — ОРГАНИЗАТОР ТУРА. ТВОЯ ЦЕЛЬ — ЗАИНТЕРЕСОВАТЬ ПРОГРАММОЙ И ВЫВЕСТИ НА СОЗВОН/ОПЛАТУ.\n\nСКРИПТ:\n1. Приветствие: \"Привет! Рад(а), что откликнулся. Тебя интересует полная перезагрузка?\"\n2. Детали: \"Мы едем в Гималаи, группа маленькая, программа очень насыщенная практиками.\"\n3. Оффер: \"Даты такие-то. Цена сейчас со скидкой. Скинуть презентацию?\"\n4. Закрытие: \"Если интересно, давай созвонимся на 5 минут, расскажу детали. Вот контакт главного: @grishkoff\".",
+    "target_action": {
+      "forward_to_username": "grishkoff",
+      "forward_keywords": ["цена", "программа", "даты", "билеты", "сколько стоит", "презентация", "сайт"],
+      "bot_username": "@Lead_Hunbot",
+      "bot_link": "https://t.me/Lead_Hunbot",
+      "min_messages_before_offer": 1,
+      "keywords_for_detection": ["ретрит", "индия", "йога", "гималаи", "программа", "даты", "цена", "медитация", "тур"]
+    },
+    "conversation_history_limit": 15,
+    "typing_delay_min": 7,
+    "typing_delay_max": 20,
+    "message_buffer_delay": 7,
+    "response_style": { "be_natural": true, "use_emojis": true, "max_length": 500, "min_length": 15 }
+  },
+
+  "joining_schedule": {
+    "timezone": "Asia/Jakarta",
+    "slots": [
+      {"name": "early_morning_1", "time": "05:00"}, {"name": "early_morning_2", "time": "07:00"},
+      {"name": "morning_1", "time": "09:00"}, {"name": "morning_2", "time": "11:00"},
+      {"name": "afternoon_1", "time": "13:00"}, {"name": "afternoon_2", "time": "15:00"},
+      {"name": "evening_1", "time": "17:00"}, {"name": "evening_1_early", "time": "17:35"}, {"name": "evening_2", "time": "19:00"}
+    ]
+  },
+
+  "limits": {
+    "posts_per_day_per_group": 2,
+    "warm_up_hours": 24,
+    "max_joins_per_day": 100,
+    "join_batch_size": 50,
+    "min_delay_between_joins": 40,
+    "max_delay_between_joins": 120
+  }
+}

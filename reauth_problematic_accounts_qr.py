@@ -7,6 +7,7 @@ import asyncio
 import sys
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from telethon.errors import SessionPasswordNeededError
 
 # Пытаемся импортировать qrcode
 try:
@@ -110,11 +111,53 @@ async def authorize_via_qr(account_data):
             try:
                 await qr_login.wait()
                 print("✅ QR-код успешно отсканирован!")
+                
+                # Проверяем, требуется ли пароль 2FA после сканирования QR
+                if not await client.is_user_authorized():
+                    print("\n🔐 Включена двухфакторная аутентификация (2FA)")
+                    print("="*80)
+                    print("После сканирования QR-кода требуется ввести пароль 2FA")
+                    print("="*80)
+                    
+                    password = input("\n🔐 Введите пароль 2FA: ").strip()
+                    
+                    if not password:
+                        print("❌ Пароль не введен. Отмена.")
+                        await client.disconnect()
+                        return None
+                    
+                    try:
+                        await client.sign_in(password=password)
+                        print("✅ Пароль 2FA принят! Авторизация успешна.")
+                    except Exception as e:
+                        print(f"❌ Ошибка при вводе пароля 2FA: {e}")
+                        print("   Проверьте правильность пароля и попробуйте снова.")
+                        await client.disconnect()
+                        return None
+                        
             except asyncio.TimeoutError:
                 print("❌ Время ожидания истекло. QR-код устарел.")
                 print("   Перезапустите скрипт для получения нового QR-кода.")
                 await client.disconnect()
                 return None
+            except SessionPasswordNeededError:
+                # Требуется пароль 2FA
+                print("\n🔐 Требуется пароль 2FA (двухфакторная аутентификация)")
+                print("="*80)
+                password = input("Введите пароль 2FA: ").strip()
+                
+                if not password:
+                    print("❌ Пароль не введен. Отмена.")
+                    await client.disconnect()
+                    return None
+                
+                try:
+                    await client.sign_in(password=password)
+                    print("✅ Пароль 2FA принят!")
+                except Exception as e:
+                    print(f"❌ Ошибка при вводе пароля 2FA: {e}")
+                    await client.disconnect()
+                    return None
             except Exception as e:
                 print(f"❌ Ошибка при ожидании сканирования: {e}")
                 await client.disconnect()

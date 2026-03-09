@@ -19,7 +19,9 @@ scheduler = importlib.util.module_from_spec(scheduler_spec)
 scheduler_spec.loader.exec_module(scheduler)
 AccountManagerScheduler = scheduler.AccountManagerScheduler
 
-# Настройка логирования
+# Настройка логирования (подавляем шум Telethon "Got difference for channel")
+logging.getLogger("telethon").setLevel(logging.WARNING)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',

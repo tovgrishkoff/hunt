@@ -143,51 +143,60 @@ class MessageResponder:
         
         return False
     
+    # Если наше последнее сообщение старше этого числа часов — переписка считается
+    # «неактивной» и автоответ снова разрешён (лид не остаётся без ответа).
+    ACTIVE_CONVERSATION_MAX_HOURS = 72
+
     async def check_if_active_conversation(self, client: TelegramClient, user: User) -> bool:
         """
-        Проверка, идет ли активная переписка (есть ли ответы пользователя после нашего последнего сообщения)
-        
-        Args:
-            client: Telegram клиент
-            user: Пользователь
-        
-        Returns:
-            True если идет переписка (пользователь уже ответил после нашего последнего сообщения)
+        Проверка, идет ли активная переписка (есть ли ответы пользователя после нашего последнего сообщения).
+
+        Если наше последнее сообщение старше ACTIVE_CONVERSATION_MAX_HOURS часов — переписка
+        считается неактивной и автоответ разрешён (чтобы лиды вроде «Что решили?» получали ответ).
         """
         try:
             # Получаем последние 10 сообщений
             messages = []
             async for message in client.iter_messages(user, limit=10):
                 messages.append(message)
-            
+
             if not messages:
                 return False
-            
+
             # Ищем наше последнее сообщение (out=True)
             our_last_message_index = None
+            our_last_message_date = None
             for i, msg in enumerate(messages):
                 if msg.out:  # Наше сообщение
                     our_last_message_index = i
+                    our_last_message_date = getattr(msg, 'date', None)
                     break
-            
+
             # Если нет наших сообщений - это первое сообщение, не переписка
             if our_last_message_index is None:
                 return False
-            
+
+            # Если наше последнее сообщение старше N часов — не считаем переписку активной,
+            # разрешаем автоответ (лид не должен ждать вечно без ответа).
+            if our_last_message_date:
+                age_hours = (datetime.utcnow() - our_last_message_date.replace(tzinfo=None)).total_seconds() / 3600
+                if age_hours > self.ACTIVE_CONVERSATION_MAX_HOURS:
+                    logger.debug(
+                        f"  ⏱️ Our last message is {age_hours:.0f}h old (> {self.ACTIVE_CONVERSATION_MAX_HOURS}h) — allowing auto-reply"
+                    )
+                    return False
+
             # Проверяем, есть ли сообщения от пользователя ПОСЛЕ нашего последнего
             # (сообщения с меньшим индексом = более новые)
             for i in range(our_last_message_index):
                 if not messages[i].out:  # Сообщение от пользователя
-                    # Есть ответ пользователя после нашего последнего сообщения
                     logger.debug(f"  💬 Found user reply after our last message (message {i} of {len(messages)})")
                     return True
-            
-            # Нет ответов пользователя после нашего последнего сообщения
+
             return False
-            
+
         except Exception as e:
             logger.warning(f"  ⚠️ Error checking conversation status: {e}")
-            # В случае ошибки считаем, что переписки нет (отвечаем как обычно)
             return False
     
     async def forward_message_to_grishkoff(
@@ -442,12 +451,19 @@ class MessageResponder:
             # Проверяем, идет ли уже переписка (есть ли ответы пользователя после нашего последнего сообщения)
             is_active_conversation = await self.check_if_active_conversation(client, sender)
             
-            # ВАЖНО: Мы убрали return, чтобы бот мог вести диалог (квалифицировать лида или продавать)
-            # Бот должен отвечать на ВСЕ сообщения, даже если диалог идет.
-            # Это необходимо для задач квалификации (выяснение цены) и продажи.
-            if is_active_conversation:
-                # Идет переписка - пересылаем админу для мониторинга, НО ПРОДОЛЖАЕМ ОТВЕЧАТЬ
-                logger.info(f"  💬 Active conversation detected with @{username} - forwarding to admin, BUT continuing GPT reply")
+            # ИСКЛЮЧЕНИЕ: Админ (ID: 210147380) всегда получает ответ, даже при активной переписке
+            # Это позволяет тестировать систему
+            ADMIN_ID = 210147380
+            is_admin = user_id == ADMIN_ID
+            
+            # Проверяем, нужно ли перевести на владельца по триггерам (встреча, цена, телефон и т.д.)
+            # Это проверяем ДО проверки активной переписки, чтобы важные триггеры всегда форвардились
+            should_forward = self.should_forward_to_owner(combined_text)
+            
+            if is_active_conversation and not is_admin:
+                # Идет активная переписка - ТОЛЬКО пересылаем админу, НЕ отвечаем автоматически
+                # Это предотвращает потерю контекста и спам ответами
+                logger.info(f"  💬 Active conversation detected with @{username} - forwarding only, NO auto-reply")
                 if event:
                     try:
                         await self.forward_message_to_grishkoff(
@@ -462,10 +478,30 @@ class MessageResponder:
                         )
                     except Exception as e:
                         logger.warning(f"  ⚠️ Failed to forward message: {e}")
-                        # Не прерываем выполнение, продолжаем отвечать
+                
+                # Если есть важный триггер - тоже форвардим (на случай если не зафорвардили выше)
+                if should_forward and event:
+                    logger.info(f"  🔄 Forward trigger also detected - additional forward to @{self.forward_to_username}")
+                    try:
+                        await self.forward_message_to_grishkoff(
+                            client=client,
+                            event=event,
+                            account=account,
+                            sender=sender,
+                            username=username,
+                            user_id=user_id,
+                            message_text=combined_text,
+                            has_media=bool(event.message.media) if event else False
+                        )
+                    except Exception as e:
+                        logger.warning(f"  ⚠️ Failed to forward message: {e}")
+                
+                # ВАЖНО: Выходим из функции - НЕ отвечаем через GPT при активной переписке
+                return
             
-            # Проверяем, нужно ли перевести на владельца по триггерам (встреча, цена, телефон и т.д.)
-            if self.should_forward_to_owner(combined_text):
+            # Если НЕТ активной переписки - продолжаем обработку
+            # Проверяем триггеры для форварда (но продолжаем отвечать через GPT)
+            if should_forward:
                 logger.info(f"  🔄 Forward trigger detected in message from @{username} - forwarding to @{self.forward_to_username}")
                 if event:
                     try:
@@ -483,7 +519,7 @@ class MessageResponder:
                         logger.warning(f"  ⚠️ Failed to forward message: {e}")
                 # Продолжаем отвечать через GPT (не прерываем выполнение)
             
-            # ВСЕГДА отвечаем через GPT (не выходим из функции)
+            # Нет активной переписки - отвечаем через GPT
             # Это позволяет боту вести диалог для квалификации и продажи
             # Получаем расширенную историю переписки (10-15 сообщений для контекста)
             logger.debug(f"📚 [DEBUG] Получаем историю переписки для @{username}...")
@@ -527,31 +563,34 @@ class MessageResponder:
                 
                 logger.info(f"  ✅ Replied to @{username}: {response_text[:100]}...")
                 
-                # Сохраняем в БД
-                db = SessionLocal()
+                # Сохраняем в БД (graceful degradation - если БД недоступна, просто логируем)
                 try:
-                    dm_response = DMResponse(
-                        account_id=account.id,
-                        user_id=user_id,
-                        username=username,
-                        incoming_message=combined_text[:1000],  # Ограничиваем длину
-                        response_text=response_text[:1000],
-                        service_type='gpt-4o-mini',
-                        sent_at=datetime.utcnow()
-                    )
-                    db.add(dm_response)
-                    db.commit()
-                    
-                    # Помечаем, что мы ответили
-                    self.mark_responded(account.id, user_id)
-                    
-                    logger.debug(f"  💾 Saved response to DB")
-                    
-                except Exception as e:
-                    db.rollback()
-                    logger.error(f"  ❌ Error saving to DB: {e}")
-                finally:
-                    db.close()
+                    db = SessionLocal()
+                    try:
+                        dm_response = DMResponse(
+                            account_id=account.id,
+                            user_id=user_id,
+                            username=username,
+                            incoming_message=combined_text[:1000],  # Ограничиваем длину
+                            response_text=response_text[:1000],
+                            service_type='gpt-4o-mini',
+                            sent_at=datetime.utcnow()
+                        )
+                        db.add(dm_response)
+                        db.commit()
+                        
+                        logger.debug(f"  💾 Saved response to DB")
+                        
+                    except Exception as e:
+                        db.rollback()
+                        logger.warning(f"  ⚠️ Error saving to DB (продолжаем работу): {e}")
+                    finally:
+                        db.close()
+                except Exception as db_error:
+                    logger.warning(f"  ⚠️ DB недоступна для сохранения ответа (продолжаем работу): {db_error}")
+                
+                # Помечаем, что мы ответили (в памяти, даже если БД недоступна)
+                self.mark_responded(account.id, user_id)
                 
             except FloodWaitError as e:
                 logger.warning(f"  ⏳ FloodWait {e.seconds} seconds for @{username}")
@@ -610,23 +649,29 @@ class MessageResponder:
                 return
             
             # Проверяем в БД, не отвечали ли мы совсем недавно (за последнюю секунду)
-            db = SessionLocal()
+            # ВАЖНО: Если БД недоступна, продолжаем обработку (graceful degradation)
             try:
-                one_second_ago = datetime.utcnow() - timedelta(seconds=1)
-                recent_response = db.query(DMResponse).filter(
-                    and_(
-                        DMResponse.account_id == account.id,
-                        DMResponse.user_id == user_id,
-                        DMResponse.sent_at >= one_second_ago
-                    )
-                ).first()
-                
-                if recent_response:
-                    logger.debug(f"  ⏭️ Skipping - responded less than 1 second ago to @{username}")
-                    return
-                
-            finally:
-                db.close()
+                db = SessionLocal()
+                try:
+                    one_second_ago = datetime.utcnow() - timedelta(seconds=1)
+                    recent_response = db.query(DMResponse).filter(
+                        and_(
+                            DMResponse.account_id == account.id,
+                            DMResponse.user_id == user_id,
+                            DMResponse.sent_at >= one_second_ago
+                        )
+                    ).first()
+                    
+                    if recent_response:
+                        logger.debug(f"  ⏭️ Skipping - responded less than 1 second ago to @{username}")
+                        return
+                    
+                finally:
+                    db.close()
+            except Exception as db_error:
+                # БД недоступна - продолжаем обработку без проверки последних ответов
+                logger.warning(f"  ⚠️ DB недоступна для проверки последних ответов (продолжаем): {db_error}")
+                # Продолжаем обработку сообщения
             
             logger.debug(f"  📨 Buffering message from @{username}: {message_text[:50]}...")
             
@@ -718,11 +763,26 @@ class MessageResponder:
             # КРИТИЧНО: Создаем правильное замыкание для каждого обработчика
             # Используем функцию-фабрику, чтобы каждая итерация цикла создавала свои переменные
             def create_handler(acc, cli, acc_name):
-                @cli.on(NewMessage(incoming=True, func=lambda e: e.is_private))
+                # Создаем функцию-фильтр, которая проверяет что сообщение личное
+                def is_private_message(event):
+                    try:
+                        return event.is_private
+                    except Exception as e:
+                        logger.debug(f"  ⚠️ Error checking is_private for {acc_name}: {e}")
+                        # В случае ошибки проверяем через sender
+                        try:
+                            sender = event.message.sender_id if event.message else None
+                            # Если sender_id есть и это не группа, то это личное сообщение
+                            return sender is not None
+                        except:
+                            return False
+                
+                @cli.on(NewMessage(incoming=True, func=is_private_message))
                 async def handler(event):
                     logger.info(f"🔥 [HANDLER] Обработчик сработал для {acc_name}! Событие получено.")
                     logger.info(f"🔥 [HANDLER] event.message.text: {event.message.text if event.message else 'None'}")
                     logger.info(f"🔥 [HANDLER] event.message.sender_id: {event.message.sender_id if event.message else 'None'}")
+                    logger.info(f"🔥 [HANDLER] event.is_private: {getattr(event, 'is_private', 'N/A')}")
                     try:
                         await self.handle_message(event, acc, cli)
                         logger.info(f"🔥 [HANDLER] handle_message завершен для {acc_name}")
@@ -733,7 +793,8 @@ class MessageResponder:
                 return handler
             
             # Создаем обработчик с правильным замыканием
-            create_handler(account, client, account_name)
+            handler_func = create_handler(account, client, account_name)
+            logger.debug(f"  🔧 Handler function created for {account_name}: {handler_func}")
             
             logger.info(f"  ✅ Registered handler for {account_name} (включая /ping)")
         

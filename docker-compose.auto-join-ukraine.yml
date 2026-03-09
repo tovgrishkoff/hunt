@@ -19,7 +19,7 @@ services:
       - ./promotion_system.py:/app/promotion_system.py:ro
       # Монтируем директории с данными (для записи)
       - ./logs:/app/logs
-      - ./sessions:/app/sessions
+      - ./sessions_lexus:/app/sessions
       # Монтируем entrypoint скрипт для обновления без пересборки
       - ./docker-entrypoint-auto-join-ukraine.sh:/app/docker-entrypoint-auto-join-ukraine.sh:ro
     environment:

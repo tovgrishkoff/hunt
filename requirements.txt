@@ -7,3 +7,4 @@ psycopg2-binary==2.9.9
 aiohttp==3.9.1
 openai>=1.40.0
 pysocks==1.7.1
+aiogram>=3.0,<4

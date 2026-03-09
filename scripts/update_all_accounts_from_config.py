@@ -63,18 +63,16 @@ def update_all_accounts_from_config():
                 continue
             
             string_session = config_data.get('string_session')
-            if not string_session or len(string_session) < 50:
-                logger.warning(f"⚠️ Нет валидной StringSession в конфиге для {session_name}")
-                skipped += 1
-                continue
+            has_valid_session = string_session and len(string_session) >= 50
             
             # Находим аккаунт в БД
             account = db.query(Account).filter(Account.session_name == session_name).first()
             
             if account:
-                # Обновляем существующий
+                # Обновляем существующий: всегда синхронизируем proxy, api_id, phone и т.д.
                 old_session = account.string_session
-                account.string_session = string_session
+                if has_valid_session:
+                    account.string_session = string_session
                 account.api_id = config_data.get('api_id', account.api_id)
                 account.api_hash = config_data.get('api_hash', account.api_hash)
                 account.phone = config_data.get('phone', account.phone)
@@ -85,13 +83,14 @@ def update_all_accounts_from_config():
                 
                 db.commit()
                 
-                if old_session != string_session:
-                    logger.info(f"✅ ОБНОВЛЕН: {session_name} (StringSession изменен)")
+                if has_valid_session and old_session != string_session:
+                    logger.info(f"✅ ОБНОВЛЕН: {session_name} (StringSession + proxy/поля)")
                     updated += 1
                 else:
-                    logger.info(f"ℹ️  БЕЗ ИЗМЕНЕНИЙ: {session_name}")
-            else:
-                # Создаем новый
+                    logger.info(f"✅ ОБНОВЛЕН: {session_name} (proxy и поля из конфига)")
+                    updated += 1
+            elif has_valid_session:
+                # Создаем новый только при наличии валидной сессии
                 new_account = Account(
                     session_name=session_name,
                     api_id=config_data.get('api_id'),
@@ -107,6 +106,9 @@ def update_all_accounts_from_config():
                 
                 logger.info(f"✅ ДОБАВЛЕН: {session_name}")
                 added += 1
+            else:
+                logger.warning(f"⚠️ Нет валидной StringSession в конфиге для {session_name}, аккаунт в БД не найден — пропуск")
+                skipped += 1
         
         logger.info("")
         logger.info("=" * 80)

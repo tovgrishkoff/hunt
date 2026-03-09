@@ -130,7 +130,11 @@ async def main():
     config_map = {acc.get('session_name'): acc for acc in accounts_config if acc.get('session_name')}
     
     # Аккаунты для переавторизации
-    accounts_to_reauth = ['promotion_dao_bro', 'promotion_oleg_petrov']
+    accounts_to_reauth = [
+        'promotion_dao_bro',
+        'promotion_oleg_petrov',
+        'promotion_Masha Sinugina',
+    ]
     
     logger.info(f"📋 Аккаунты для переавторизации: {', '.join(accounts_to_reauth)}")
     logger.info("")

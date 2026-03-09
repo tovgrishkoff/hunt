@@ -5,6 +5,7 @@
 Проверяет, являются ли аккаунты участниками и могут ли постить
 """
 
+import argparse
 import asyncio
 import json
 import logging
@@ -167,6 +168,20 @@ async def check_group_permissions(client, account_name, group_username, logger):
 async def main():
     """Основная функция"""
     logger = setup_logging()
+
+    parser = argparse.ArgumentParser(description="Проверка прав на постинг в Lexus группах")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Ограничить число проверяемых групп (0 = без лимита)",
+    )
+    parser.add_argument(
+        "--targets-only",
+        action="store_true",
+        help="Проверять только группы, которые есть в targets.txt",
+    )
+    args = parser.parse_args()
     
     logger.info("=" * 80)
     logger.info("🔍 ПРОВЕРКА ПРАВ НА ПОСТИНГ В ГРУППАХ LEXUS")
@@ -198,6 +213,20 @@ async def main():
         target for target, niche in system.group_niches.items()
         if niche == 'ukraine_cars'
     ]
+
+    if args.targets_only:
+        targets_path = Path("targets.txt")
+        if targets_path.exists():
+            with targets_path.open("r", encoding="utf-8") as f:
+                targets = {line.strip() for line in f if line.strip() and not line.startswith("#")}
+            ukraine_cars_groups = [g for g in ukraine_cars_groups if g in targets]
+            logger.info(f"📌 Фильтр targets.txt: осталось {len(ukraine_cars_groups)} групп")
+        else:
+            logger.warning("⚠️ targets.txt не найден, фильтр targets-only пропущен")
+
+    if args.limit and args.limit > 0:
+        ukraine_cars_groups = ukraine_cars_groups[:args.limit]
+        logger.info(f"📌 Лимит групп: проверяем {len(ukraine_cars_groups)}")
     
     logger.info(f"📋 Найдено {len(ukraine_cars_groups)} групп с нишей 'ukraine_cars'")
     logger.info("")

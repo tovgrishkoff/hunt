@@ -4,6 +4,7 @@ Activity Service: Просмотр Stories участников групп
 Работает в фоновом режиме, параллельно с постингом
 """
 import asyncio
+import os
 import sys
 import logging
 from pathlib import Path
@@ -56,9 +57,14 @@ class ActivityService:
         try:
             # Для activity используем ВСЕ активные аккаунты, включая те, которые
             # не входят в Bali whitelist (например, account для контактов/сторис).
+            exclude_lexus = os.getenv("EXCLUDE_LEXUS_ACCOUNTS", "true").lower() in (
+                "1",
+                "true",
+                "yes",
+            )
             await self.client_manager.load_accounts_from_db(
                 db,
-                exclude_lexus_accounts=False,
+                exclude_lexus_accounts=exclude_lexus,
             )
             logger.info(f"✅ Loaded {len(self.client_manager.clients)} accounts")
         except Exception as e:

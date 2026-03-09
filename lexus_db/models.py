@@ -1,7 +1,7 @@
 """
 Модели базы данных для системы Lexus Promotion (Async SQLAlchemy)
 """
-from sqlalchemy import Column, Integer, String, Boolean, Text, BigInteger, TIMESTAMP, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Text, BigInteger, TIMESTAMP, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, relationship
 from datetime import datetime, timedelta
 from typing import Optional
@@ -192,3 +192,19 @@ class PostHistory(Base):
     # Relationships (упрощенные для БД Bali)
     account = relationship("Account", foreign_keys=[account_id])
     target = relationship("Target", foreign_keys=[group_id])
+
+
+class AccountGroupBlocklist(Base):
+    """Блоклист связок аккаунт-группа"""
+    __tablename__ = 'account_group_blocklist'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey('groups.id', ondelete='CASCADE'), nullable=False, index=True)
+    account_id = Column(Integer, ForeignKey('accounts.id', ondelete='CASCADE'), nullable=False, index=True)
+    reason = Column(Text, nullable=True)  # Причина блокировки
+    created_at = Column(TIMESTAMP, default=datetime.utcnow, nullable=True)
+    
+    # Уникальный индекс для пары (group_id, account_id)
+    __table_args__ = (
+        UniqueConstraint('group_id', 'account_id', name='uq_account_group_blocklist'),
+    )

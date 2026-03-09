@@ -1,6 +1,107 @@
 version: '3.8'
 
 services:
+  lexus-postgres:
+    image: postgres:15-alpine
+    container_name: lexus-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-telegram_promotion_lexus}
+      POSTGRES_USER: ${POSTGRES_USER:-telegram_user_bali}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telegram_password_bali}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/lexus/postgres:/var/lib/postgresql/data
+    ports:
+      - "5440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-telegram_user_bali} -d ${POSTGRES_DB:-telegram_promotion_lexus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - telegram-promotion
+
+  lexus-account-manager:
+    build:
+      context: .
+      dockerfile: services/account-manager/Dockerfile
+    container_name: lexus-account-manager
+    restart: unless-stopped
+    depends_on:
+      lexus-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://telegram_user_bali:telegram_password_bali@lexus-postgres:5432/telegram_promotion_lexus
+      POSTGRES_HOST: lexus-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: telegram_user_bali
+      POSTGRES_PASSWORD: telegram_password_bali
+      POSTGRES_DB: telegram_promotion_lexus
+      PROJECT_NAME: lexus
+      NICHE: ukraine_cars
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    command: python3 /app/services/account-manager/lexus_main.py
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./scripts:/app/scripts:ro
+      - ./config:/app/config:ro
+      - ./sessions_lexus:/app/sessions:ro
+      - ./logs:/app/logs:rw
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./lexus_accounts_config.json:/app/lexus_accounts_config.json:ro
+      - ./group_niches.json:/app/group_niches.json:ro
+    networks:
+      - telegram-promotion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  lexus-marketer:
+    build:
+      context: .
+      dockerfile: services/marketer/Dockerfile
+    container_name: lexus-marketer
+    restart: unless-stopped
+    depends_on:
+      lexus-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://telegram_user_bali:telegram_password_bali@lexus-postgres:5432/telegram_promotion_lexus
+      POSTGRES_HOST: lexus-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: telegram_user_bali
+      POSTGRES_PASSWORD: telegram_password_bali
+      POSTGRES_DB: telegram_promotion_lexus
+      PROJECT_NAME: lexus
+      NICHE: ukraine_cars
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+      - ./lexus_db:/app/lexus_db:ro
+      - ./config:/app/config:ro
+      - ./lexus_assets:/app/lexus_assets:ro
+      - ./sessions_lexus:/app/sessions:ro
+      - ./logs:/app/logs:rw
+      - ./accounts_config.json:/app/accounts_config.json:ro
+      - ./lexus_accounts_config.json:/app/lexus_accounts_config.json:ro
+      - ./group_niches.json:/app/group_niches.json:ro
+      - ./scripts:/app/scripts:ro
+    networks:
+      - telegram-promotion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   lexus-scheduler:
     build:
       context: .
@@ -21,7 +122,7 @@ services:
       # Монтируем директории с данными (для записи)
       - ./lexus_assets:/app/lexus_assets:ro
       - ./logs:/app/logs
-      - ./sessions:/app/sessions
+      - ./sessions_lexus:/app/sessions
     env_file:
       - .env.lexus
     networks:
@@ -38,6 +139,21 @@ services:
       dockerfile: Dockerfile.lexus-secretary
     container_name: lexus-secretary
     restart: unless-stopped
+    depends_on:
+      lexus-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://telegram_user_bali:telegram_password_bali@lexus-postgres:5432/telegram_promotion_lexus
+      POSTGRES_HOST: lexus-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: telegram_user_bali
+      POSTGRES_PASSWORD: telegram_password_bali
+      POSTGRES_DB: telegram_promotion_lexus
+      PROJECT_NAME: lexus
+      NICHE: ukraine_cars
+      TZ: ${TZ:-Europe/Kiev}
+      PYTHONUNBUFFERED: 1
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     volumes:
       # Монтируем конфигурационные файлы
       - ./accounts_config.json:/app/accounts_config.json:ro
@@ -48,15 +164,11 @@ services:
       - ./lexus_secretary.py:/app/lexus_secretary.py:ro
       - ./services/secretary/gpt_handler.py:/app/services/secretary/gpt_handler.py:ro
       - ./shared/config/loader.py:/app/shared/config/loader.py:ro
+      - ./lexus_db:/app/lexus_db:ro
       # Монтируем директории с данными
       - ./logs:/app/logs
-      - ./sessions:/app/sessions:rw
+      - ./sessions_lexus:/app/sessions:rw
       - ./blacklist.txt:/app/blacklist.txt:ro
-    env_file:
-      - .env.lexus
-    environment:
-      # Только специфичные переменные, которых нет в .env.lexus
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
     networks:
       - telegram-promotion
     logging:

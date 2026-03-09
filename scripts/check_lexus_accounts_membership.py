@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Проверка участия аккаунтов Lexus в группах
-Проверяет, являются ли аккаунты promotion_dao_bro и promotion_rod_shaihutdinov участниками групп ukraine_cars
+Проверка участия аккаунтов Lexus в группах.
+Проверяет, являются ли аккаунты promotion_dao_bro и promotion_rod_shaihutdinov участниками групп ukraine_cars.
 """
 
 import asyncio

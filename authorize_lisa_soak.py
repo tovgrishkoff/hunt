@@ -17,6 +17,9 @@ ACCOUNT = {
     "nickname": "Lisa Soak"
 }
 
+# Новый прокси для перелогина (HTTPS)
+PROXY_URL = "https://FATKWa:bsJ7rQ@193.32.153.87:9526"
+
 def parse_proxy(proxy_config):
     """Парсинг прокси в формат для Telethon"""
     if not proxy_config:
@@ -80,8 +83,12 @@ async def authorize_account(account_data, use_proxy=False):
     # Парсим прокси если указан
     proxy = None
     if use_proxy:
-        # Можно добавить прокси позже, если нужно
-        print("⚠️ Прокси не указан, работаем без прокси")
+        proxy = parse_proxy(PROXY_URL)
+        if proxy:
+            print(f"✅ Прокси включен: {PROXY_URL}")
+        else:
+            print("⚠️ Не удалось распарсить прокси, работаем без прокси")
+            proxy = None
     else:
         print("⚠️ Работаем без прокси")
     

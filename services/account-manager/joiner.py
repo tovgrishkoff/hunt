@@ -5,8 +5,8 @@ import asyncio
 import random
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, List
-from sqlalchemy import func, and_
+from typing import Optional, Tuple, List, Iterable, Set
+from sqlalchemy import func, and_, desc, nullslast, desc, nullslast
 
 from telethon.tl.functions.channels import JoinChannelRequest, GetFullChannelRequest
 from telethon.errors import (
@@ -17,6 +17,7 @@ from telethon.errors import (
     ChatAdminRequiredError,
     ChatWriteForbiddenError,
     UserBannedInChannelError,
+    InviteRequestSentError,
     RPCError
 )
 
@@ -29,7 +30,20 @@ logger = logging.getLogger(__name__)
 class GroupJoiner:
     """Класс для вступления в группы"""
     
-    def __init__(self, client_manager, niche_config):
+    def __init__(
+        self,
+        client_manager,
+        niche_config,
+        allowed_sessions: Optional[Iterable[str]] = None,
+    ):
+        """
+        Args:
+            client_manager: TelegramClientManager
+            niche_config: конфиг ниши (limits, schedule и т.п.)
+            allowed_sessions: опциональный список session_name аккаунтов,
+                которые разрешено использовать для вступления в группы
+                (например, Bali love-аккаунты).
+        """
         self.client_manager = client_manager
         self.niche_config = niche_config
         limits = niche_config.get('limits', {})
@@ -40,6 +54,8 @@ class GroupJoiner:
         # Задержки между вступлениями (в секундах)
         self.min_delay_between_joins = limits.get('min_delay_between_joins', 30)
         self.max_delay_between_joins = limits.get('max_delay_between_joins', 90)
+        # Ограничение по аккаунтам для вступления (например, только Bali love-аккаунты)
+        self.allowed_sessions: Set[str] = set(allowed_sessions or [])
     
     def get_least_loaded_account(self, db, exclude_account_ids: list = None, loaded_clients: set = None) -> Optional[Account]:
         """
@@ -73,6 +89,11 @@ class GroupJoiner:
         ).filter(
             Account.status == 'active'
         )
+        
+        # Если заданы allowed_sessions (например, для ниши Bali) —
+        # используем ТОЛЬКО эти аккаунты для вступления.
+        if self.allowed_sessions:
+            query = query.filter(Account.session_name.in_(self.allowed_sessions))
         
         if exclude_account_ids:
             query = query.filter(~Account.id.in_(exclude_account_ids))
@@ -137,54 +158,45 @@ class GroupJoiner:
         
         return db.query(Account).filter(Account.id == account_id).first()
     
-    async def check_can_post_after_join(self, client, entity) -> bool:
+    async def check_can_post_after_join(self, client, entity) -> Tuple[bool, bool]:
         """
-        Проверка, можно ли постить в группе после вступления
-        
-        Проверяет права через get_permissions и banned_rights.
-        Для каналов и групп с ограниченными правами возвращает False.
-        
+        Проверка членства и прав на постинг после вступления.
+
+        Сначала верифицирует, что мы действительно участники (get_permissions успешен).
+        Если Telegram отвечает "not a member" — возвращает (False, False), чтобы не писать
+        в БД статус joined/active.
+
         Args:
             client: Telegram клиент
             entity: Entity группы
-        
+
         Returns:
-            True если можно постить, False если нет
+            (can_post: bool, is_member: bool).
+            is_member=False → не писать в БД joined/active; статус откатить в pending/failed.
         """
         try:
-            # Проверяем подключенность клиента
             if not client.is_connected():
                 logger.warning("  ⚠️ Client disconnected, cannot check permissions")
-                return False  # Не можем проверить - считаем что нельзя постить
-            
+                return False, False
+
             me = await client.get_me()
             try:
                 permissions = await client.get_permissions(entity, me)
-                
+
                 if permissions:
-                    # Проверяем право на отправку сообщений напрямую
+                    # Мы участники (get_permissions успешен). Проверяем право на постинг.
                     if hasattr(permissions, 'send_messages'):
                         can_send = permissions.send_messages
                         logger.debug(f"  🔍 Permission check: send_messages = {can_send}")
-                        return can_send
-                    
-                    # Проверяем через banned_rights (если send_messages заблокирован)
+                        return can_send, True
                     if hasattr(permissions, 'banned_rights') and permissions.banned_rights:
                         if hasattr(permissions.banned_rights, 'send_messages'):
-                            is_banned = permissions.banned_rights.send_messages
-                            can_send = not is_banned
-                            logger.debug(f"  🔍 Banned rights check: send_messages banned = {is_banned}, can_send = {can_send}")
-                            return can_send
-                    
-                    # Если есть permissions, но нет явного send_messages - проверяем другие признаки
-                    # Для супергрупп и каналов без явных прав считаем что нельзя постить
+                            can_send = not permissions.banned_rights.send_messages
+                            logger.debug(f"  🔍 Banned rights check: can_send = {can_send}")
+                            return can_send, True
                     if hasattr(entity, 'broadcast') and entity.broadcast:
-                        # Это канал - обычные участники не могут писать
                         logger.info(f"  ℹ️ Это канал (broadcast=True), обычные участники не могут писать")
-                        return False
-                    
-                    # Если permissions есть, но нет send_messages - проверяем default_banned_rights
-                    # Это важно для групп, где писать могут только админы
+                        return False, True
                     try:
                         full_info = await client(GetFullChannelRequest(entity))
                         if hasattr(full_info, 'full_chat') and hasattr(full_info.full_chat, 'default_banned_rights'):
@@ -192,55 +204,37 @@ class GroupJoiner:
                             if banned_rights and hasattr(banned_rights, 'send_messages'):
                                 if banned_rights.send_messages:
                                     logger.info(f"  ⚠️ default_banned_rights.send_messages = True - писать могут только админы")
-                                    return False
-                                else:
-                                    logger.debug(f"  ✅ default_banned_rights.send_messages = False - можно писать")
-                                    return True
+                                    return False, True
+                                return True, True
                     except Exception as e:
                         logger.debug(f"  ℹ️ Не удалось проверить default_banned_rights: {e}")
-                    
-                    # Если permissions есть, но нет send_messages и default_banned_rights - по умолчанию разрешаем
-                    # (для обычных групп это обычно работает)
-                    logger.debug(f"  ℹ️ Permissions получены, но send_messages не найден - разрешаем по умолчанию")
-                    return True
-                
-                # Если permissions = None - проверяем default_banned_rights
+                    logger.debug(f"  ℹ️ Permissions получены, send_messages не найден - разрешаем по умолчанию")
+                    return True, True
+
+                # permissions = None
                 try:
                     full_info = await client(GetFullChannelRequest(entity))
                     if hasattr(full_info, 'full_chat') and hasattr(full_info.full_chat, 'default_banned_rights'):
                         banned_rights = full_info.full_chat.default_banned_rights
-                        if banned_rights and hasattr(banned_rights, 'send_messages'):
-                            if banned_rights.send_messages:
-                                logger.info(f"  ⚠️ default_banned_rights.send_messages = True (permissions=None) - писать могут только админы")
-                                return False
+                        if banned_rights and hasattr(banned_rights, 'send_messages') and banned_rights.send_messages:
+                            logger.info(f"  ⚠️ default_banned_rights.send_messages = True (permissions=None)")
+                            return False, True
                 except Exception as e:
                     logger.debug(f"  ℹ️ Не удалось проверить default_banned_rights при permissions=None: {e}")
-                
-                # Если permissions = None и не удалось проверить default_banned_rights - разрешаем по умолчанию
-                logger.debug(f"  ℹ️ Permissions = None, разрешаем по умолчанию (обычная группа)")
-                return True
-                
+                return True, True
+
             except (RPCError, Exception) as e:
                 error_str = str(e)
-                # Если GetParticipantRequest не работает - это может быть канал или группа с ограничениями
                 if "GetParticipantRequest" in error_str or "not a member" in error_str.lower():
-                    logger.warning(f"  ⚠️ Не удалось проверить права через get_permissions: {e}")
-                    # Для каналов и групп с ограничениями - считаем что нельзя постить
-                    if hasattr(entity, 'broadcast') and entity.broadcast:
-                        logger.info(f"  ℹ️ Это канал, нельзя постить без прав админа")
-                        return False
-                    # Для обычных групп - разрешаем (может быть временная ошибка API)
-                    logger.debug(f"  ℹ️ Обычная группа, разрешаем по умолчанию")
-                    return True
-                else:
-                    logger.warning(f"  ⚠️ Ошибка при проверке прав: {e}")
-                    # При неизвестной ошибке - не разрешаем (безопаснее)
-                    return False
-            
+                    logger.warning(f"  ⚠️ Верификация участника не прошла (get_permissions): {e}")
+                    # Критично: мы НЕ участники — не помечаем как joined/active.
+                    return False, False
+                logger.warning(f"  ⚠️ Ошибка при проверке прав: {e}")
+                return False, True
+
         except Exception as e:
             logger.warning(f"  ⚠️ Критическая ошибка при проверке прав: {e}")
-            # При критической ошибке - не разрешаем (безопаснее)
-            return False
+            return False, False
     
     async def join_group(
         self,
@@ -270,9 +264,18 @@ class GroupJoiner:
             
             logger.info(f"  🚪 Вступаю в {username} через {account.session_name}...")
             
+            # Нормализуем username (должен быть с @ для get_entity)
+            if username and not username.startswith('@'):
+                username = '@' + username
+            
             # Получаем entity группы
             try:
                 entity = await client.get_entity(username)
+            except FloodWaitError as e:
+                wait_seconds = getattr(e, "seconds", 0) or 0
+                error_msg = f"FloodWait: {wait_seconds} seconds"
+                logger.warning(f"  ⏳ {error_msg} (аккаунт временно в лимите, переключимся на другого)")
+                return False, error_msg
             except UsernameNotOccupiedError:
                 error_msg = f"Группа {username} не найдена"
                 logger.warning(f"  ⚠️ {error_msg}")
@@ -281,34 +284,43 @@ class GroupJoiner:
                 error_msg = f"Группа {username} приватная"
                 logger.warning(f"  ⚠️ {error_msg}")
                 return False, error_msg
+            except ValueError as e:
+                # Telethon: "No user has X as username" — группа переименована/удалена или это invite hash
+                error_msg = f"Группа не найдена ({e})"
+                logger.warning(f"  ⚠️ {error_msg}")
+                return False, error_msg
             
             # Проверяем, не участник ли уже
             try:
                 await client.get_participants(entity, limit=1)
                 logger.info(f"  ℹ️ Уже участник {username}")
                 is_already_member = True
-            except:
+            except Exception:
                 is_already_member = False
-            
+
             # Вступаем в группу (если еще не участник)
-            join_request_sent = False
             if not is_already_member:
                 try:
-                    await client(JoinChannelRequest(entity))
-                    join_request_sent = True
+                    updates = await client(JoinChannelRequest(entity))
+                    # Проверяем ответ: если в updates есть чат с left=True — мы не вступили, только заявка
+                    if updates and getattr(updates, 'chats', None):
+                        for c in updates.chats:
+                            if getattr(c, 'left', False):
+                                logger.info(f"  📤 JoinChannelRequest: чат с left=True — заявка отправлена, ждём одобрения")
+                                return False, "Waiting for approval"
                     # Проверяем, действительно ли мы стали участниками
-                    # (JoinChannelRequest может не выбросить ошибку, но заявка может требовать одобрения)
                     try:
                         await client.get_participants(entity, limit=1)
-                        # Если get_participants не выбросил ошибку - мы участники
                         chat_id = entity.id if hasattr(entity, 'id') else 'unknown'
                         logger.info(f"  ✅ Successfully joined {username} (chat_id: {chat_id})")
                         is_already_member = True
-                    except Exception as participants_error:
-                        # Если get_participants выбросил ошибку - мы НЕ участники (заявка отправлена)
+                    except Exception:
                         chat_id = entity.id if hasattr(entity, 'id') else 'unknown'
                         logger.info(f"  📤 Sent join request to {username} (chat_id: {chat_id}) - Waiting for approval")
                         return False, "Waiting for approval"
+                except InviteRequestSentError:
+                    logger.info(f"  📤 InviteRequestSentError: заявка на вступление отправлена в {username}")
+                    return False, "Waiting for approval"
                 except UserAlreadyParticipantError:
                     logger.info(f"  ℹ️ Уже участник {username}")
                     is_already_member = True
@@ -349,28 +361,27 @@ class GroupJoiner:
                     logger.warning(f"  ⚠️ Not a member of {username} (chat_id: {chat_id}) after join request: {e}")
                     return False, "Not a member after join request"
             
-            # Проверяем права на постинг после вступления
-            can_post = await self.check_can_post_after_join(client, entity)
-            
+            # Верификация участника и прав: если мы не участники — не пишем в БД joined/active
+            can_post, is_member = await self.check_can_post_after_join(client, entity)
+            if not is_member:
+                logger.warning(f"  ⚠️ Верификация не прошла: аккаунт не является участником {username}, в БД joined не пишем")
+                return False, "Not a member (verification failed)"
+
             chat_id = entity.id if hasattr(entity, 'id') else 'unknown'
-            
-            # Обновляем группу в БД (независимо от can_post, чтобы сохранить информацию)
+
+            # Обновляем группу в БД только при подтверждённом членстве
             db = SessionLocal()
             try:
-                # Блокируем группу для обновления
                 locked_group = db.query(Group).filter(Group.id == group_id).with_for_update().first()
-                
                 if not locked_group:
                     return False, "Группа не найдена в БД"
-                
-                # Обновляем информацию о группе
+
                 now = datetime.utcnow()
                 locked_group.assigned_account_id = account.id
                 locked_group.joined_at = now
                 locked_group.warm_up_until = now + timedelta(hours=self.warm_up_hours)
-                # ВАЖНО: Записываем результат проверки прав в БД ПЕРЕД установкой статуса
                 locked_group.can_post = can_post
-                
+
                 if not can_post:
                     error_msg = "Нельзя постить в группе (read-only или канал)"
                     logger.warning(f"  ⚠️ {error_msg} (chat_id: {chat_id}) - помечаю как read-only")
@@ -391,8 +402,8 @@ class GroupJoiner:
                             locked_group.title = full_info.full_chat.title
                         if hasattr(full_info.full_chat, 'participants_count'):
                             locked_group.members_count = full_info.full_chat.participants_count
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"  ℹ️ Не удалось обновить title/members_count: {e}")
                 
                 db.commit()
                 logger.info(f"  🔗 Назначен аккаунт {account.session_name} для {username} (group_id: {locked_group.id}, chat_id: {chat_id}, can_post={can_post}, warm-up {self.warm_up_hours}ч)")
@@ -434,7 +445,7 @@ class GroupJoiner:
                 Group.status == 'new',
                 Group.niche == niche
             )
-        ).order_by(Group.created_at)
+        ).order_by(nullslast(desc(Group.members_count)), Group.created_at)
         
         if limit:
             query = query.limit(limit)
@@ -462,7 +473,7 @@ class GroupJoiner:
         db = SessionLocal()
         try:
             # Получаем группы со статусом 'new'
-            new_groups_orm = self.get_new_groups(db, niche, limit=50)  # Максимум 50 за раз
+            new_groups_orm = self.get_new_groups(db, niche, limit=80)  # Выборка для батча (реальный лимит — join_batch_size из конфига)
             
             if not new_groups_orm:
                 logger.info("ℹ️ Нет новых групп для вступления")
@@ -501,16 +512,18 @@ class GroupJoiner:
             db.close()
         
         # ШАГ 2: Работаем с данными в памяти (без открытой сессии БД)
+        # Аккаунты с FloodWait исключаем из выбора на этот батч, чтобы переключиться на других
+        exclude_account_ids: List[int] = []
         for idx, group_data in enumerate(groups_to_process, 1):
             group_id = group_data['id']
             group_username = group_data['username']
             
             try:
-                # Выбираем аккаунт для вступления (открываем короткую сессию только для этого)
+                # Выбираем аккаунт для вступления (исключаем тех, кто в FloodWait в этом батче)
                 db = SessionLocal()
                 try:
                     loaded_clients = set(self.client_manager.clients.keys()) if self.client_manager.clients else set()
-                    account = self.get_least_loaded_account(db, loaded_clients=loaded_clients)
+                    account = self.get_least_loaded_account(db, exclude_account_ids=exclude_account_ids, loaded_clients=loaded_clients)
                 finally:
                     db.close()
                 
@@ -548,10 +561,12 @@ class GroupJoiner:
                 else:
                     failed_count += 1
                     
-                    # ОБРАБОТКА JOIN REQUEST (заявка на вступление)
-                    # Если отправлена заявка, НЕ проверяем права и НЕ помечаем как read_only
-                    if error and ("waiting for approval" in error.lower() or "not a member after join request" in error.lower()):
-                        # Открываем короткую сессию только для обновления статуса
+                    # ОБРАБОТКА JOIN REQUEST и неуспешной верификации участника
+                    if error and (
+                        "waiting for approval" in error.lower()
+                        or "not a member after join request" in error.lower()
+                        or "not a member (verification failed)" in error.lower()
+                    ):
                         db = SessionLocal()
                         try:
                             group = db.query(Group).filter(Group.id == group_id).first()
@@ -559,37 +574,50 @@ class GroupJoiner:
                                 group.status = 'pending'
                                 group.updated_at = datetime.utcnow()
                                 db.commit()
-                                logger.info(f"  📤 Группа {group_username} помечена как 'pending' - заявка отправлена, ждем одобрения")
+                                logger.info(f"  📤 Группа {group_username} помечена как 'pending' (заявка или верификация не прошла)")
                         except Exception as e:
                             db.rollback()
                             logger.error(f"  ❌ Ошибка при обновлении статуса на pending: {e}")
                         finally:
                             db.close()
-                        # Небольшая пауза и продолжаем
                         await asyncio.sleep(30)
-                    # Если группа недоступна, помечаем её
-                    elif error and ("не найдена" in error.lower() or "приватная" in error.lower() or "inaccessible" in error.lower()):
-                        # Открываем короткую сессию только для обновления статуса
+                    # Если группа недоступна (не найдена, приватная, username не существует), помечаем её
+                    elif error and (
+                        "не найдена" in error.lower()
+                        or "приватная" in error.lower()
+                        or "inaccessible" in error.lower()
+                        or "no user has" in error.lower()
+                    ):
                         db = SessionLocal()
                         try:
                             group = db.query(Group).filter(Group.id == group_id).first()
                             if group:
                                 group.status = 'inaccessible'
                                 db.commit()
-                        except:
+                                logger.info(f"  📛 Группа {group_username} помечена как 'inaccessible' (больше не будем пытаться)")
+                        except Exception as e:
                             db.rollback()
+                            logger.error(f"  ❌ Ошибка при обновлении статуса на inaccessible: {e}")
                         finally:
                             db.close()
-                        await asyncio.sleep(30)
-                    # Обработка FloodWait - пропускаем группу, но продолжаем
+                        await asyncio.sleep(5)
+                    # Обработка FloodWait — исключаем этот аккаунт на остаток батча, следующий цикл возьмёт другого
                     elif error and ("wait" in error.lower() or "flood" in error.lower()):
-                        logger.warning(f"  ⏳ FloodWait для {group_username}, пропускаем эту группу")
-                        # Небольшая пауза и продолжаем
-                        await asyncio.sleep(30)
+                        if account and account.id not in exclude_account_ids:
+                            exclude_account_ids.append(account.id)
+                            logger.warning(f"  ⏳ FloodWait для {group_username}, аккаунт {account.session_name} исключён до конца батча")
+                        await asyncio.sleep(5)
                     else:
                         # Короткая пауза при ошибке
                         await asyncio.sleep(60)
             
+            except FloodWaitError as e:
+                wait_seconds = getattr(e, "seconds", 0) or 0
+                if account and account.id not in exclude_account_ids:
+                    exclude_account_ids.append(account.id)
+                    logger.warning(f"  ⏳ FloodWait {wait_seconds} сек у {account.session_name}, исключаем до конца батча")
+                failed_count += 1
+                await asyncio.sleep(5)
             except Exception as e:
                 logger.error(f"❌ Ошибка при обработке группы {group_username} (ID: {group_id}): {e}", exc_info=True)
                 failed_count += 1

@@ -40,7 +40,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Детальная статистика
-docker exec telegram-bali-postgres psql -U telegram_user -d telegram_promotion -c "
+docker exec telegram-bali-postgres psql -U telegram_user_bali -d telegram_promotion_bali -c "
 SELECT 
     CASE 
         WHEN status = 'active' AND can_post = true THEN 'active (can_post)'
@@ -71,7 +71,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Группы в warm-up периоде
-docker exec telegram-bali-postgres psql -U telegram_user -d telegram_promotion -c "
+docker exec telegram-bali-postgres psql -U telegram_user_bali -d telegram_promotion_bali -c "
 SELECT 
     COUNT(*) FILTER (WHERE warm_up_until > NOW()) as in_warmup,
     COUNT(*) FILTER (WHERE warm_up_until <= NOW() OR warm_up_until IS NULL) as warmup_complete
@@ -86,7 +86,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Последние вступления
-docker exec telegram-bali-postgres psql -U telegram_user -d telegram_promotion -c "
+docker exec telegram-bali-postgres psql -U telegram_user_bali -d telegram_promotion_bali -c "
 SELECT 
     username,
     status,
@@ -111,8 +111,8 @@ echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Автоматический анализ
-ACTIVE_CAN_POST=$(docker exec telegram-bali-postgres psql -U telegram_user -d telegram_promotion -t -c "SELECT COUNT(*) FROM groups WHERE status = 'active' AND can_post = true;" 2>/dev/null | tr -d ' ')
-NEW_GROUPS=$(docker exec telegram-bali-postgres psql -U telegram_user -d telegram_promotion -t -c "SELECT COUNT(*) FROM groups WHERE status = 'new';" 2>/dev/null | tr -d ' ')
+ACTIVE_CAN_POST=$(docker exec telegram-bali-postgres psql -U telegram_user_bali -d telegram_promotion_bali -t -c "SELECT COUNT(*) FROM groups WHERE status IN ('active','joined') AND (can_post = true OR can_post IS NULL);" 2>/dev/null | tr -d ' ')
+NEW_GROUPS=$(docker exec telegram-bali-postgres psql -U telegram_user_bali -d telegram_promotion_bali -t -c "SELECT COUNT(*) FROM groups WHERE status = 'new';" 2>/dev/null | tr -d ' ')
 
 if [ -z "$ACTIVE_CAN_POST" ]; then
     ACTIVE_CAN_POST=0
@@ -122,7 +122,7 @@ if [ -z "$NEW_GROUPS" ]; then
     NEW_GROUPS=0
 fi
 
-echo -e "Active groups (can_post=true): ${CYAN}${ACTIVE_CAN_POST}${NC}"
+echo -e "Groups ready for posting (active + can_post): ${CYAN}${ACTIVE_CAN_POST}${NC}"
 echo -e "New groups (waiting to join): ${CYAN}${NEW_GROUPS}${NC}"
 echo ""
 

@@ -14,7 +14,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from services.marketer.scheduler import MarketerScheduler
 from services.marketer.poster import SmartPoster
 
-# Настройка логирования
+# Настройка логирования (подавляем шум Telethon "Got difference for channel")
+logging.getLogger("telethon").setLevel(logging.WARNING)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',

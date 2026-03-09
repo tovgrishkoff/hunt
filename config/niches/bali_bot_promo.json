@@ -1,0 +1,92 @@
+{
+  "name": "bali",
+  "display_name": "Спринт: Реклама бота @Lead_Hunbot",
+
+  "manager": {
+    "search_keywords": [
+      "bali rent", "bali property", "bali villa", "аренда бали", "недвижимость бали",
+      "вилла бали", "bali real estate", "bali accommodation", "bali apartment", "bali house",
+      "аренда жилья бали", "продажа недвижимости бали", "bali chat", "bali community",
+      "bali expat", "bali services", "услуги бали", "bali помощь", "bali groups",
+      "bali русские", "русские бали", "bali expats", "bali life", "bali rental",
+      "bali property rental", "Бали чат", "Убуд комьюнити", "Чангу тусовка", "Русские на Бали",
+      "бизнес комьюнити", "business community", "предприниматели чат", "стартап комьюнити",
+      "digital nomads chat", "expat community", "expats chat", "русские за рубежом", "экспаты чат",
+      "фриланс чат", "удаленка чат"
+    ],
+    "keyword_to_sub_niche": {}
+  },
+
+  "marketer": {
+    "batch_size": 20,
+    "posting_schedule": {
+      "timezone": "Asia/Jakarta",
+      "slots": [
+        {"name": "morning", "time": "08:00"},
+        {"name": "noon", "time": "12:00"},
+        {"name": "afternoon", "time": "15:00"},
+        {"name": "evening", "time": "18:00"}
+      ]
+    },
+    "assets_path": "/app/bali_assets",
+    "photos": [],
+    "system_prompt": "ТЫ — ОБЫЧНЫЙ ПОЛЬЗОВАТЕЛЬ ТЕЛЕГРАМ (ФРИЛАНСЕР/ПРЕДПРИНИМАТЕЛЬ). ТВОЯ ЦЕЛЬ — НАТИВНО ПОСОВЕТОВАТЬ ИНСТРУМЕНТ ПОИСКА КЛИЕНТОВ @Lead_Hunbot.\n\nСЦЕНАРИИ ПОСТОВ:\n1. История успеха: \"Ребят, нашел тему, как искать клиентов на автомате. За неделю 5 лидов закрыл. Кому интересно — скину бота.\"\n2. Вопрос-ответ: \"Кто как сейчас ищет заказы? Таргет дорогой стал. Я вот через бота пробую, вроде норм идет.\"\n3. Совет: \"Если кому нужны клиенты из чатов, могу посоветовать тулзу, которая сама мониторит запросы.\"\n\nВАЖНО: Не пиши как рекламный буклет. Пиши с ошибками, смайлами, как живой человек в чате. Не используй хештеги.",
+    "active": true
+  },
+
+  "activity": {
+    "story_view_probability": 0.92,
+    "story_reaction_probability": 0.55,
+    "max_views_per_day": 320,
+    "min_views_per_day": 100,
+    "story_reactions": ["❤️", "🔥", "👍", "😍", "💯"],
+    "min_delay_between_views": 8,
+    "max_delay_between_views": 35,
+    "min_delay_between_reactions": 12,
+    "max_delay_between_reactions": 50,
+    "contacts_view_accounts": [
+      "promotion_lisa_soak", "promotion_artur_biggest", "promotion_anna_truncher",
+      "promotion_oleg_petrov", "promotion_Masha Sinugina", "promotion_lev_moiseev", "promotion_lera_katina"
+    ],
+    "contacts_dialogs_limit": 300,
+    "story_view_exclude_usernames": ["Luxury_Car9", "Elkozadefensis", "MargoMusaeva", "bykdasha"],
+    "story_view_priority_usernames": ["Andrey_Birzhin", "Alex_Abramov_Everest"],
+    "story_view_priority_reaction_probability": 1.0
+  },
+
+  "secretary": {
+    "system_prompt": "ТЫ — МЕНЕДЖЕР ПОДДЕРЖКИ (ИЛИ ДОВОЛЬНЫЙ КЛИЕНТ), КОТОРЫЙ СОВЕТУЕТ БОТА.\nКОНТЕКСТ: Тебе написали в личку после твоего поста о поиске клиентов.\nЦЕЛЬ: Узнать нишу собеседника и дать ссылку на @Lead_Hunbot.\n\nСКРИПТ:\n1. Спроси: \"Привет! А ты в какой нише работаешь?\"\n2. Посочувствуй: \"Да, там конкуренция большая сейчас.\"\n3. Предложи: \"Попробуй @Lead_Hunbot, он сам ищет горячие заявки по чатам. Там есть бесплатный тест.\"\n4. Если просят настроить: \"Напиши разрабу, он поможет: @huansya0\".",
+    "target_action": {
+      "forward_to_username": "grishkoff",
+      "forward_keywords": ["цена", "как работает", "настройка", "доступ", "купить", "попробовать", "тест"],
+      "bot_username": "@Lead_Hunbot",
+      "bot_link": "https://t.me/Lead_Hunbot",
+      "min_messages_before_offer": 1,
+      "keywords_for_detection": ["цена", "стоимость", "ниша", "клиенты", "заявки", "бот", "тест", "настройка", "как работает"]
+    },
+    "conversation_history_limit": 15,
+    "typing_delay_min": 7,
+    "typing_delay_max": 20,
+    "message_buffer_delay": 7,
+    "response_style": { "be_natural": true, "use_emojis": false, "max_length": 500, "min_length": 15 }
+  },
+
+  "joining_schedule": {
+    "timezone": "Asia/Jakarta",
+    "slots": [
+      {"name": "early_morning_1", "time": "05:00"}, {"name": "early_morning_2", "time": "07:00"},
+      {"name": "morning_1", "time": "09:00"}, {"name": "morning_2", "time": "11:00"},
+      {"name": "afternoon_1", "time": "13:00"}, {"name": "afternoon_2", "time": "15:00"},
+      {"name": "evening_1", "time": "17:00"}, {"name": "evening_1_early", "time": "17:35"}, {"name": "evening_2", "time": "19:00"}
+    ]
+  },
+
+  "limits": {
+    "posts_per_day_per_group": 2,
+    "warm_up_hours": 24,
+    "max_joins_per_day": 100,
+    "join_batch_size": 50,
+    "min_delay_between_joins": 40,
+    "max_delay_between_joins": 120
+  }
+}

@@ -5,8 +5,10 @@
 import asyncio
 import sys
 import json
+from pathlib import Path
 from telethon import TelegramClient
 from telethon.sessions import StringSession
+from telethon.errors import SessionPasswordNeededError
 
 # Пытаемся импортировать qrcode
 try:
@@ -52,8 +54,61 @@ ACCOUNTS_TO_AUTH = {
         "api_hash": "5326e0a7fb4803c973bc0b7025eb65af",
         "session_name": "promotion_oleg_petrov",
         "nickname": "Oleg Petrov"
+    },
+    "6": {
+        "phone": "+380930734685",
+        "api_id": 25586686,
+        "api_hash": "9ccad646ca28f63e7e9f0c2ea0e5f1c2",
+        "session_name": "promotion_alex_ever",
+        "nickname": "Alex Ever"
+    },
+    "7": {
+        "phone": "+380934672230",
+        "api_id": 27971326,
+        "api_hash": "3e9d2b22e6ad33f1da1df8d2a1a4e2b3",
+        "session_name": "promotion_dao_bro",
+        "nickname": "Dao Bro"
+    },
+    "8": {
+        "phone": "+380935173511",
+        "api_id": 37120288,
+        "api_hash": "e576f165ace9ea847633a136dc521062",
+        "session_name": "promotion_rod_shaihutdinov",
+        "nickname": "Rod Shaihutdinov"
     }
 }
+
+# Если есть accounts_config.json — подтягиваем реальные данные (API_ID/API_HASH/phone)
+def _sync_accounts_from_config(accounts_map: dict) -> dict:
+    config_path = Path(__file__).parent / "accounts_config.json"
+    if not config_path.exists():
+        return accounts_map
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_accounts = json.load(f)
+    except Exception:
+        return accounts_map
+
+    by_session = {
+        acc.get("session_name"): acc
+        for acc in config_accounts
+        if acc.get("session_name")
+    }
+    for key, acc in accounts_map.items():
+        session_name = acc.get("session_name")
+        if not session_name:
+            continue
+        cfg = by_session.get(session_name)
+        if not cfg:
+            continue
+        # Обновляем только если в конфиге есть значения
+        acc["phone"] = cfg.get("phone", acc.get("phone"))
+        acc["api_id"] = cfg.get("api_id", acc.get("api_id"))
+        acc["api_hash"] = cfg.get("api_hash", acc.get("api_hash"))
+        acc["nickname"] = cfg.get("nickname", acc.get("nickname"))
+    return accounts_map
+
+ACCOUNTS_TO_AUTH = _sync_accounts_from_config(ACCOUNTS_TO_AUTH)
 
 def display_url_as_qr(url):
     """Отображение QR-кода в терминале"""
@@ -131,6 +186,20 @@ async def authorize_via_qr(account_data):
                 try:
                     await qr_login.wait()
                     print("✅ QR-код успешно отсканирован!")
+                except SessionPasswordNeededError:
+                    print("🔐 Включена двухфакторная защита. Нужен пароль 2FA.")
+                    password = input("🔐 Пароль 2FA: ").strip()
+                    if not password:
+                        print("❌ Пароль 2FA не введен")
+                        await client.disconnect()
+                        return None
+                    try:
+                        await client.sign_in(password=password)
+                        print("✅ Авторизация с 2FA успешна!")
+                    except Exception as e:
+                        print(f"❌ Ошибка 2FA: {e}")
+                        await client.disconnect()
+                        return None
                 except asyncio.TimeoutError:
                     print("❌ Время ожидания истекло. QR-код устарел.")
                     print("   Перезапустите скрипт для получения нового QR-кода.")

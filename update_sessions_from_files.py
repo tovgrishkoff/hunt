@@ -23,6 +23,8 @@ def update_accounts_config():
     session_files = [
         Path('new_session_promotion_oleg_petrov.txt'),
         Path('new_session_promotion_anna_truncher.txt'),
+        Path('new_session_promotion_lisa_soak.txt'),
+        Path('new_session_promotion_Masha Sinugina.txt'),
     ]
     
     updated_count = 0

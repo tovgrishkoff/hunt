@@ -1,0 +1,85 @@
+{
+  "name": "bali",
+  "display_name": "Спринт: Продажа виллы на Бали (инвестиции)",
+
+  "manager": {
+    "search_keywords": [
+      "bali property", "bali villa buy", "invest bali", "недвижимость бали",
+      "инвестиции бали", "crypto bali", "business bali"
+    ],
+    "keyword_to_sub_niche": {}
+  },
+
+  "marketer": {
+    "batch_size": 20,
+    "posting_schedule": {
+      "timezone": "Asia/Jakarta",
+      "slots": [
+        {"name": "morning", "time": "08:00"},
+        {"name": "noon", "time": "12:00"},
+        {"name": "afternoon", "time": "15:00"},
+        {"name": "evening", "time": "18:00"}
+      ]
+    },
+    "assets_path": "/app/bali_assets",
+    "photos": [],
+    "system_prompt": "ТЫ — ПОМОЩНИК СОБСТВЕННИКА ВИЛЛЫ НА БАЛИ.\nСТИЛЬ: Деловой, конкретный, срочный.\n\nОФФЕР: \"Срочная продажа. Вилла в Чангу/Убуде. ROI 15%. Цена ниже рынка на 20% из-за переезда.\"\nДЕТАЛИ: Указывай (выдуманные или реальные из базы) параметры: 2 спальни, бассейн, лизхолд 25 лет.\nПРИЗЫВ: \"Фото и планировку скину в личку. Пишите +.\"",
+    "active": true
+  },
+
+  "activity": {
+    "story_view_probability": 0.92,
+    "story_reaction_probability": 0.55,
+    "max_views_per_day": 320,
+    "min_views_per_day": 100,
+    "story_reactions": ["❤️", "🔥", "👍", "😍", "💯"],
+    "min_delay_between_views": 8,
+    "max_delay_between_views": 35,
+    "min_delay_between_reactions": 12,
+    "max_delay_between_reactions": 50,
+    "contacts_view_accounts": [
+      "promotion_lisa_soak", "promotion_artur_biggest", "promotion_anna_truncher",
+      "promotion_oleg_petrov", "promotion_Masha Sinugina", "promotion_lev_moiseev", "promotion_lera_katina"
+    ],
+    "contacts_dialogs_limit": 300,
+    "story_view_exclude_usernames": ["Luxury_Car9", "Elkozadefensis", "MargoMusaeva", "bykdasha"],
+    "story_view_priority_usernames": ["Andrey_Birzhin", "Alex_Abramov_Everest"],
+    "story_view_priority_reaction_probability": 1.0
+  },
+
+  "secretary": {
+    "system_prompt": "ТЫ — РИЕЛТОР/СОБСТВЕННИК. ТВОЯ ЦЕЛЬ — ДОГОВОРИТЬСЯ О ПРОСМОТРЕ.\n\nСКРИПТ:\n1. Ответ: \"Привет! Вилла находится в районе (Убуд/Чангу). Локация топ.\"\n2. Ценность: \"Сейчас сдается за 3000$/мес. Окупаемость отличная.\"\n3. Призыв: \"Скинуть видео-обзор? Или когда удобно посмотреть вживую?\"\n4. Перевод на босса: \"По всем документам и сделке пишите владельцу: @grishkoff\".",
+    "target_action": {
+      "forward_to_username": "grishkoff",
+      "forward_keywords": ["цена", "фото", "видео", "локация", "где находится", "просмотр", "документы", "лизхолд"],
+      "bot_username": "@Lead_Hunbot",
+      "bot_link": "https://t.me/Lead_Hunbot",
+      "min_messages_before_offer": 1,
+      "keywords_for_detection": ["вилла", "недвижимость", "аренда", "покупка", "инвестиции", "бали", "чангу", "убуд", "лизхолд"]
+    },
+    "conversation_history_limit": 15,
+    "typing_delay_min": 7,
+    "typing_delay_max": 20,
+    "message_buffer_delay": 7,
+    "response_style": { "be_natural": true, "use_emojis": false, "max_length": 500, "min_length": 15 }
+  },
+
+  "joining_schedule": {
+    "timezone": "Asia/Jakarta",
+    "slots": [
+      {"name": "early_morning_1", "time": "05:00"}, {"name": "early_morning_2", "time": "07:00"},
+      {"name": "morning_1", "time": "09:00"}, {"name": "morning_2", "time": "11:00"},
+      {"name": "afternoon_1", "time": "13:00"}, {"name": "afternoon_2", "time": "15:00"},
+      {"name": "evening_1", "time": "17:00"}, {"name": "evening_1_early", "time": "17:35"}, {"name": "evening_2", "time": "19:00"}
+    ]
+  },
+
+  "limits": {
+    "posts_per_day_per_group": 2,
+    "warm_up_hours": 24,
+    "max_joins_per_day": 100,
+    "join_batch_size": 50,
+    "min_delay_between_joins": 40,
+    "max_delay_between_joins": 120
+  }
+}

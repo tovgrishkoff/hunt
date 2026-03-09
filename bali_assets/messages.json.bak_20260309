@@ -1,0 +1,3546 @@
+[
+  {
+    "text": "Ищу байк в аренду на Бали, нужен мотоцикл для поездок по острову",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу мотоцикл в аренду, кто может посоветовать проверенную компанию?",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу байк на прокат в Семиньяке, нужен надежный мотоцикл",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу аренду мотоцикла с шлемом, кто знает где взять?",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу байк в аренду для поездки в Убуд, нужен скутер или мотоцикл",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу мотоцикл на прокат с полным баком, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу байк в аренду в Чангу, нужен недорогой вариант",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу аренду мотоцикла для экскурсий, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу байк на прокат с водительскими правами, нужна компания",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу мотоцикл в аренду для поездки в аэропорт, кто знает?",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу байк в аренду на неделю, нужен выгодный тариф",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу аренду мотоцикла с доставкой, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу байк на прокат для фотосессии, нужен красивый мотоцикл",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу мотоцикл в аренду с GPS, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу байк в аренду с страховкой, нужна безопасная поездка",
+    "photo": null,
+    "source_file": "messages_bike_rental.txt"
+  },
+  {
+    "text": "Ищу авто в аренду на Бали, нужна машина для поездок",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу аренду автомобиля с водителем, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу машину в аренду в Семиньяке, нужен надежный автомобиль",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу авто на прокат для экскурсий, кто знает где взять?",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу аренду автомобиля для поездки в Убуд, нужна машина с кондиционером",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу машину в аренду со страховкой, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу авто в аренду в Чангу, нужен недорогой вариант",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу аренду автомобиля для туристов, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу машину на прокат для поездки в аэропорт, нужна компания",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу авто в аренду с GPS, кто знает где взять?",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу аренду автомобиля на неделю, нужен выгодный тариф",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу машину в аренду с доставкой, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу авто на прокат для фотосессии, нужен красивый автомобиль",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу аренду автомобиля для семьи, нужна машина с детским креслом",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу машину в аренду с полным баком, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_car_rental.txt"
+  },
+  {
+    "text": "Ищу косметолога на Бали, нужна чистка лица",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу специалиста по косметологии для ухода за кожей, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу косметолога в Семиньяке, нужна качественная процедура",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу мастера косметолога для фотосессии, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу косметолога в Убуде, нужна чистка и уход",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу специалиста по косметологии для свадьбы, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу косметолога в Чангу, нужна профессиональная процедура",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу мастера косметолога для особого случая, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу косметолога для anti-age процедур, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу специалиста по косметологии для проблемной кожи, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу косметолога для мезотерапии, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу мастера косметолога для лифтинга, кто знает?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу косметолога для пилинга, нужна качественная процедура",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу специалиста по косметологии для увлажнения кожи, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу косметолога для массажа лица, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_cosmetology.txt"
+  },
+  {
+    "text": "Ищу обменник валюты на Бали, нужен выгодный курс",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу где поменять доллары на рупии, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу обменник в Семиньяке, нужен хороший курс без комиссии",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу где поменять евро на рупии, кто знает проверенное место?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу обменник валюты в Убуде, нужен надежный обменник",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу где поменять валюту с минимальной комиссией, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу обменник в Чангу, нужен выгодный курс",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу где поменять доллары, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу обменник валюты для крупной суммы, кто знает где?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу где поменять валюту безопасно, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу обменник в Куте, нужен хороший курс",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу где поменять валюту для поездки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу обменник валюты с хорошей репутацией, кто знает?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу где поменять доллары на рупии выгодно, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу обменник валюты для туристов, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_currency.txt"
+  },
+  {
+    "text": "Ищу дизайнера интерьеров на Бали, нужен дизайн виллы",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера для создания логотипа, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера в Семиньяке, нужен дизайн интерьера",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу графического дизайнера для бренда, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера в Убуде, нужен дизайн квартиры",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу веб-дизайнера для сайта, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера в Чангу, нужен дизайн логотипа",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера интерьеров для ресторана, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу графического дизайнера для соцсетей, кто знает?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера для упаковки товара, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера интерьеров для офиса, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу веб-дизайнера для landing page, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера для фирменного стиля, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу дизайнера интерьеров для кафе, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу графического дизайнера для рекламы, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_designer.txt"
+  },
+  {
+    "text": "Ищу специалиста по энергетической чистке на Бали, нужна очистка",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу мастера для энергетической чистки пространства, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу специалиста по очищению энергетики в Семиньяке, нужна помощь",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу мастера для энергетической чистки дома, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу специалиста по очищению в Убуде, нужна практика очищения",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу мастера для энергетической чистки перед новым годом, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу специалиста по очищению энергетики в Чангу, нужна помощь",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу мастера для энергетической чистки от негатива, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу специалиста по очищению чакр, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу мастера для энергетической чистки после стресса, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу специалиста по очищению пространства, нужна практика",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу мастера для энергетической чистки для перезагрузки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу специалиста по очищению энергетики для обновления, кто знает?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу мастера для энергетической чистки для входа в новый год, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Ищу специалиста по очищению для освобождения от груза, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_energy_cleansing.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужна аренда виллы 🏠",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Семиньяке? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу риелтора для покупки недвижимости. Кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна качественная недвижимость",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости! Хочу крутую виллу для Instagram ✨",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго дня! Нужна помощь в поиске дома. Кто посоветует риелтора?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен профессиональный риелтор",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Убуде? Подскажите контакты агентства!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для особого случая. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для мероприятия",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для свадебного торжества! Хочу качественный результат",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с опытом работы. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенное агентство недвижимости на Бали? Нужен риелтор",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Чангу? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для корпоративного мероприятия. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для бизнеса",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для fashion-съемки! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с креативным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для блога",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами агентства недвижимости? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки на закате. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужен опытный риелтор",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для travel-съемки! Хочу качественную недвижимость",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с портфолио. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежное агентство недвижимости на Бали? Нужен профессиональный риелтор",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Куте? Подскажите агентство!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для семейной поездки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для отпуска",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для романтической поездки! Хочу элегантную виллу",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с современными условиями. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для соцсетей",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Денпасаре? Подскажите контакты агентства!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для коммерческой съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для рекламы",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для портретной съемки! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с хорошим оборудованием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенное агентство недвижимости на Бали? Нужен риелтор для мероприятия",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Сануре? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки в студии. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для вечеринки",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для девичника! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с индивидуальным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для дня рождения",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами агентства недвижимости для особого события? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для срочной поездки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужен быстрый риелтор",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости с русскоязычным персоналом! Хочу понимание",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с хорошим обслуживанием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежное агентство недвижимости на Бали? Нужен качественный риелтор",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Нуса-Дуа? Подскажите агентство!",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки на пляже. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для пляжной вечеринки",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для водных развлечений! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с хорошими ценами. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для романтической поездки",
+    "photo": null,
+    "source_file": "messages_evening.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям на Бали, нужна коррекция бровей",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу специалиста по бровям для коррекции формы, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям в Семиньяке, нужна качественная коррекция",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу специалиста по окрашиванию бровей, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям в Убуде, нужна коррекция и окрашивание",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу специалиста по бровям для свадьбы, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям в Чангу, нужна профессиональная коррекция",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу специалиста по бровям для фотосессии, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям для ламинирования, кто знает?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу специалиста по бровям для перманентного макияжа, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям для коррекции формы, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу специалиста по бровям для окрашивания хной, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям для создания идеальной формы, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу специалиста по бровям для особого случая, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям для ухода за бровями, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_eyebrows.txt"
+  },
+  {
+    "text": "Ищу мастера по наращиванию ресниц на Бали, нужна качественная работа",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу специалиста по ресницам для наращивания, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу мастера по ресницам в Семиньяке, нужна профессиональная работа",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу специалиста по наращиванию ресниц для свадьбы, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу мастера по ресницам в Убуде, нужна качественная работа",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу специалиста по наращиванию ресниц для фотосессии, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу мастера по ресницам в Чангу, нужна работа с хорошими материалами",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу специалиста по ресницам для коррекции, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу мастера по наращиванию ресниц объемом, кто знает?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу специалиста по ресницам для снятия, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу мастера по наращиванию ресниц для особого случая, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу специалиста по ресницам для классического наращивания, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу мастера по ресницам для 2D-3D наращивания, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу специалиста по ресницам для ламинирования, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу мастера по наращиванию ресниц для долговечного результата, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_eyelashes.txt"
+  },
+  {
+    "text": "Ищу организатора семейного ретрита на Бали, нужна программа для семьи",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу ретрит для семейной пары в Убуде, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу семейный ретрит с практиками сближения, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу организатора ретрита для семьи с детьми, нужна программа",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу семейный ретрит с духовными практиками, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу ретрит для семейной пары с медитацией, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу семейный ретрит с практиками раскрытия сердца, кто знает?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу организатора ретрита для укрепления отношений, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу семейный ретрит с фото и видео съемкой, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу ретрит для семейной пары с практиками соединения, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу семейный ретрит с поддержкой фасилитатора, нужна программа",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу организатора ретрита для семейного опыта, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу семейный ретрит с практиками для пары, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу ретрит для семейной пары с духовным опытом, кто знает?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу семейный ретрит с практиками для сближения, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_family_retreat.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам на Бали, нужен качественный маникюр",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу видеографа на свадьбу, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу фотографа для фотосессии, нужен опытный специалист",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу турагента кто может сделать ретритный тур на Бали, нужна организация",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу парикмахера на Бали, нужна качественная стрижка",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу мастера по бровям для свадьбы, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу косметолога для ухода за кожей, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу дизайнера интерьеров для виллы, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу авто в аренду на Бали, нужна машина для поездок",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу обменник валюты с хорошим курсом, кто знает где?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу визажиста для свадьбы, нужен профессиональный макияж",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу медиа-студию для видеосъемки, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу швею для пошива вещи по эскизу, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу психолога для консультации, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Разрабатываю Telegram-ботов для автоматизации бизнеса. Автоматизация процессов, чат-боты, интеграции с CRM. Кто заинтересован?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Создаю чат-ботов для Telegram. Опыт разработки, готовые решения для продаж и поддержки клиентов. Пишите в ЛС!",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу разработчика для проекта на Бали, кто может помочь? Сам тоже разрабатываю ботов, можем обменяться опытом!",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Кто знает, где на Бали можно заказать разработку Telegram-бота? Сам занимаюсь этим, могу помочь с автоматизацией.",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Разрабатываю ботов для продаж, поддержки клиентов, автоматизации задач. Интеграции с платежами, базами данных. Кто заинтересован?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Создаю Telegram-ботов для бизнеса. Автоматизация рутинных процессов, обработка заказов, уведомления. Опыт разработки.",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу программиста для создания бота. Сам тоже разрабатываю, можем обсудить проект или обменяться опытом!",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Нужен совет по автоматизации бизнеса через Telegram, кто разбирается? Сам занимаюсь разработкой ботов, могу помочь.",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Разрабатываю ботов для автоматизации. Чат-боты для продаж, обработка заявок, интеграции. Кто заинтересован в сотрудничестве?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу организатора ретрита для семьи, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_general.txt"
+  },
+  {
+    "text": "Ищу парикмахера на Бали, нужна качественная стрижка",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу мастера по волосам для окрашивания, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу парикмахера в Семиньяке, нужна стрижка и укладка",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу мастера по волосам для свадьбы, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу парикмахера в Убуде, нужна профессиональная стрижка",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу мастера по волосам для окрашивания в блонд, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу парикмахера в Чангу, нужна стрижка и окрашивание",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу мастера по волосам для свадебной укладки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу парикмахера для мелирования, кто знает?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу мастера по волосам для кератинового выпрямления, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу парикмахера для мужской стрижки, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу мастера по волосам для женской стрижки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу парикмахера для окрашивания в темный цвет, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу мастера по волосам для укладки на вечер, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу парикмахера для стрижки и окрашивания, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_hair.txt"
+  },
+  {
+    "text": "Ищу кальянную на Бали, нужна качественная кальянная",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальян-бар для вечеринки, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальянную в Семиньяке, нужна уютная атмосфера",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальян-бар с хорошим табаком, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальянную в Убуде, нужна кальянная с живой музыкой",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальян-бар для особого случая, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальянную в Чангу, нужна качественная кальянная",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальян-бар для вечера с друзьями, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальянную с хорошим обслуживанием, кто знает?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальян-бар для романтического вечера, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальянную с разнообразным табаком, нужна хорошая кальянная",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальян-бар для девичника, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальянную с уютной атмосферой, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальян-бар для дня рождения, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "Ищу кальянную для вечера, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_hookah.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_housing.txt"
+  },
+  {
+    "text": "Ищу визажиста на Бали, нужен профессиональный макияж",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера макияжа для свадьбы, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу визажиста в Семиньяке, нужен качественный макияж",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера макияжа для фотосессии, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу визажиста в Убуде, нужен свадебный макияж",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера макияжа для вечернего макияжа, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу визажиста в Чангу, нужен профессиональный макияж",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера макияжа для особого случая, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу визажиста для дневного макияжа, кто знает?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера макияжа для вечернего образа, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу визажиста для естественного макияжа, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера макияжа для фотосессии, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу визажиста для свадебной подготовки, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера макияжа для девичника, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу визажиста для особого события, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_makeup.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам на Бали, нужен качественный маникюр",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по маникюру для свадьбы, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам в Семиньяке, нужен гель-лак",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по маникюру для фотосессии, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам в Убуде, нужен французский маникюр",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по маникюру для особого случая, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам в Чангу, нужна качественная работа",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по маникюру для свадебного торжества, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам для гель-лака, нужен долговечный результат",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по маникюру с опытом работы, кто знает?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам для сложного дизайна, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по маникюру для отпуска, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам в Куте, нужна качественная работа",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по маникюру для портретной съемки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу мастера по ноготкам для особого события, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_manicure.txt"
+  },
+  {
+    "text": "Ищу медиа-студию на Бали, нужна студия для видеосъемки",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу студию для съемки контента, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу медиа-студию в Семиньяке, нужна студия с оборудованием",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу студию для видеосъемки, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу медиа-студию в Убуде, нужна профессиональная студия",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу студию для съемки рекламы, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу медиа-студию в Чангу, нужна студия с хорошим светом",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу студию для съемки YouTube контента, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу медиа-студию для интервью, кто знает?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу студию для съемки корпоративного видео, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу медиа-студию для съемки музыкального клипа, нужна профессиональная студия",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу студию для съемки контента для соцсетей, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу медиа-студию для съемки подкаста, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу студию для съемки презентации, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Ищу медиа-студию для съемки проекта, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_media_studio.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужна аренда виллы 🏠",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Семиньяке? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу риелтора для покупки недвижимости. Кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна качественная недвижимость",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости! Хочу крутую виллу для Instagram ✨",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго дня! Нужна помощь в поиске дома. Кто посоветует риелтора?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен профессиональный риелтор",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Убуде? Подскажите контакты агентства!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для особого случая. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для мероприятия",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для свадебного торжества! Хочу качественный результат",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с опытом работы. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенное агентство недвижимости на Бали? Нужен риелтор",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Чангу? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для корпоративного мероприятия. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для бизнеса",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для fashion-съемки! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с креативным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для блога",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами агентства недвижимости? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки на закате. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужен опытный риелтор",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для travel-съемки! Хочу качественную недвижимость",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с портфолио. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежное агентство недвижимости на Бали? Нужен профессиональный риелтор",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Куте? Подскажите агентство!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для семейной поездки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для отпуска",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для романтической поездки! Хочу элегантную виллу",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с современными условиями. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для соцсетей",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Денпасаре? Подскажите контакты агентства!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для коммерческой съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для рекламы",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для портретной съемки! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с хорошим оборудованием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенное агентство недвижимости на Бали? Нужен риелтор для мероприятия",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Сануре? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки в студии. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для вечеринки",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для девичника! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с индивидуальным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для дня рождения",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами агентства недвижимости для особого события? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для срочной поездки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужен быстрый риелтор",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости с русскоязычным персоналом! Хочу понимание",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с хорошим обслуживанием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежное агентство недвижимости на Бали? Нужен качественный риелтор",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Нуса-Дуа? Подскажите агентство!",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки на пляже. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для пляжной вечеринки",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с хорошими ценами. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для романтической поездки",
+    "photo": null,
+    "source_file": "messages_morning.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужна аренда виллы 🏠",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Семиньяке? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу риелтора для покупки недвижимости. Кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна качественная недвижимость",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости! Хочу крутую виллу для Instagram ✨",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго дня! Нужна помощь в поиске дома. Кто посоветует риелтора?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен профессиональный риелтор",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Убуде? Подскажите контакты агентства!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для особого случая. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для мероприятия",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для свадебного торжества! Хочу качественный результат",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с опытом работы. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенное агентство недвижимости на Бали? Нужен риелтор",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Чангу? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для корпоративного мероприятия. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для бизнеса",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для fashion-съемки! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с креативным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для блога",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами агентства недвижимости? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки на закате. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужен опытный риелтор",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для travel-съемки! Хочу качественную недвижимость",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с портфолио. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежное агентство недвижимости на Бали? Нужен профессиональный риелтор",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Куте? Подскажите агентство!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для семейной поездки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для отпуска",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для романтической поездки! Хочу элегантную виллу",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с современными условиями. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для соцсетей",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Денпасаре? Подскажите контакты агентства!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для коммерческой съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для рекламы",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для портретной съемки! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с хорошим оборудованием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенное агентство недвижимости на Бали? Нужен риелтор для мероприятия",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Сануре? Подскажите агентство с опытом!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки в студии. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для вечеринки",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для девичника! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с индивидуальным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами агентства недвижимости для особого события? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для срочной поездки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужен быстрый риелтор",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости с русскоязычным персоналом! Хочу понимание",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу риелтора с хорошим обслуживанием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежное агентство недвижимости на Бали? Нужен качественный риелтор",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал жилье в Нуса-Дуа? Подскажите агентство!",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем привет! Ищу специалиста по недвижимости для съемки на пляже. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти агентство недвижимости на Бали? Нужна недвижимость для пляжной вечеринки",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Ребят, подскажите агентство недвижимости для водных развлечений! Хочу крутую виллу",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу риелтора с хорошими ценами. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошее агентство недвижимости на Бали? Нужен риелтор для романтической поездки",
+    "photo": null,
+    "source_file": "messages_noon.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего фотографа на Бали? Нужна свадебная съемка 📸",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, а кто делал фотосессию в Семиньяке? Подскажите фотографа с опытом!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для коммерческой съемки. Кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна качественная съемка",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа! Хочу крутую фотосессию для Instagram ✨",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго дня! Нужен фотограф для портретной съемки. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего фотографа на Бали? Нужна профессиональная съемка",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, а кто делал фотосессию в Убуде? Подскажите контакты фотографа!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для корпоративного мероприятия. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна съемка для особого случая",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа для свадебной съемки! Хочу качественный результат",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу фотографа с опытом работы. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенного фотографа на Бали? Нужна съемка",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, а кто делал фотосессию в Чангу? Подскажите фотографа с опытом!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для студийной съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна съемка для бизнеса",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа для fashion-съемки! Хочу крутую фотосессию",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу фотографа с креативным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего фотографа на Бали? Нужна съемка для блога",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами фотографа? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для съемки на закате. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужен опытный специалист",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа для travel-съемки! Хочу качественную фотосессию",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу фотографа с портфолио. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежного фотографа на Бали? Нужна профессиональная съемка",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, а кто делал фотосессию в Куте? Подскажите фотографа!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для семейной фотосессии. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна съемка для отпуска",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа для романтической съемки! Хочу элегантную фотосессию",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу фотографа с современными техниками. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего фотографа на Бали? Нужна съемка для соцсетей",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, а кто делал фотосессию в Денпасаре? Подскажите контакты фотографа!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для коммерческой съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна съемка для рекламы",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа для портретной съемки! Хочу крутые фото",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу фотографа с хорошим оборудованием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенного фотографа на Бали? Нужна съемка для мероприятия",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, а кто делал фотосессию в Сануре? Подскажите фотографа с опытом!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для съемки в студии. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна съемка для вечеринки",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа для девичника! Хочу крутую фотосессию",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу фотографа с индивидуальным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего фотографа на Бали? Нужна съемка для дня рождения",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами фотографа для особого события? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для срочной съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна быстрая съемка",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа с русскоязычным персоналом! Хочу понимание",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу фотографа с хорошим обслуживанием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежного фотографа на Бали? Нужна качественная съемка",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, а кто делал фотосессию в Нуса-Дуа? Подскажите фотографа!",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем привет! Ищу фотографа для съемки на пляже. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти фотографа на Бали? Нужна съемка для пляжной вечеринки",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ребят, подскажите фотографа для водной съемки! Хочу крутые фото",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу фотографа с хорошими ценами. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего фотографа на Бали? Нужна съемка для романтической поездки",
+    "photo": null,
+    "source_file": "messages_photo.txt"
+  },
+  {
+    "text": "Ищу фотографа на свадьбу на Бали, нужна качественная съемка",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для свадебной фотосессии, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа в Семиньяке, нужна профессиональная съемка",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для портретной съемки, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа в Убуде, нужна семейная фотосессия",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для коммерческой съемки, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа в Чангу, нужна качественная фотосессия",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для fashion-съемки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для travel-контента, кто знает?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для съемки на закате, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для блога, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для съемки мероприятия, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для студийной съемки, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для съемки на пляже, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу фотографа для особого события, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_photographer.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду на Бали, нужна приставка для вечеринки",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу аренду игровой приставки для мероприятия, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду в Семиньяке, нужна приставка с играми",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу аренду игровой консоли для вечера, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду в Убуде, нужна приставка для друзей",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу аренду игровой приставки для дня рождения, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду в Чангу, нужна приставка с контроллерами",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу аренду игровой консоли для вечеринки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду для девичника, кто знает?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу аренду игровой приставки для корпоратива, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду на выходные, нужна приставка",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу аренду игровой консоли для вечера, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду с доставкой, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу аренду игровой приставки для мероприятия, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "Ищу PlayStation в аренду для вечеринки, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_playstation.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_rental_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "Ищу турагента кто может сделать ретритный тур на Бали, нужна организация",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для ретритного тура, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для организации тура в Убуде, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для ретритного тура с йогой, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для организации тура для группы, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для ретритного тура с медитацией, кто знает?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для организации тура для семьи, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для ретритного тура с практиками, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для организации тура с питанием, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для ретритного тура для друзей, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для организации тура с проживанием, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для ретритного тура с трансфером, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для организации тура с экскурсиями, кто знает?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для ретритного тура с программой, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу турагента для организации тура на Бали, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_tourism.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию на Бали, нужен трансфер в аэропорт",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу трансфер для поездки, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию в Семиньяке, нужен трансфер с водителем",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу трансфер для экскурсии, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию в Убуде, нужен трансфер для группы",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу трансфер для поездки в аэропорт, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию в Чангу, нужен трансфер для туристов",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу трансфер для мероприятия, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию для корпоративного трансфера, кто знает?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу трансфер для поездки на пляж, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию для трансфера с кондиционером, нужна компания",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу трансфер для поездки по острову, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию для трансфера с GPS, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу трансфер для поездки на вулкан, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Ищу транспортную компанию для трансфера для семьи, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_transport.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего видеографа на Бали? Нужна съемка корпоративного контента 🎥",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал видео в Семиньяке? Подскажите видеографа с опытом!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу оператора для видеосъемки. Кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна качественная съемка",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа! Хочу крутое видео для Instagram ✨",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго дня! Нужен монтажер для обработки видео. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего видеографа на Бали? Нужна профессиональная съемка",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал видео в Убуде? Подскажите контакты видеографа!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для особого случая. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна съемка для мероприятия",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа для свадебной съемки! Хочу качественный результат",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу видеографа с опытом работы. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенного видеографа на Бали? Нужна съемка",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал видео в Чангу? Подскажите видеографа с опытом!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для корпоративного мероприятия. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна съемка для бизнеса",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа для fashion-съемки! Хочу крутое видео",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу видеографа с креативным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего видеографа на Бали? Нужна съемка для блога",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами видеографа? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для съемки на закате. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужен опытный специалист",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа для travel-съемки! Хочу качественное видео",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу видеографа с портфолио. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежного видеографа на Бали? Нужна профессиональная съемка",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал видео в Куте? Подскажите видеографа!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для семейной съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна съемка для отпуска",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа для романтической съемки! Хочу элегантное видео",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу видеографа с современными техниками. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего видеографа на Бали? Нужна съемка для соцсетей",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал видео в Денпасаре? Подскажите контакты видеографа!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для коммерческой съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна съемка для рекламы",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа для портретной съемки! Хочу крутые кадры",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу видеографа с хорошим оборудованием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает проверенного видеографа на Бали? Нужна съемка для мероприятия",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал видео в Сануре? Подскажите видеографа с опытом!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для съемки в студии. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна съемка для вечеринки",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа для девичника! Хочу крутое видео",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу видеографа с индивидуальным подходом. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего видеографа на Бали? Нужна съемка для дня рождения",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, кто пользовался услугами видеографа для особого события? Подскажите контакты!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для срочной съемки. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна быстрая съемка",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа с русскоязычным персоналом! Хочу понимание",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго времени! Ищу видеографа с хорошим обслуживанием. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает надежного видеографа на Бали? Нужна качественная съемка",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, а кто снимал видео в Нуса-Дуа? Подскажите видеографа!",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем привет! Ищу видеографа для съемки на пляже. Кто может помочь?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает где найти видеографа на Бали? Нужна съемка для пляжной вечеринки",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ребят, подскажите видеографа для водной съемки! Хочу крутые кадры",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Всем доброго дня! Ищу видеографа с хорошими ценами. Кто посоветует?",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Привет! Кто знает хорошего видеографа на Бали? Нужна съемка для романтической поездки",
+    "photo": null,
+    "source_file": "messages_video.txt"
+  },
+  {
+    "text": "Ищу видеографа на свадьбу на Бали, нужна качественная съемка",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для свадебной съемки, кто может посоветовать?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа в Семиньяке, нужна профессиональная съемка",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки YouTube канала, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа в Убуде, нужна съемка для рекламы",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для корпоративного видео, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа в Чангу, нужна качественная съемка",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки мероприятия, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для travel-контента, кто знает?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки на закате, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки блога, нужен профессионал",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки коммерческого проекта, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки семейного видео, кто знает где найти?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки на пляже, кто посоветует?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "Ищу видеографа для съемки особого события, кто может помочь?",
+    "photo": null,
+    "source_file": "messages_videographer.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "• $215К Дизайн-лофт Чангу | Бассейн • Фитнес • Баня",
+    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
+    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "source_file": "messages_sale_property.txt"
+  },
+
+  {
+    "text": "Ребят, нашёл отличный подарок на 8 марта — ретрит на Бали 7–10: 3 дня, йога, каяки, букет с утра, массаж, вид на вулканы. Подходит, если она любит перезагрузку. Осталось пару мест. Кому скинуть ссылку — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девушки, нашла ретрит на Бали как раз на 8 марта — 3 дня, йога, медитация, домик с видом на вулканы, букет гортензий, массаж. Если хотите подарить себе перезагрузку — пишите, скину детали.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Привет! Кто ищет необычный подарок на 8 марта? Есть ретрит на Бали: 7–10 марта, 3 дня — йога, медитации, каяки, массаж, вид на вулканы. Оформлено как подарок для неё, но можно и самой поехать. Группа маленькая. Кому интересно — напишите, скину программу.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Народ, нашёл ретрит на Бали 7–10 марта — йога, букет, каяки, всё под ключ. Отличный подарок на 8 марта. Есть ссылка на программу — кому нужна, в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девочки, нашла ретрит на Бали именно на 8 марта 😊 3 дня: йога, медитация, вид на вулканы, букет с утра, массаж. Формат «подарок для себя» — можно и самой, и с партнёром. Даты 7–10 марта, мест мало. Кому актуально — пишите, скину.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Коллеги, нашла ретрит на Бали 7–10 марта — йога, каяки, вид на вулканы. Альтернатива букету на 8 марта. Кому скинуть ссылку — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девчонки, нашла классный формат на 8 марта — короткий ретрит 3 дня. Йога по утрам, медитация, домики с видом, букет гортензий. Кто в теме — напишите, скину ссылку на программу.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл ретрит на Бали 7–10 марта — йога, массаж, букет, всё под ключ. Идеальный подарок на 8 марта. Кому ссылку — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Нашёл небанальный подарок на 8 марта — ретрит на Бали 7–10: 3 дня, йога, каяки, вид на вулканы. Подходит, если она любит перезагрузку. Кому скинуть — в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Привет! Нашёл ретрит на Бали 7–10 марта — йога, медитация, красивая локация. 3 дня. Кому скинуть контакты организаторов — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девочки, кто искал идею для себя на 8 марта? Есть ретрит на Бали — йога, вид на вулканы, букет, массаж. 3 дня, всё включено. Мест немного, пишите — расскажу.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, собираем компанию на ретрит 7–10 марта. Бали, домики с видом, йога, каяки. Маленькая группа. Кому интересно — велком в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл подарок для девушки на 8 марта — ретрит на Бали 7–10: йога, каяки, букет с утра, массаж. Альтернатива цветам, если она любит перезагрузку. Кому программу — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, нашёл ретрит на Бали 7–10 — отличный подарок на 8 марта вместо букета: 3 дня, йога, вид на вулканы, всё под ключ. Кому ссылку — в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Мужчины, нашёл ретрит на Бали 7–10 марта — йога, букет, каяки. Необычный подарок на 8 марта. Кому скинуть — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл подарок на 8 марта — ретрит на Бали 7–10: 3 дня, йога, букет гортензий, массаж. Кому ссылку скинуть — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, нашёл идею подарка для неё на 8 марта — ретрит на Бали 7–10: йога, каяки, домик с видом. Она просила перезагрузку. Кому скинуть — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл ретрит на Бали 7–10 марта — всё включено, букет, йога. Подарок-поездка на 8 марта. Есть контакты организаторов — кому в личку, пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девушки, нашла мини-ретрит на Бали 7–10 марта — йога, медитация, букет гортензий, каяки. Формат подарочный. Кому программу — пишите, скину.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, есть ретрит 7–10 марта — Бали, вид на вулканы, йога по утрам, массаж, букет. 3 дня. Кому ссылку — в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девочки, нашла ретрит на 8 марта на Бали — домики с видом, йога, каяки, букет с утра. Маленькая группа. Пишите — скину детали.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл формат на 8 марта — ретрит на Бали 7–10: йога, букет, каяки, массаж. Для неё. Кому скинуть — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Народ, нашла ретрит 7–10 марта на Бали — йога, медитация, вид на вулканы, букет гортензий. Кому интересно — пишите, скину ссылку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Привет! Есть ретрит на Бали 7–10 марта — 3 дня, йога, каяки, букет, массаж. Подарок на 8 марта. Кому программу — в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девчонки, нашла ретрит именно на 8 марта — Бали, йога, домики с видом, букет, каяки. Кому скинуть контакты — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, нашёл ретрит 7–10 марта — Бали, йога по утрам, медитация, букет с утра, массаж. Кому ссылку — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл ретрит на Бали 7–10 — йога, букет, каяки, вид на вулканы. Подарок на 8 марта. Кому скинуть — в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девочки, нашла ретрит на Бали 7–10 марта — йога, букет гортензий, массаж, каяки. Даты как раз на 8 марта. Пишите — скину программу.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Мужчины, нашёл ретрит на Бали 7–10 — 3 дня, йога, букет, массаж. Идея подарка на 8 марта. Кому скинуть — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, есть ретрит на Бали 7–10 марта — йога, медитация, домики с видом, букет. 3 дня. Кому программу — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девушки, нашла ретрит 7–10 марта — Бали, йога, каяки, букет с утра, массаж. Для себя или в подарок. Кому ссылку — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл ретрит на Бали как раз на 8 марта — йога, букет гортензий, каяки, вид на вулканы. Кому скинуть — в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Народ, нашёл ретрит 7–10 марта на Бали — йога по утрам, медитация, букет, массаж. Подарок на 8 марта. Есть ссылка — кому нужна, пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Привет! Нашла ретрит на Бали 7–10 марта — 3 дня, йога, каяки, букет, домики с видом. Кому программу скинуть — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, нашёл ретрит на 8 марта — Бали 7–10, йога, букет, каяки, массаж. Маленькая группа. Кому интересно — велком в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Парни, нашёл ретрит на Бали 7–10 — йога, букет с утра, каяки, массаж. Подарок для неё на 8 марта. Кому ссылку — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Девочки, нашла ретрит на Бали 7–10 марта — йога, вид на вулканы, букет, массаж. 3 дня. Кому скинуть детали — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ребят, кто думал про Кайлас? В 2026 году особая кора — год огненной лошади, 1 за 13 лет. Маршрут из Лхасы, 13 дней. Озёра, монастыри, перевал Дролма Ла. Для тех, кому это давно зрело. Старт 1 июня. Кому скинуть программу — пишите в личку.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt",
+    "priority": 999
+  },
+  {
+    "text": "Привет! Собираем группу в Тибет на кору вокруг Кайласа. 2026 — особый год, такая кора бывает раз в 10+ лет. 13 дней, Лхаса → озеро Манасаровар → Кайлас. Серьёзный маршрут, отели 4–5*, видеограф в группе. Даты 1–13 июня. Кому интересно — велком в ЛС.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt",
+    "priority": 999
+  },
+  {
+    "text": "Народ, кто за паломничество к Кайласу в 2026? Год огненной лошади, кора считается особенной. 13 дней из Лхасы, озеро Манасаровар, монастыри. Не лёгкий туризм, но для многих это именно то, что нужно. Старт 1 июня. Пишите, расскажу подробнее.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt",
+    "priority": 999
+  },
+  {
+    "text": "Кто за Тибет в июне? 🏔 Кора вокруг Кайласа, 2026 — год огненной лошади, такое бывает редко. Маршрут: Лхаса, Шигадзе, Манасаровар, перевал Дролма Ла. 13 дней, всё организовано. Кому давно зрело — пишите, скину детали.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt",
+    "priority": 999
+  },
+  {
+    "text": "Друзья, ищем попутчиков в Тибет на кору вокруг Кайласа. 1–13 июня, старт в Лхасе. 2026 — особый год, много кто ждёт именно такую кору. Группа небольшая, отели 4–5*, гиды. Кому актуально — напишите, обсудим.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt",
+    "priority": 999
+  },
+  {
+    "text": "Ищем девушек, кто хотел получить красивые фото в wellness-тематике) Создаём контент для сайта и ищем тех, кто хотел бы поучаствовать и получить классный контент для себя.\n\nС вас — присутствие, с нас — красивые фото и видео, в том числе на коптер.\n\nЛокация: пляж Дримленд, в марте.\nРеференсы прикрепляем.\nЧтобы попасть, напишите нашему арт-директору @sofyasvetlaya",
+    "photo": "bali_assets/photo_2026-03-06_12-26-15.jpg",
+    "source_file": "messages_wellness_dreamland_6march.txt"
+  },
+  {
+    "text": "Девушки, кто хочет красивые фото в wellness-тематике? Делаем контент для сайта и ищем участниц — с вас присутствие, с нас фото и видео (в т.ч. на коптер).\n\nПляж Дримленд, в марта. Референсы прикрепляем.\nЗаписаться: @sofyasvetlaya",
+    "photo": "bali_assets/photo_2026-03-06_12-26-15.jpg",
+    "source_file": "messages_wellness_dreamland_6march.txt"
+  }
+]

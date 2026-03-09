@@ -2,8 +2,10 @@
 Модуль поиска новых групп для вступления
 """
 import asyncio
+import json
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Optional
 from sqlalchemy import and_
 
@@ -63,7 +65,7 @@ class GroupFinder:
         # Дополнительные проверки
         if len(title) < 3:  # Слишком короткое название
             return False
-        
+
         return True
     
     async def check_can_post_in_group(self, client, entity) -> bool:
@@ -78,6 +80,11 @@ class GroupFinder:
             True если можно постить, False если нет
         """
         try:
+            # Каналы (broadcast=True): только админы могут постить, обычные подписчики — нет
+            if getattr(entity, "broadcast", False):
+                logger.debug(f"  ⏭️ Пропуск канала (broadcast): постить могут только админы")
+                return False
+
             # Пробуем получить информацию о группе
             try:
                 full_info = await client(GetFullChannelRequest(entity))
@@ -144,7 +151,11 @@ class GroupFinder:
                 for chat in results.chats:
                     if not hasattr(chat, 'username') or not chat.username:
                         continue
-                    
+                    # Каналы (broadcast): постить могут только админы — пропускаем
+                    if getattr(chat, 'broadcast', False):
+                        logger.debug(f"  ⏭️ Пропуск канала @{chat.username} (broadcast)")
+                        continue
+
                     username = f"@{chat.username}"
                     title = getattr(chat, 'title', 'Unknown')
                     
@@ -191,9 +202,22 @@ class GroupFinder:
                 await asyncio.sleep(2)
                 
             except FloodWaitError as e:
-                wait_seconds = min(e.seconds, 3600)  # Максимум 1 час
-                logger.warning(f"  ⏳ FloodWait {wait_seconds} секунд для '{keyword}'")
-                await asyncio.sleep(wait_seconds)
+                # Для небольших FloodWait просто подождём и продолжим с тем же аккаунтом,
+                # но слишком большие значения пробрасываем наверх, чтобы планировщик
+                # мог поместить аккаунт в cooldown и переключиться на другой.
+                wait_seconds = int(getattr(e, "seconds", 0) or 0)
+                if wait_seconds <= 0:
+                    wait_seconds = 60
+                if wait_seconds > 600:
+                    # >10 минут — считаем, что аккаунту нужен «отдых», не блокируем весь поток здесь
+                    logger.warning(
+                        f"  ⏳ FloodWait {wait_seconds} секунд для '{keyword}' "
+                        f"(слишком большой, передаём управление планировщику)"
+                    )
+                    raise
+                capped = min(wait_seconds, 3600)  # Максимум 1 час
+                logger.warning(f"  ⏳ FloodWait {capped} секунд для '{keyword}'")
+                await asyncio.sleep(capped)
                 continue
             except Exception as e:
                 logger.error(f"  ❌ Ошибка при поиске '{keyword}': {e}")
@@ -202,29 +226,46 @@ class GroupFinder:
         logger.info(f"✅ Найдено новых групп: {len(found_groups)}")
         return found_groups
     
-    def save_groups_to_db(self, groups: List[Dict], niche: str) -> int:
+    def save_groups_to_db(
+        self,
+        groups: List[Dict],
+        niche: str,
+        keyword_to_sub_niche: Optional[Dict[str, str]] = None,
+    ) -> int:
         """
-        Сохранение найденных групп в БД со статусом 'new'
-        
+        Сохранение найденных групп в БД со статусом 'new' и обновление group_niches.json.
+
+        По ключу found_by из keyword_to_sub_niche задаётся под-ниша (например india_retreat)
+        для выбора сообщений при постинге.
+
         Args:
-            groups: Список найденных групп
-            niche: Ниша для групп
-        
+            groups: Список найденных групп (с полем found_by — ключевое слово поиска)
+            niche: Ниша групп (например 'bali')
+            keyword_to_sub_niche: Маппинг ключевое слово -> под-ниша (например {"Thailand expat": "india_retreat"})
+
         Returns:
             Количество сохраненных групп
         """
         if not groups:
             return 0
-        
+
+        if keyword_to_sub_niche is None:
+            keyword_to_sub_niche = {}
+
         db = SessionLocal()
         saved_count = 0
-        
+        group_niches_updates = {}  # username -> sub_niche для обновления group_niches.json
+
         try:
             for group_info in groups:
                 username = group_info.get('username')
                 if not username:
                     continue
-                
+
+                found_by = group_info.get('found_by', '')
+                sub_niche = keyword_to_sub_niche.get(found_by, 'general')
+                group_niches_updates[username] = sub_niche
+
                 try:
                     # Проверяем, нет ли уже такой группы
                     existing = db.query(Group).filter(Group.username == username).first()
@@ -235,16 +276,19 @@ class GroupFinder:
                             existing.niche = niche
                             existing.title = group_info.get('title', existing.title)
                             existing.members_count = group_info.get('members_count', existing.members_count)
+                            if hasattr(existing, 'found_by_keyword'):
+                                existing.found_by_keyword = group_info.get('found_by', existing.found_by_keyword or '')
                             db.commit()
                             saved_count += 1
                             logger.debug(f"  🔄 Обновлена группа {username} -> статус 'new'")
                         continue
-                    
+
                     # Создаем новую группу
                     new_group = Group(
                         username=username,
                         title=group_info.get('title', ''),
                         niche=niche,
+                        found_by_keyword=group_info.get('found_by', ''),
                         status='new',  # Статус 'new' - готова к вступлению
                         can_post=True,
                         members_count=group_info.get('members_count', 0)
@@ -253,19 +297,53 @@ class GroupFinder:
                     db.commit()
                     saved_count += 1
                     logger.debug(f"  ✅ Сохранена новая группа {username}")
-                    
+
                 except Exception as e:
                     db.rollback()
                     logger.error(f"  ❌ Ошибка при сохранении {username}: {e}")
                     continue
-            
+
             logger.info(f"💾 Сохранено в БД: {saved_count} групп со статусом 'new'")
-            
+
+            # Обновляем group_niches.json для выбора сообщений по под-нише при постинге
+            if group_niches_updates:
+                self._update_group_niches_file(group_niches_updates)
+
         except Exception as e:
             db.rollback()
             logger.error(f"❌ Ошибка при сохранении групп: {e}")
         finally:
             db.close()
-        
+
         return saved_count
 
+    def _update_group_niches_file(self, updates: Dict[str, str]) -> None:
+        """Дописать/обновить group_niches.json по маппингу username -> sub_niche."""
+        paths = [
+            Path('/app/group_niches.json'),
+            Path(__file__).resolve().parent.parent.parent / 'group_niches.json',
+            Path('group_niches.json'),
+            Path(__file__).resolve().parent.parent.parent.parent / 'group_niches.json',
+        ]
+        group_niches_path = None
+        for p in paths:
+            if p.exists() or p.parent.exists():
+                group_niches_path = p
+                break
+        if group_niches_path is None:
+            group_niches_path = Path(__file__).resolve().parent.parent.parent / 'group_niches.json'
+        try:
+            if group_niches_path.exists():
+                with open(group_niches_path, 'r', encoding='utf-8') as f:
+                    group_niches = json.load(f)
+            else:
+                group_niches = {}
+            for username, sub_niche in updates.items():
+                if not username.startswith('@'):
+                    username = '@' + username
+                group_niches[username] = sub_niche
+            with open(group_niches_path, 'w', encoding='utf-8') as f:
+                json.dump(group_niches, f, ensure_ascii=False, indent=2)
+            logger.info(f"  📝 Обновлён group_niches.json: +{len(updates)} записей (под-ниши для постинга)")
+        except Exception as e:
+            logger.warning(f"  ⚠️ Не удалось обновить group_niches.json: {e}")

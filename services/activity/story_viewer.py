@@ -2,6 +2,9 @@
 Модуль просмотра Stories участников групп
 """
 import asyncio
+import json
+from dataclasses import dataclass
+from pathlib import Path
 import random
 import logging
 from datetime import datetime, timedelta
@@ -29,9 +32,16 @@ from shared.database.models import Account, Group, StoryView
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class AccountSnapshot:
+    """Минимальный слепок аккаунта для работы без DB-сессии."""
+    id: int
+    session_name: str
+
+
 class StoryViewer:
     """Класс для просмотра Stories участников групп"""
-    
+
     def __init__(self, client_manager, niche_config=None):
         self.client_manager = client_manager
         self.niche_config = niche_config or {}
@@ -56,9 +66,36 @@ class StoryViewer:
         self.MIN_DELAY_BETWEEN_USERS = 5
         self.MAX_DELAY_BETWEEN_USERS = 15
         
-        # Аккаунты для просмотра Stories контактов (вместо групп)
+        # Аккаунты для просмотра Stories контактов (диалоги). Для Bali при необходимости подгружаем всех из bali_accounts_config
         self.contacts_view_accounts = set(activity_config.get('contacts_view_accounts', []))
+        if self.niche_config.get('name') == 'bali':
+            for p in [Path('/app/config/bali_accounts_config.json'), Path('/app/bali_accounts_config.json'), Path('config/bali_accounts_config.json'), Path('bali_accounts_config.json')]:
+                if p.exists():
+                    try:
+                        with open(p, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        allowed = data.get('allowed_accounts') or []
+                        if allowed:
+                            self.contacts_view_accounts = self.contacts_view_accounts | {s for s in allowed if s}
+                            logger.info("Bali: все аккаунты из bali_accounts_config добавлены в просмотр сторис: %s", sorted(self.contacts_view_accounts))
+                            break
+                    except Exception as e:
+                        logger.warning("Не удалось загрузить %s: %s", p, e)
         self.contacts_dialogs_limit = activity_config.get('contacts_dialogs_limit', 300)
+        # Юзернеймы, которых не смотрим и не лайкаем (бан-лист)
+        self.story_view_exclude_usernames = set(
+            u.strip().lower() for u in activity_config.get('story_view_exclude_usernames', [])
+            if u and isinstance(u, str)
+        )
+        # Приоритетные юзернеймы: смотрим всегда, ставим реакции с макс. вероятностью; обрабатываются первыми
+        self.story_view_priority_usernames = set(
+            u.strip().lower() for u in activity_config.get('story_view_priority_usernames', [])
+            if u and isinstance(u, str)
+        )
+        self.story_view_priority_reaction_probability = min(
+            1.0,
+            max(0.0, float(activity_config.get('story_view_priority_reaction_probability', 1.0)))
+        )
     
     def get_viewed_stories_today(self, db, account_id: int) -> set:
         """
@@ -221,8 +258,17 @@ class StoryViewer:
         reactions_count = 0
         
         try:
-            # Пропускаем с вероятностью
-            if random.random() > self.STORY_VIEW_PROBABILITY:
+            username = getattr(user, 'username', None)
+            username_lower = username.lower() if username else None
+            is_priority = bool(username_lower and username_lower in self.story_view_priority_usernames)
+            
+            # Не смотрим и не лайкаем забаненных пользователей
+            if self.story_view_exclude_usernames and username_lower and username_lower in self.story_view_exclude_usernames:
+                logger.debug(f"    ⏭️ Пропуск @{username} (в списке исключений)")
+                return 0, 0
+            
+            # Пропускаем с вероятностью (приоритетных всегда смотрим)
+            if not is_priority and random.random() > self.STORY_VIEW_PROBABILITY:
                 return 0, 0
             
             # Получаем Stories пользователя
@@ -290,8 +336,9 @@ class StoryViewer:
                             viewed_at=datetime.utcnow()
                         )
                         
-                        # Ставим реакцию с вероятностью
-                        if random.random() <= self.STORY_REACTION_PROBABILITY:
+                        # Ставим реакцию с вероятностью (для приоритетных — своя, обычно 1.0)
+                        reaction_prob = self.story_view_priority_reaction_probability if is_priority else self.STORY_REACTION_PROBABILITY
+                        if random.random() <= reaction_prob:
                             try:
                                 reaction = random.choice(self.STORY_REACTIONS)
                                 
@@ -426,12 +473,20 @@ class StoryViewer:
                 
                 logger.info(f"  📋 Аккаунт {account.session_name}: найдено {len(contacts)} контактов")
                 
-                # Перемешиваем для разнообразия
-                random.shuffle(contacts)
+                # Приоритетные контакты — в начало списка, остальные перемешиваем
+                def is_priority_contact(entity):
+                    un = getattr(entity, 'username', None)
+                    return un and un.lower() in self.story_view_priority_usernames
+                priority = [c for c in contacts if is_priority_contact(c)]
+                rest = [c for c in contacts if not is_priority_contact(c)]
+                random.shuffle(rest)
+                contacts = priority + rest
+                if priority:
+                    logger.info(f"  ⭐ Приоритетных контактов: {len(priority)}")
                 
-                # Обрабатываем контакты (максимум 50 за цикл)
+                # Обрабатываем контакты (максимум 90 за цикл для активного режима)
                 processed_count = 0
-                for contact in contacts[:50]:
+                for contact in contacts[:90]:
                     # Проверяем лимит просмотров
                     if total_viewed >= remaining_views:
                         logger.info(f"  ✅ Достигнут лимит просмотров ({total_viewed})")
@@ -526,17 +581,36 @@ class StoryViewer:
                 logger.warning("⚠️ Нет активных аккаунтов")
                 return 0, 0
             
+            # Исключения из просмотра (опционально из конфига ниши; по умолчанию никого не исключаем)
+            activity_cfg = (self.niche_config or {}).get('activity', {})
+            excluded_sessions = set(activity_cfg.get('story_view_excluded_accounts', []))
+            if excluded_sessions:
+                accounts = [a for a in accounts if a.session_name not in excluded_sessions]
+                logger.info("Исключены из просмотра сторис: %s", sorted(excluded_sessions))
+
+            # Делаем слепок, чтобы избежать DetachedInstanceError
+            account_snapshots = [
+                AccountSnapshot(id=account.id, session_name=account.session_name)
+                for account in accounts
+            ]
+
+            # ВАЖНО: используем scoped_session, поэтому освобождаем сессию
+            # до запуска обработки, чтобы вложенные SessionLocal() не закрывали
+            # текущую сессию и не делали Account detached.
+            db.close()
+            db = None
+            
             # Сначала прогоняем аккаунты для контактов/сторис, чтобы активность
             # была "видимой" быстрее, а затем остальные.
             contacts_accounts = [
-                a for a in accounts if a.session_name in self.contacts_view_accounts
+                a for a in account_snapshots if a.session_name in self.contacts_view_accounts
             ]
             other_accounts = [
-                a for a in accounts if a.session_name not in self.contacts_view_accounts
+                a for a in account_snapshots if a.session_name not in self.contacts_view_accounts
             ]
             ordered_accounts = [*contacts_accounts, *other_accounts]
 
-            logger.info(f"📋 Обработка {len(accounts)} активных аккаунтов...")
+            logger.info(f"📋 Обработка {len(account_snapshots)} активных аккаунтов...")
             
             total_viewed = 0
             total_reactions = 0
@@ -570,5 +644,6 @@ class StoryViewer:
             logger.error(f"❌ Ошибка при обработке аккаунтов: {e}", exc_info=True)
             return 0, 0
         finally:
-            db.close()
+            if db is not None:
+                db.close()
 

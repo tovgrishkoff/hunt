@@ -26,6 +26,7 @@
   },
   
   "marketer": {
+    "batch_size": 20,
     "posting_schedule": {
       "timezone": "Europe/Kiev",
       "slots": [
@@ -100,17 +101,19 @@
   },
   
   "joining_schedule": {
-    "timezone": "Asia/Jakarta",
+    "timezone": "Europe/Kiev",
     "slots": [
-      {"name": "early_morning_1", "time": "05:00"},
-      {"name": "early_morning_2", "time": "07:00"},
-      {"name": "morning_1", "time": "09:00"},
-      {"name": "morning_2", "time": "11:00"}
+      {"name": "morning_1", "time": "08:00"},
+      {"name": "noon_1", "time": "12:00"},
+      {"name": "afternoon_1", "time": "15:00"},
+      {"name": "evening_1", "time": "18:00"},
+      {"name": "night_1", "time": "20:00"}
     ]
   },
   
   "limits": {
     "posts_per_day_per_group": 2,
-    "warm_up_hours": 24
+    "warm_up_hours": 24,
+    "join_batch_size": 20
   }
 }

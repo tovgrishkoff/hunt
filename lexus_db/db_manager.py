@@ -123,14 +123,14 @@ class DbManager:
             normalized_link = self._normalize_group_link(group_link)
             
             # Находим или создаем группу
-            stmt = select(Target).where(Target.link == normalized_link)
+            stmt = select(Target).where(Target.username == normalized_link)
             result = await self.session.execute(stmt)
             target = result.scalar_one_or_none()
             
             if not target:
                 # Создаем новую группу
                 target = Target(
-                    link=normalized_link,
+                    username=normalized_link,
                     status='new',
                     niche='ukraine_cars'  # По умолчанию для Lexus
                 )
@@ -153,7 +153,9 @@ class DbManager:
             target.status = 'joined'
             target.set_warmup_ends_at(joined_at)
             target.updated_at = datetime.utcnow()
-            
+            # После успешного вступления мы уже проверили права в smart_joiner — можно постить
+            if hasattr(target, 'can_post'):
+                target.can_post = True
             await self.session.commit()
             logger.info(
                 f"✅ Assigned group {normalized_link} to account_id={account_id}, "
@@ -202,9 +204,10 @@ class DbManager:
         # Базовые условия (обязательные для БД Bali)
         conditions = [
             Target.niche == niche,
-            Target.status == 'active',  # В БД Bali используется 'active' вместо 'joined'
+            Target.status.in_(['active', 'joined']),  # как в маркетере для ukraine_cars
             Target.assigned_account_id.isnot(None),
             Account.status == 'active',
+            or_(Target.can_post.is_(None), Target.can_post == True),  # как в Bali: только где можно постить
         ]
         
         # Добавляем условие для warm-up (используем warm_up_until для БД Bali)

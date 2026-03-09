@@ -5,6 +5,7 @@
 Запускается после успешного вступления в группы
 """
 
+import argparse
 import json
 import logging
 import sys
@@ -29,7 +30,7 @@ def setup_logging():
     
     return logging.getLogger(__name__)
 
-def add_groups_to_targets():
+def add_groups_to_targets(sync_assigned: bool = False):
     """Добавление найденных групп в targets.txt и group_niches.json"""
     logger = setup_logging()
     
@@ -40,6 +41,7 @@ def add_groups_to_targets():
     found_file = Path('logs/found_ukraine_cars_groups.json')
     targets_file = Path('targets.txt')
     niches_file = Path('group_niches.json')
+    assignments_file = Path('group_account_assignments.json')
     
     if not found_file.exists():
         logger.warning(f"⚠️ Файл {found_file} не найден! Группы еще не найдены.")
@@ -58,6 +60,23 @@ def add_groups_to_targets():
         return
     
     logger.info(f"📋 Найдено групп в файле: {len(found_groups)}")
+
+    # Загружаем список закрепленных (вступленных) групп, если есть
+    assigned_groups = None
+    if assignments_file.exists():
+        try:
+            with assignments_file.open('r', encoding='utf-8') as f:
+                assignments = json.load(f)
+            assigned_groups = {g for g in assignments.keys() if g}
+            logger.info(f"🔗 Закрепленных групп (assignments): {len(assigned_groups)}")
+        except Exception as e:
+            logger.warning(f"⚠️ Ошибка при загрузке {assignments_file}: {e}")
+            assigned_groups = None
+
+    # Если есть assignments — добавляем только реально вступленные группы
+    if assigned_groups is not None:
+        found_groups = [g for g in found_groups if g.get('username') in assigned_groups]
+        logger.info(f"✅ После фильтра assignments: {len(found_groups)} групп")
     
     # Загружаем существующие targets
     existing_targets = set()
@@ -78,6 +97,11 @@ def add_groups_to_targets():
                 existing_niches = json.load(f)
         except Exception as e:
             logger.warning(f"⚠️ Ошибка при загрузке {niches_file}: {e}")
+
+    # Список ukraine_cars групп до синхронизации (для корректной очистки targets)
+    ukraine_targets_before_sync = {
+        g for g in existing_targets if existing_niches.get(g) == 'ukraine_cars'
+    }
     
     # Создаем backup
     if targets_file.exists():
@@ -130,6 +154,35 @@ def add_groups_to_targets():
     
     # Обновляем group_niches.json
     existing_niches.update(updated_niches)
+
+    # Опционально синхронизируем ukraine_cars по assignments
+    if sync_assigned and assigned_groups is not None:
+        # Удаляем ukraine_cars, которых нет в assignments
+        to_remove = [
+            g for g, niche in existing_niches.items()
+            if niche == 'ukraine_cars' and g not in assigned_groups
+        ]
+        for g in to_remove:
+            del existing_niches[g]
+        logger.info(f"🧹 Удалено ukraine_cars ниш: {len(to_remove)} (нет в assignments)")
+
+        # Очищаем targets.txt от ukraine_cars, которые не в assignments
+        if targets_file.exists():
+            filtered_targets = []
+            removed_targets = 0
+            for line in existing_targets:
+                if line in ukraine_targets_before_sync and line not in assigned_groups:
+                    removed_targets += 1
+                    continue
+                filtered_targets.append(line)
+            try:
+                with targets_file.open('w', encoding='utf-8') as f:
+                    for group in filtered_targets:
+                        f.write(f"{group}\n")
+                existing_targets = set(filtered_targets)
+                logger.info(f"🧹 Удалено из targets.txt ukraine_cars групп: {removed_targets}")
+            except Exception as e:
+                logger.error(f"❌ Ошибка при обновлении {targets_file}: {e}")
     try:
         with niches_file.open('w', encoding='utf-8') as f:
             json.dump(existing_niches, f, ensure_ascii=False, indent=2)
@@ -147,6 +200,13 @@ def add_groups_to_targets():
     return added_count, len(updated_niches)
 
 if __name__ == "__main__":
-    add_groups_to_targets()
+    parser = argparse.ArgumentParser(description="Добавление/синхронизация ukraine_cars групп")
+    parser.add_argument(
+        "--sync-assigned",
+        action="store_true",
+        help="Синхронизировать ukraine_cars по group_account_assignments.json (очистить лишние)",
+    )
+    args = parser.parse_args()
+    add_groups_to_targets(sync_assigned=args.sync_assigned)
 
 

@@ -1,3 +1,11 @@
+data/logs
+logs
+*.log
+__pycache__
+.git
+.env
 data/ukraine/postgres/pgdata
 data/ukraine/**
 data/bali/postgres/pgdata
+data/lexus/postgres/pgdata
+data/lexus/**

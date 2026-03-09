@@ -5,7 +5,10 @@
     "first_post_at": null,
     "warm_up_until": "2026-01-16T06:15:08.672829",
     "posts_count": 0,
-    "last_post_at": null
+    "last_post_at": null,
+    "account_name": "promotion_dao_bro",
+    "can_post": true,
+    "updated_at": "2026-01-18T02:05:06.373588"
   },
   "@bazaravtoukr": {
     "account": "promotion_dao_bro",
@@ -45,7 +48,10 @@
     "first_post_at": null,
     "warm_up_until": "2026-01-16T06:18:02.693928",
     "posts_count": 0,
-    "last_post_at": null
+    "last_post_at": null,
+    "account_name": "promotion_dao_bro",
+    "can_post": true,
+    "updated_at": "2026-01-18T02:05:06.373588"
   },
   "@razborkaukraina": {
     "account": "promotion_dao_bro",
@@ -69,7 +75,10 @@
     "first_post_at": null,
     "warm_up_until": "2026-01-16T06:18:02.693928",
     "posts_count": 0,
-    "last_post_at": null
+    "last_post_at": null,
+    "account_name": "promotion_alex_ever",
+    "can_post": true,
+    "updated_at": "2026-01-18T02:05:06.373588"
   },
   "@sellautoukraine": {
     "account": "promotion_dao_bro",
@@ -149,7 +158,10 @@
     "first_post_at": null,
     "warm_up_until": "2026-01-17T07:11:45.218103",
     "posts_count": 0,
-    "last_post_at": null
+    "last_post_at": null,
+    "account_name": "promotion_rod_shaihutdinov",
+    "can_post": true,
+    "updated_at": "2026-01-18T02:05:06.373588"
   },
   "@chat_avto": {
     "account": "promotion_rod_shaihutdinov",
@@ -317,7 +329,10 @@
     "first_post_at": null,
     "warm_up_until": "2026-01-17T07:29:19.081743",
     "posts_count": 0,
-    "last_post_at": null
+    "last_post_at": null,
+    "account_name": "promotion_rod_shaihutdinov",
+    "can_post": true,
+    "updated_at": "2026-01-18T02:05:06.373588"
   },
   "@autolcc": {
     "account": "promotion_alex_ever",
@@ -348,6 +363,142 @@
     "joined_at": "2026-01-16T07:31:37.298601",
     "first_post_at": null,
     "warm_up_until": "2026-01-17T07:31:37.298601",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@avtomobilitc": {
+    "account": "promotion_dao_bro",
+    "joined_at": "2026-01-17T06:43:52.824241",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T06:43:52.824241",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@FeAAhiidkjf": {
+    "account": "promotion_alex_ever",
+    "joined_at": "2026-01-17T06:44:42.433823",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T06:44:42.433823",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@baraholka_kieva_ukrainy": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-17T06:45:43.023612",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T06:45:43.023612",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@ua_kh_antikvariat_kh_ua": {
+    "account": "promotion_dao_bro",
+    "joined_at": "2026-01-17T06:46:31.644321",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T06:46:31.644321",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@avtobazar_prodazha_avto_ua": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-17T03:22:16.442534",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T03:21:16.442534",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@Darnitsky24": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-17T03:22:16.442534",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T03:21:16.442534",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@baraholkaAds": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-17T03:22:16.442534",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T03:21:16.442534",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@doska_obyavlenij_Odessa": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-17T03:22:16.442534",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-18T03:21:16.442534",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@rabota_kiev_kharkov": {
+    "account": "promotion_dao_bro",
+    "joined_at": "2026-01-19T10:56:45.440952",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T10:56:45.440952",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@avto_podbor_odessa": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-19T10:57:05.178999",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T10:57:05.178999",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@topcarukraine": {
+    "account": "promotion_alex_ever",
+    "joined_at": "2026-01-19T10:57:29.038841",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T10:57:29.038841",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@avto_prodazha_krsk": {
+    "account": "promotion_dao_bro",
+    "joined_at": "2026-01-19T10:58:19.322206",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T10:58:19.322206",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@ogolosheniaUAA": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-19T10:58:44.019700",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T10:58:44.019700",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@perevozkiLudejChehija": {
+    "account": "promotion_alex_ever",
+    "joined_at": "2026-01-19T10:59:02.757288",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T10:59:02.757288",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@Lvovskaya2": {
+    "account": "promotion_dao_bro",
+    "joined_at": "2026-01-19T10:59:43.977084",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T10:59:43.977084",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@profmeua": {
+    "account": "promotion_rod_shaihutdinov",
+    "joined_at": "2026-01-19T11:00:30.437643",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T11:00:30.437643",
+    "posts_count": 0,
+    "last_post_at": null
+  },
+  "@prodazha_Ukraina": {
+    "account": "promotion_alex_ever",
+    "joined_at": "2026-01-19T11:00:45.267384",
+    "first_post_at": null,
+    "warm_up_until": "2026-01-20T11:00:45.267384",
     "posts_count": 0,
     "last_post_at": null
   }

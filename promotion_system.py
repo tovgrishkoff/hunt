@@ -596,24 +596,47 @@ class PromotionSystem:
             self.logger.error(f"❌ Failed to load Kammora messages: {e}")
             self.kammora_messages = {}
 
-    def load_lexus_messages(self, lexus_file: str = 'lexus_assets/messages.json'):
-        """Загрузка сообщений Lexus с фото из JSON файла"""
+    def load_lexus_messages(self, lexus_file: str = None):
+        """Загрузка сообщений Lexus с фото из JSON файла
+        
+        Пробует загрузить из нескольких мест в порядке приоритета:
+        1. config/messages/cars/messages.json
+        2. lexus_assets/messages.json
+        3. Переданный lexus_file (если указан явно)
+        """
+        # Определяем приоритетные пути для поиска файла
+        possible_paths = []
+        if lexus_file:
+            possible_paths.append(Path(lexus_file))
+        possible_paths.extend([
+            Path('config/messages/cars/messages.json'),
+            Path('/app/config/messages/cars/messages.json'),  # Docker путь
+            Path('lexus_assets/messages.json'),
+            Path('/app/lexus_assets/messages.json'),  # Docker путь
+        ])
+        
+        lexus_file_path = None
+        for path in possible_paths:
+            if path.exists():
+                lexus_file_path = path
+                self.logger.info(f"📁 Found Lexus messages file at: {path}")
+                break
+        
+        if not lexus_file_path:
+            self.logger.warning(f"⚠️ Lexus messages file not found in any of: {[str(p) for p in possible_paths]}")
+            self.lexus_messages = {}
+            return
+        
         try:
-            path = Path(lexus_file)
-            if not path.exists():
-                self.logger.warning(f"Lexus messages file {lexus_file} not found")
-                self.lexus_messages = {}
-                return
-            
-            with path.open('r', encoding='utf-8') as f:
+            with lexus_file_path.open('r', encoding='utf-8') as f:
                 self.lexus_messages = json.load(f)
             
             uk_count = len(self.lexus_messages.get('uk', []))
             
-            self.logger.info(f"✅ Loaded Lexus messages: UK={uk_count}")
+            self.logger.info(f"✅ Loaded Lexus messages from {lexus_file_path}: UK={uk_count}")
             
         except Exception as e:
-            self.logger.error(f"❌ Failed to load Lexus messages: {e}")
+            self.logger.error(f"❌ Failed to load Lexus messages from {lexus_file_path}: {e}")
             self.lexus_messages = {}
 
     def load_ukraine_cars_accounts_config(self):
@@ -1005,9 +1028,49 @@ class PromotionSystem:
             return False, None
         
         # Проверяем существование файла
-        photo_file = Path(photo_path)
-        if not photo_file.exists():
-            self.logger.error(f"❌ Photo file not found: {photo_path}")
+        # Поддерживаем разные форматы путей:
+        # - Относительный: lexus_assets/lexus_variant_1.jpg (от текущей директории)
+        # - Docker: /app/lexus_assets/lexus_variant_1.jpg
+        # - Абсолютный: /полный/путь/к/файлу.jpg
+        photo_file = None
+        
+        # Пробуем как относительный путь от текущей директории (для локального запуска)
+        candidate = Path(photo_path)
+        if candidate.exists():
+            photo_file = candidate
+        else:
+            # Пробуем с префиксом /app/ (для Docker)
+            candidate = Path(f"/app/{photo_path}")
+            if candidate.exists():
+                photo_file = candidate
+            else:
+                # Убираем префикс lexus_assets/ или kammora_assets/ если есть и пробуем снова
+                clean_path = photo_path.replace('lexus_assets/', '').replace('kammora_assets/', '')
+                # Сначала пробуем относительный путь от текущей директории
+                candidate = Path(f"lexus_assets/{clean_path}")
+                if candidate.exists():
+                    photo_file = candidate
+                else:
+                    candidate = Path(f"kammora_assets/{clean_path}")
+                    if candidate.exists():
+                        photo_file = candidate
+                    else:
+                        # Пробуем Docker-пути
+                        candidate = Path(f"/app/lexus_assets/{clean_path}")
+                        if candidate.exists():
+                            photo_file = candidate
+                        else:
+                            candidate = Path(f"/app/kammora_assets/{clean_path}")
+                            if candidate.exists():
+                                photo_file = candidate
+        
+        if not photo_file or not photo_file.exists():
+            clean_path = photo_path.replace('lexus_assets/', '').replace('kammora_assets/', '')
+            self.logger.error(
+                f"❌ Photo file not found: {photo_path} "
+                f"(tried: {photo_path}, /app/{photo_path}, lexus_assets/{clean_path}, "
+                f"kammora_assets/{clean_path}, /app/lexus_assets/{clean_path}, /app/kammora_assets/{clean_path})"
+            )
             return False, None
         
         # Пробуем отправить через каждый доступный аккаунт

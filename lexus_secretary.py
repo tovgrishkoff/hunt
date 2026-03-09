@@ -522,21 +522,25 @@ class LexusSecretary:
             logger.info(f"  📨 New DM from @{username} via {account_name}: {message_text[:100]}...")
             
             # Проверяем, идет ли уже активная переписка
-            is_active_conversation = await self.check_if_active_conversation(client, sender)
+            # НО: если сообщение от @grishkoff (владельца) - всегда отвечаем, не пересылаем
+            is_owner_message = username.lower() == self.forward_to_username.lower() or username.lower() == f"@{self.forward_to_username}".lower()
             
-            if is_active_conversation:
-                # Идет переписка - только пересылаем, не отвечаем автоматически
-                logger.info(f"  💬 Active conversation detected with @{username} - forwarding only, no auto-reply")
-                await self.forward_message_to_owner(
-                    client=client,
-                    event=event,
-                    account_name=account_name,
-                    username=username,
-                    user_id=user_id,
-                    message_text=message_text,
-                    has_media=has_media
-                )
-                return
+            if not is_owner_message:
+                is_active_conversation = await self.check_if_active_conversation(client, sender)
+                
+                if is_active_conversation:
+                    # Идет переписка - только пересылаем, не отвечаем автоматически
+                    logger.info(f"  💬 Active conversation detected with @{username} - forwarding only, no auto-reply")
+                    await self.forward_message_to_owner(
+                        client=client,
+                        event=event,
+                        account_name=account_name,
+                        username=username,
+                        user_id=user_id,
+                        message_text=message_text,
+                        has_media=has_media
+                    )
+                    return
             
             # Проверяем, нужно ли сразу переводить на владельца (просмотр, торг, телефон)
             if self.should_forward_to_owner(message_text):

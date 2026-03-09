@@ -185,7 +185,7 @@ async def migrate_accounts(session, accounts_config: list, lexus_allowed: Set[st
             new_account = Account(
                 session_name=session_name,
                 phone=acc_config.get('phone'),
-                session_string=acc_config.get('string_session'),
+                string_session=acc_config.get('string_session'),
                 status='active',
                 daily_posts_count=0,
                 last_stats_reset=datetime.utcnow()
@@ -233,7 +233,7 @@ async def migrate_targets(
         niche = group_niches.get(target_link, group_niches.get(normalized_link, 'ukraine_cars'))
         
         # Проверяем, существует ли группа
-        stmt = select(Target).where(Target.link == normalized_link)
+        stmt = select(Target).where(Target.username == normalized_link)
         result = await session.execute(stmt)
         existing_target = result.scalar_one_or_none()
         
@@ -247,11 +247,10 @@ async def migrate_targets(
         else:
             # Создаем новую
             target = Target(
-                link=normalized_link,
+                username=normalized_link,
                 niche=niche,
                 status='new',  # По умолчанию 'new', будет 'joined' после вступления
-                daily_posts_in_group=0,
-                last_group_stats_reset=datetime.utcnow()
+                daily_posts_count=0
             )
             session.add(target)
             await session.flush()  # Чтобы получить ID

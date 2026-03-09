@@ -9,6 +9,7 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 from typing import Dict, Optional
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -181,40 +182,93 @@ class TelegramClientManager:
             db_session: Сессия базы данных
             exclude_lexus_accounts: Если True, исключает аккаунты из lexus_accounts_config.json
                                    (используется в Bali системе для разделения с Lexus)
+                                   Если False, для Lexus использует whitelist из lexus_accounts_config.json
         """
         from ..database.models import Account
+        
+        # Определяем проект (Lexus или Bali)
+        project_name = os.getenv('PROJECT_NAME', '').lower()
+        is_lexus = project_name == 'lexus'
         
         accounts = db_session.query(Account).filter(
             Account.status == 'active'
         ).all()
+
+        # Исключаем сессии, заданные через переменную окружения
+        excluded_sessions_env = os.getenv("EXCLUDED_SESSIONS", "")
+        excluded_sessions = {
+            s.strip() for s in excluded_sessions_env.split(",") if s.strip()
+        }
+        if excluded_sessions:
+            accounts = [
+                account for account in accounts
+                if account.session_name not in excluded_sessions
+            ]
+            logger.info(
+                f"✅ Excluding sessions via EXCLUDED_SESSIONS: {sorted(excluded_sessions)}"
+            )
         
         # Загружаем список аккаунтов для фильтрации
         excluded_accounts = set()
         allowed_accounts = set()
         use_whitelist = False
         
-        if exclude_lexus_accounts:
-            # Сначала проверяем, есть ли whitelist для Bali
-            bali_config_paths = [
-                Path('/app/bali_accounts_config.json'),
-                Path('bali_accounts_config.json'),
-                Path('../bali_accounts_config.json'),
+        # Для Lexus используем whitelist из lexus_accounts_config.json
+        if is_lexus and not exclude_lexus_accounts:
+            lexus_config_paths = [
+                Path('/app/lexus_accounts_config.json'),
+                Path('lexus_accounts_config.json'),
+                Path('../lexus_accounts_config.json'),
             ]
             
-            for path in bali_config_paths:
+            for path in lexus_config_paths:
                 if path.exists():
                     try:
                         with open(path, 'r', encoding='utf-8') as f:
-                            bali_config = json.load(f)
-                            allowed_accounts = set(bali_config.get('allowed_accounts', []))
+                            lexus_config = json.load(f)
+                            allowed_accounts = set(lexus_config.get('allowed_accounts', []))
                             if allowed_accounts:
                                 use_whitelist = True
-                                logger.info(f"✅ Using Bali whitelist: {sorted(allowed_accounts)}")
+                                logger.info(f"✅ Using Lexus whitelist: {sorted(allowed_accounts)}")
                                 break
                     except Exception as e:
-                        logger.warning(f"⚠️ Failed to load bali_accounts_config.json from {path}: {e}")
-            
-            # Если нет whitelist, используем blacklist (исключаем Lexus аккаунты)
+                        logger.warning(f"⚠️ Failed to load lexus_accounts_config.json from {path}: {e}")
+        
+        if exclude_lexus_accounts:
+            # Приоритет: Bali-аккаунты из БД (niche='bali'), иначе — из bali_accounts_config.json
+            bali_from_db = [
+                a for a in accounts
+                if getattr(a, "niche", None) == "bali"
+            ]
+            if bali_from_db:
+                accounts = bali_from_db
+                use_whitelist = True
+                allowed_accounts = {a.session_name for a in accounts}
+                logger.info(
+                    f"✅ Using Bali accounts from DB (niche=bali): {sorted(allowed_accounts)}"
+                )
+            else:
+                bali_config_paths = [
+                    Path('/app/bali_accounts_config.json'),
+                    Path('bali_accounts_config.json'),
+                    Path('../bali_accounts_config.json'),
+                    Path('/app/config/bali_accounts_config.json'),
+                    Path('config/bali_accounts_config.json'),
+                ]
+                for path in bali_config_paths:
+                    if path.exists():
+                        try:
+                            with open(path, 'r', encoding='utf-8') as f:
+                                bali_config = json.load(f)
+                                allowed_accounts = set(bali_config.get('allowed_accounts', []))
+                                if allowed_accounts:
+                                    use_whitelist = True
+                                    logger.info(f"✅ Using Bali whitelist from JSON: {sorted(allowed_accounts)}")
+                                    break
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to load bali_accounts_config.json from {path}: {e}")
+
+            # Если нет whitelist из БД и не из JSON, используем blacklist (исключаем Lexus)
             if not use_whitelist:
                 lexus_config_paths = [
                     Path('/app/lexus_accounts_config.json'),
@@ -253,6 +307,12 @@ class TelegramClientManager:
                         excluded_count += 1
                         logger.debug(f"Skipping Lexus account: {account.session_name}")
                         continue
+            else:
+                # Lexus: загружаем только аккаунты из whitelist
+                if is_lexus and use_whitelist and account.session_name not in allowed_accounts:
+                    excluded_count += 1
+                    logger.debug(f"Skipping account (not in Lexus whitelist): {account.session_name}")
+                    continue
             
             try:
                 client = await self.create_client(

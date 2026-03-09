@@ -95,9 +95,9 @@ class GPTHandler:
         
         # Формируем контекст с разделением на историю и новые сообщения
         if recent_messages and new_messages:
-            # Форматируем историю для лучшего понимания контекста
+            # Форматируем историю без меток «Пользователь»/«Ты», чтобы не выдавать автоответ
             history_text = "\n".join([
-                f"{'Ты' if msg.get('role') == 'assistant' else 'Пользователь'}: {msg.get('content', '')}"
+                f"{'Я' if msg.get('role') == 'assistant' else 'Собеседник'}: {msg.get('content', '')}"
                 for msg in recent_messages
             ])
             
@@ -112,6 +112,37 @@ class GPTHandler:
             formatted.extend(recent_messages)
         
         return formatted
+    
+    def _clean_response_for_sending(self, text: str) -> str:
+        """
+        Убирает из ответа GPT префиксы «Исполнитель:», «Ты:», «Я:», «Собеседник:»,
+        чтобы в чат уходило только одно сообщение от лица бота (клиента).
+        """
+        if not text or not text.strip():
+            return text
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
+        our_prefixes = ("ты:", "я:", "твой ответ:", "ответ:")
+        other_prefixes = ("исполнитель:", "собеседник:", "пользователь:")
+        cleaned_lines = []
+        for line in lines:
+            line_lower = line.lower()
+            if any(line_lower.startswith(p) for p in other_prefixes):
+                continue
+            if any(line_lower.startswith(p) for p in our_prefixes):
+                for p in our_prefixes:
+                    if line_lower.startswith(p):
+                        rest = line[len(p):].strip()
+                        if rest:
+                            cleaned_lines.append(rest)
+                        break
+                continue
+            cleaned_lines.append(line)
+        if cleaned_lines:
+            return "\n".join(cleaned_lines).strip()
+        # Если модель вернула только реплику «Исполнитель»/«Собеседник» — не отправляем её
+        if any(text.strip().lower().startswith(p) for p in ("исполнитель:", "собеседник:", "пользователь:")):
+            return "Расскажи, что предлагаешь? Какой формат и цены?"
+        return text.strip()
     
     def detect_need_keywords(self, message_text: str) -> bool:
         """
@@ -194,6 +225,7 @@ class GPTHandler:
             )
             
             generated_text = response.choices[0].message.content.strip()
+            generated_text = self._clean_response_for_sending(generated_text)
             
             # Обрезаем, если слишком длинный
             if len(generated_text) > max_length:

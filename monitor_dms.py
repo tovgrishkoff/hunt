@@ -16,11 +16,17 @@ class DMMonitor:
         
     def setup_logging(self):
         """Настройка логирования"""
+        from pathlib import Path
+        
+        logs_dir = Path("logs")
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        log_file = logs_dir / "dm_monitor.log"
+        
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler('dm_monitor.log'),
+                logging.FileHandler(log_file, encoding='utf-8'),
                 logging.StreamHandler()
             ]
         )

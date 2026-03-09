@@ -23,6 +23,7 @@ class Account(Base):
     nickname = Column(String(255))
     bio = Column(Text)
     status = Column(String(50), default='active')  # active, banned, warmup, inactive
+    niche = Column(String(50), index=True, nullable=True)  # 'bali', 'lexus' — для фильтрации по проекту
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -41,6 +42,7 @@ class Group(Base):
     username = Column(String(255), unique=True, nullable=False, index=True)
     title = Column(String(500))
     niche = Column(String(100), index=True)  # cars, real_estate, general, etc.
+    found_by_keyword = Column(String(255), nullable=True, index=True)  # ключевое слово поиска (expat, Thailand и т.д.)
     assigned_account_id = Column(Integer, ForeignKey('accounts.id'), nullable=True, index=True)
     joined_at = Column(TIMESTAMP)
     warm_up_until = Column(TIMESTAMP, index=True)

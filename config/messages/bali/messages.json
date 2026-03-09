@@ -1220,81 +1220,6 @@
     "source_file": "messages_hookah.txt"
   },
   {
-    "text": "Ищу агентство недвижимости на Бали, нужна аренда виллы",
-    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу риелтора для покупки недвижимости, кто может посоветовать?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу агентство недвижимости в Семиньяке, нужна качественная недвижимость",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу риелтора для аренды квартиры, кто знает где найти?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу агентство недвижимости в Убуде, нужна вилла на длительный срок",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу риелтора для покупки виллы, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу агентство недвижимости в Чангу, нужна квартира с мебелью",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу риелтора для аренды недвижимости, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу агентство недвижимости для инвестиций, кто знает?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу риелтора для продажи недвижимости, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу агентство недвижимости для долгосрочной аренды, нужен профессионал",
-    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу риелтора для краткосрочной аренды, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу агентство недвижимости с русскоязычным персоналом, кто знает где найти?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу риелтора для поиска виллы, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
-    "text": "Ищу агентство недвижимости для аренды квартиры, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
-    "source_file": "messages_housing.txt"
-  },
-  {
     "text": "Ищу визажиста на Бали, нужен профессиональный макияж",
     "photo": null,
     "source_file": "messages_makeup.txt"
@@ -2571,152 +2496,117 @@
   },
   {
     "text": "Ищу аренду недвижимости на Бали, нужна квартира на длительный срок",
-    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу виллу в аренду для отпуска, кто может посоветовать?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу аренду недвижимости в Семиньяке, нужна квартира с мебелью",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу виллу в аренду для поездки, кто знает где найти?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу аренду недвижимости в Убуде, нужна вилла на месяц",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу квартиру в аренду для работы, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу аренду недвижимости в Чангу, нужна квартира с кондиционером",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу виллу в аренду для семьи, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу аренду недвижимости для долгосрочной аренды, кто знает?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу квартиру в аренду для краткосрочной аренды, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу аренду недвижимости с бассейном, нужна вилла",
-    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу квартиру в аренду для туристов, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу аренду недвижимости с видом на океан, кто знает где найти?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу виллу в аренду для мероприятия, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
     "text": "Ищу аренду недвижимости для фотосессии, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
+    "photo": null,
     "source_file": "messages_rental_property.txt"
   },
   {
-    "text": "Ищу агента недвижимости для покупки виллы на Бали, нужна помощь",
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
     "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
-    "text": "Ищу недвижимость на продажу в Семиньяке, кто может посоветовать?",
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
     "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
-    "text": "Ищу агента недвижимости для покупки квартиры, кто знает где найти?",
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
     "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
-    "text": "Ищу недвижимость на продажу в Убуде, нужна вилла",
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
     "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
-    "text": "Ищу агента недвижимости для инвестиций, кто посоветует?",
+    "text": "🏡 Дизайн-лофт Чангу, Бали\nПремиум 59 м² инвестиционная недвижимость\n\nАренда: $18,600/год | Продажа: $215,000\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K/10л | ⏱ Окупаемость: ~11.6л\n\nБассейн • Фитнес • Баня • Лифт",
     "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
-    "text": "Ищу недвижимость на продажу в Чангу, нужна квартира",
+    "text": "🚀 Инвестиционная недвижимость Чангу\nДизайн-лофт 59 м²\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 $1,550-2,000/месяц доходность\n📊 $186,000 за 10 лет\n⏱ ~11.6 лет окупаемость",
     "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
-    "text": "Ищу агента недвижимости для покупки недвижимости, кто может помочь?",
+    "text": "🏖️ Дизайн-лофт Чангу, Бали\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186K за 10 лет | Окупаемость: ~11.6 лет\n\nПремиум локация • Бассейн • Фитнес 24/7 • Баня",
     "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
-    "text": "Ищу недвижимость на продажу для инвестиций, кто знает?",
+    "text": "💎 Дизайн-лофт Чангу\n59 м² | Инвестиционная возможность\n\nАренда: $18,600/год\nПродажа: $215,000\n\n💰 Доходность: $1,550-2,000/месяц\n📊 $186,000 за 10 лет\n⏱ Окупаемость: ~11.6 лет",
     "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
-    "source_file": "messages_sale_property.txt"
-  },
-  {
-    "text": "Ищу агента недвижимости для продажи недвижимости, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
-    "source_file": "messages_sale_property.txt"
-  },
-  {
-    "text": "Ищу недвижимость на продажу с видом на океан, нужна вилла",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
-    "source_file": "messages_sale_property.txt"
-  },
-  {
-    "text": "Ищу агента недвижимости для покупки виллы, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_collage_ru.jpg",
-    "source_file": "messages_sale_property.txt"
-  },
-  {
-    "text": "Ищу недвижимость на продажу для бизнеса, кто знает где найти?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_1_ru.jpg",
-    "source_file": "messages_sale_property.txt"
-  },
-  {
-    "text": "Ищу агента недвижимости для покупки квартиры, кто посоветует?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
-    "source_file": "messages_sale_property.txt"
-  },
-  {
-    "text": "Ищу недвижимость на продажу для проживания, кто может помочь?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_3_ru.jpg",
-    "source_file": "messages_sale_property.txt"
-  },
-  {
-    "text": "Ищу агента недвижимости для инвестиций в недвижимость, кто знает?",
-    "photo": "/app/bali_assets/apart/apart_investment_variant_4_ru.jpg",
     "source_file": "messages_sale_property.txt"
   },
   {
@@ -3458,5 +3348,115 @@
     "text": "• Чангу лофт ПРОДАЕТСЯ | $215К | Все удобства",
     "photo": "/app/bali_assets/apart/apart_investment_variant_2_ru.jpg",
     "source_file": "messages_sale_property.txt"
+  },
+  {
+    "text": "Всем привет! 👋 Собираем международную группу в Индию на праздник Холи (1–10 марта). У нас часть ребят летит с Бали, часть из Москвы/Питера, встретимся уже в Дели. Формат — комфортный тур-ретрит (отели 5*, трансфер). Я профессиональный видеограф, еду снимать фильм про нашу поездку, так что у каждого останется крутой контент. Ищем 2-3 человек в компанию. Кому интересно глянуть программу — пишите в личку.",
+    "photo": null,
+    "source_file": "messages_india_holi.txt"
+  },
+  {
+    "text": "Ребят, кто хочет ярко встретить весну? 🎨 Организуем поездку в Индию на фестиваль красок Холи + Тадж-Махал. Даты: 1–10 марта. Группа смешанная (РФ и Бали), компания собирается очень душевная. Никаких рюкзаков и жести — живем в хороших отелях, передвигаемся с комфортом. С меня — профессиональная съемка вашего путешествия. Пишите в ЛС, скину детали и цены.",
+    "photo": null,
+    "source_file": "messages_india_holi.txt"
+  },
+  {
+    "text": "Друзья, ищем попутчиков в путешествие мечты! 🇮🇳 Едем в Индию по Золотому треугольнику + Варанаси на даты праздника Холи (начало марта). Группа летит из разных точек (Мск, Спб, Денпасар), встречаемся на месте. Я видеопродюсер, поэтому поездка будет не только про впечатления, но и про киношный контент для вас. Есть пара свободных мест. Кому скинуть маршрут?",
+    "photo": null,
+    "source_file": "messages_india_holi.txt"
+  },
+  {
+    "text": "Народ, есть идея для перезагрузки. ✈️ 1–10 марта, Индия. Праздник Холи, места силы и древние города. Собираем небольшую группу (летим с Бали и из РФ). Организация «под ключ»: отели 4-5*, гиды, трансферы. Я беру полный комплект съемочной техники, сделаю каждому крутой ролик в подарок. Если актуально — велком в личку за подробностями.",
+    "photo": null,
+    "source_file": "messages_india_holi.txt"
+  },
+  {
+    "text": "Всем привет! Кто планирует отпуск в марте? Собираем компанию в Индию (Холи + экскурсии + практики). Группа международная, старт 1 марта в Дели. Это авторский тур с акцентом на комфорт и качественный визуал (я видеограф, снимаю всё на про-камеру). Осталось 2 места. Кому интересно узнать подробности — напишите мне.",
+    "photo": null,
+    "source_file": "messages_india_holi.txt"
+  },
+  {
+    "text": "Привет! Ищу попутчиков на ретрит в Индию (март). Йога, медитации, места силы. Группа небольшая, всё под ключ. Кому интересно — пишите в личку.",
+    "photo": null,
+    "source_file": "messages_india_retreat.txt"
+  },
+  {
+    "text": "Кто за ретрит в Индию? Собираем группу на март: практики, природа, перезагрузка. Организация под ключ. Осталось несколько мест — кому актуально, напишите.",
+    "photo": null,
+    "source_file": "messages_india_retreat.txt"
+  },
+  {
+    "text": "Ищу людей на ретрит в Индию (весна). Йога, медитация, экскурсии по святым местам. Летим из разных городов, встречаемся на месте. Кому интересно — велком в личку за деталями.",
+    "photo": null,
+    "source_file": "messages_india_retreat.txt"
+  },
+  {
+    "text": "Народ, собираем группу на ретрит в Индию. Март, 10–12 дней: практики, гиды, комфортные отели. Есть пара свободных мест. Кто хочет присоединиться — пишите.",
+    "photo": null,
+    "source_file": "messages_india_retreat.txt"
+  },
+  {
+    "text": "Привет! Планирую ретрит в Индию (йога + медитации + путешествие). Ищу попутчиков — группа небольшая, всё организовано. Кому интересно узнать подробности — напишите.",
+    "photo": null,
+    "source_file": "messages_india_retreat.txt"
+  },
+  {
+    "text": "Ребят, кто за перезагрузку на Бали? 🧘 Авторский ретрит: отели 5*, медитации, места силы — без жести и сект, только проверенные практики. 7 дней, всё под ключ. Кому скинуть программу — пишите в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt"
+  },
+  {
+    "text": "Собираем группу на ретрит на Бали. Комфорт на высоте: хорошие отели, вкусная еда, нормальный транспорт. Практики безопасные — подойдёт даже тем, кто никогда не пробовал. Осталось пара мест. Кому актуально — напишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt"
+  },
+  {
+    "text": "Привет! Едем на Бали не просто отдыхать — за внутренней перезагрузкой. Йога, медитации, места силы. Организация под ключ, живём в топовых отелях. Кому интересно — велком в ЛС за деталями.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt"
+  },
+  {
+    "text": "Кто хочет на Бали не только пляж, но и практики? Собираем небольшую группу: 7 дней, авторский маршрут, медитации и работа с состоянием. Без экстремальной духовности — комфортно и по делу. Пишите, скину программу.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt"
+  },
+  {
+    "text": "Народ, ищем попутчиков на ретрит на Бали. Формат: жить медленно, чувствовать глубже. Отели 5*, дыхание, места силы. Возвращаешься другим человеком — проверено. Кому скинуть детали — пишите.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt"
+  },
+  {
+    "text": "Привет! Планирую ретрит на Бали (йога, медитации, природа). Всё организовано, группа маленькая. Кому интересно узнать программу и даты — напишите в личку.",
+    "photo": null,
+    "source_file": "messages_bali_retreat.txt"
+  },
+  {
+    "text": "Кто за Тибет? 🏔 Собираем группу на кору вокруг Кайласа — священная гора 6638 м, старт из Лхасы. 13 дней, формат для тех, кто готов к настоящему путешествию. Есть места. Кому скинуть программу — пишите.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt"
+  },
+  {
+    "text": "Ребят, ищем попутчиков в Тибет — кора вокруг Кайласа. Маршрут из Лхасы, 13 дней. Это не туристический трек, а глубокое путешествие. Кому актуально — велком в личку за деталями.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt"
+  },
+  {
+    "text": "Привет! Организуем поездку в Тибет: священная кора вокруг горы Кайлас. Группа небольшая, всё продумано. Кто давно хотел — пишите, скину маршрут и условия.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt"
+  },
+  {
+    "text": "Народ, есть идея на этот год — Тибет, Кайлас. Кора вокруг священной горы, 13 дней из Лхасы. Ищем людей в группу. Кому интересно — напишите, расскажу подробности.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt"
+  },
+  {
+    "text": "Кто за путешествие в Тибет? Кайлас (6638 м) — кора вокруг священной горы. Организация под ключ, группа набирается. Осталось несколько мест. Пишите в ЛС — скину программу и цены.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt"
+  },
+  {
+    "text": "Собираем группу в Тибет на кору вокруг Кайласа. Серьёзное путешествие, 13 дней. Кому давно зрело — пишите, обсудим даты и детали.",
+    "photo": null,
+    "source_file": "messages_tibet_kailash.txt"
   }
 ]
