@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  content-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: content-engine
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./knowledge:/app/knowledge:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./generated_images:/app/generated_images
+    environment:
+      - LOG_LEVEL=INFO
+      - CHROMADB_PATH=/app/data/chromadb
+      - KNOWLEDGE_DIR=/app/knowledge
+      - LOG_FILE=/app/logs/content_engine.log
+    command: ["Productivity tips for remote workers"]
+    networks:
+      - content-network
+
+  # Optional: Scheduled content generation
+  content-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: content-scheduler
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./knowledge:/app/knowledge:ro
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./generated_images:/app/generated_images
+    environment:
+      - LOG_LEVEL=INFO
+      - CHROMADB_PATH=/app/data/chromadb
+      - KNOWLEDGE_DIR=/app/knowledge
+      - LOG_FILE=/app/logs/scheduler.log
+    entrypoint: ["python", "-m", "src.scheduler"]
+    networks:
+      - content-network
+    profiles:
+      - scheduler
+
+networks:
+  content-network:
+    driver: bridge
+
+volumes:
+  chromadb_data:
+  logs_data:
+  images_data:
