@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+!.env.example
 venv/
 .venv/
 env/
@@ -29,15 +30,18 @@ wheels/
 *.egg
 
 # Data and generated content
-data/
-generated_images/
+data/*
+!data/.gitkeep
+generated_images/*
+!generated_images/.gitkeep
 *.png
 *.jpg
 *.jpeg
 *.webp
 
 # Logs
-logs/
+logs/*
+!logs/.gitkeep
 *.log
 
 # IDE
