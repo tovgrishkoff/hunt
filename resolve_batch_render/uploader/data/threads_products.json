@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "source_doc": "https://coordinated-work-a49.notion.site/Jay-Shambo-Threads-787d280c31a045cab325b233052be345",
+  "avatar": {
+    "notion_page_id": "24c2a891-8d11-4bdc-8bdf-3bc844607a36",
+    "env_path_key": "THREADS_AVATAR_PATH",
+    "env_id_key": "THREADS_AVATAR_ID",
+    "required_for_autopublish": true
+  },
+  "banned_routes": [
+    {
+      "id": "nepal_gosaikunda",
+      "labels": ["Непал", "Госайкунда", "Gosaikunda", "Nepal–Gosaikunda"],
+      "rule": "unavailable: never promote, announce, recommend, or collect interest without a new operator approval"
+    }
+  ],
+  "products": [
+    {
+      "id": "kailas_lhasa_2027",
+      "name": "Кайлас из Лхасы",
+      "priority": 1,
+      "role": "flagship",
+      "status": "interest_collection",
+      "season": "2027",
+      "sell_seasons": ["spring_2027", "summer_2027", "autumn_2027"],
+      "do_not_sell_seasons": ["2026"],
+      "formats": ["group"],
+      "url": "https://jayshambo.com/tours/kai-las-svyaschennaya-kora-iz-lhasy",
+      "notes": [
+        "Do not sell 2026 departures.",
+        "Do not auto-copy 2026 price or conditions onto 2027.",
+        "Promotion seasons are not confirmed departure dates.",
+        "Be honest about altitude, load, and preparation."
+      ],
+      "price": null,
+      "price_basis": null,
+      "inclusions": [],
+      "exclusions": [],
+      "cta_action": "interest_or_inquiry"
+    },
+    {
+      "id": "india_private_8march_2027",
+      "name": "Индивидуальное путешествие по Индии к 8 марта",
+      "priority": 2,
+      "role": "flagship",
+      "status": "announcement",
+      "season": "2027",
+      "duration_days": 10,
+      "formats": ["private_couple", "private_individual"],
+      "url": "https://jayshambo.com/tours/dusha-indii-tam-gde-ostanavlivaetsya-vremya",
+      "notes": [
+        "Shortened private route, exact dates, price and services must be operator-approved.",
+        "Do not auto-transfer the full website group itinerary or group price onto the private trip.",
+        "Promise Holi only after dates and route match."
+      ],
+      "price": null,
+      "price_basis": null,
+      "inclusions": [],
+      "exclusions": [],
+      "cta_action": "interest_or_inquiry"
+    },
+    {
+      "id": "bali_premium_ocean",
+      "name": "Премиальный ретрит Бали с океаном и отелями",
+      "priority": 3,
+      "role": "seasonal",
+      "status": "booking_open",
+      "season": "nye_2026_2027",
+      "formats": ["group", "private_couple"],
+      "url": "https://jayshambo.com/tours/puteshestvie-k-sebe-bali-tury-avtorskie-retrit-tury",
+      "notes": [
+        "New Year holiday package is not automatically a 31 Dec celebration dinner.",
+        "Clarify deposit and any 'without prepayment' wording before promising booking terms."
+      ],
+      "price": null,
+      "price_basis": null,
+      "inclusions": [],
+      "exclusions": [],
+      "cta_action": "program_page"
+    },
+    {
+      "id": "bali_sacred",
+      "name": "Природный ретрит по сакральному Бали",
+      "priority": 3,
+      "role": "seasonal",
+      "status": "booking_open",
+      "season": "nye_2026_2027",
+      "formats": ["group", "private_couple"],
+      "url": "https://jayshambo.com/tours/put-k-sebe-retreat-puteshestvie-po-sakralnomu-bali",
+      "notes": [
+        "Resolve 7/10 day and meal-condition mismatches before stating them as fact.",
+        "Do not mix services or prices with the premium ocean retreat."
+      ],
+      "price": null,
+      "price_basis": null,
+      "inclusions": [],
+      "exclusions": [],
+      "cta_action": "program_page"
+    },
+    {
+      "id": "bali_weekend",
+      "name": "Короткий ретрит выходного дня на Бали",
+      "priority": 4,
+      "role": "seasonal",
+      "status": "booking_open",
+      "season": "rolling",
+      "formats": ["group", "private_couple", "private_individual"],
+      "url": "https://jayshambo.com/tours/retrit-vyhodnogo-dnya-bali",
+      "notes": [
+        "Clarify 3 days / 3 nights before stating duration.",
+        "Do not auto-include paid shooting in the base package."
+      ],
+      "price": null,
+      "price_basis": null,
+      "inclusions": [],
+      "exclusions": [],
+      "cta_action": "program_page"
+    },
+    {
+      "id": "catalog",
+      "name": "Каталог туров Jay Shambo",
+      "priority": 9,
+      "role": "fallback",
+      "status": "announcement",
+      "formats": ["group", "private_couple", "private_individual"],
+      "url": "https://jayshambo.com/tours",
+      "notes": [
+        "Prefer a specific program URL over the catalog when the product is known."
+      ],
+      "price": null,
+      "price_basis": null,
+      "inclusions": [],
+      "exclusions": [],
+      "cta_action": "catalog"
+    }
+  ],
+  "secondary_directions": [
+    "vietnam",
+    "thailand",
+    "maldives",
+    "indonesia_other",
+    "mexico",
+    "south_africa",
+    "south_america"
+  ]
+}
