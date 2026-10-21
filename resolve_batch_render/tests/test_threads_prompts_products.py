@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import unittest
 from unittest import mock
 
@@ -21,6 +22,7 @@ from uploader.threads_prompts import (
     COMMON_PROMPT,
     author_system_prompt,
     commentator_system_prompt,
+    fit_threads_text,
 )
 from uploader.threads_text_autopost import (
     _pick_kind,
@@ -51,6 +53,33 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
         self.assertTrue(flagship_product_ids_for_day())
         self.assertTrue(approved_urls())
         self.assertIn("status=", products_prompt_block())
+
+    def test_fit_threads_text_does_not_cut_mid_word(self) -> None:
+        long = (
+            "Кайлас учит простому правилу. На высоте важнее темп и запас дня, "
+            "чем красивый план из чата. Самостоятельность хороша, когда ты "
+            "уже понимаешь свой потолок нагрузки."
+        )
+        fitted = fit_threads_text(long, max_chars=120)
+        self.assertLessEqual(len(fitted), 120)
+        self.assertFalse(fitted.endswith("нагруз"))
+        self.assertNotIn("…", fitted)
+        # incomplete connector tails should not remain
+        self.assertFalse(re.search(r"\b(и|а|но|или)$", fitted))
+
+    def test_fit_threads_text_keeps_trailing_url(self) -> None:
+        url = "https://jayshambo.com/tours/kai-las-svyaschennaya-kora-iz-lhasy"
+        body = (
+            "Для тех, кто хочет кору без самообмана по высоте и логистике. "
+            "Смотри программу и решай по фактам. " + url
+        )
+        fitted = fit_threads_text(body, max_chars=180)
+        self.assertLessEqual(len(fitted), 180)
+        self.assertTrue(fitted.endswith(url) or fitted == url)
+
+    def test_author_prompt_asks_for_short_dense_posts(self) -> None:
+        self.assertIn("180–260", AUTHOR_PROMPT)
+        self.assertIn("без воды", AUTHOR_PROMPT.lower())
 
     def test_daily_pack_roles(self) -> None:
         self.assertEqual(_role_of_kind("discussion:bali"), "discussion")

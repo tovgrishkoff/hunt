@@ -125,19 +125,24 @@ AUTHOR_PROMPT = """ТВОЯ РОЛЬ
 Не пересказывай весь маршрут. Выбирай сильный ракурс под запрос читателя.
 Продавай подходящий опыт и удобство организации, а не гарантию счастья или изменения жизни.
 
-ФОРМАТ И ПОВТОРЫ
-По умолчанию одна ветка состоит из одного короткого поста. Добавляй 1–2 продолжения только при необходимости; каждое должно добавлять смысл.
-Соблюдай установленный сервером лимит символов.
-Проверяй доступную историю за последние 14 дней. Не повторяй мысль, начала, аргументы и CTA одинаковыми формулировками.
-Не растягивай простую мысль и не используй одинаковую рубленую структуру во всех текстах.
-Передавай пакет действующему планировщику, не публикуй пять постов подряд.
+ФОРМАТ, ДЛИНА И ЭКСПЕРТНОСТЬ
+Пост короткий и ёмкий. Цель: 2–5 коротких предложений, обычно 180–260 символов без ссылки. Жёсткий потолок задаёт сервер: не превышай его.
+Одна мысль на пост. Без воды, разогрева «ну смотрите», морали и общих слов про свободу.
+Цепляй с первой строки: позиция, критерий, нюанс маршрута, высоты, ретрита или выбора формата.
+Продвигай Григория как практика: горы, ретриты, авторские маршруты, честные компромиссы. Экспертность через конкретику, не через самоназвание «я эксперт».
+Вовлекай вопросом или острым тезисом только если это усиливает мысль. Не обрывай фразу на полслове и не оставляй незаконченный хвост.
+По умолчанию одна ветка = один короткий пост. Соблюдай лимит символов сервера.
+Проверяй историю за 14 дней. Не повторяй начала, аргументы и CTA.
+Не растягивай простую мысль и не копируй одну рубленую структуру во всех текстах.
+Передавай пакет планировщику, не публикуй пять постов подряд.
 
 СВЯЗЬ С КОММЕНТАТОРОМ
 Через существующий служебный интерфейс передавай позицию поста, подтверждённые факты, связанный продукт, допустимый CTA и границы обещаний.
 Не публикуй эти сведения в тексте поста и не меняй схему API самостоятельно.
 
 ПРОВЕРКА ПЕРЕД ВЫДАЧЕЙ
-Проверь голос, конкретику, достоверность, соответствие продукту, статус продаж, ссылку, повторы и отсутствие тире.
+Проверь длину, законченность фраз, голос, конкретику, достоверность, продукт, статус, ссылку, повторы и отсутствие тире.
+Если текст длинный, сократи сам до лимита, сохранив суть. Не отдавай текст, который нужно обрезать посередине слова.
 Перепиши слабые тексты до выдачи. В поле публикации передавай только готовый текст.
 При наличии аналитики оценивай переходы, квалифицированные обращения и покупки вместе с охватом и содержательными комментариями. Не приписывай продажи посту без данных.
 """
@@ -205,10 +210,78 @@ def strip_punct_dashes(text: str) -> str:
     """Remove em/en dashes used as punctuation; keep word-internal hyphens."""
     body = text or ""
     body = _DASH_RANGE.sub("-", body)
-    body = _DASH_AS_PUNCT.sub(". ", body)
+
+    def _repl(match: re.Match[str]) -> str:
+        # New sentence only if the next token looks like a sentence start.
+        tail = body[match.end() :]
+        next_word = re.match(r"\s*([^\s]+)", tail)
+        token = next_word.group(1) if next_word else ""
+        if token[:1].isupper():
+            return ". "
+        return ", "
+
+    body = _DASH_AS_PUNCT.sub(_repl, body)
     body = re.sub(r"\.\s*\.", ".", body)
+    body = re.sub(r",\s*,", ",", body)
     body = re.sub(r"\s{2,}", " ", body)
     return body.strip()
+
+
+def fit_threads_text(text: str, *, max_chars: int) -> str:
+    """Fit text to max_chars without cutting mid-word.
+
+    Prefer a sentence boundary, then a word boundary. Never append an ellipsis
+    that would leave a broken word stem.
+    """
+    body = (text or "").strip()
+    if max_chars <= 0 or len(body) <= max_chars:
+        return body
+
+    # Prefer keeping a trailing URL intact when it fits alone at the end.
+    url_match = re.search(r"(https?://\S+)\s*$", body)
+    url = url_match.group(1) if url_match else ""
+    core = body[: -len(url)].rstrip() if url else body
+    url_budget = (1 + len(url)) if url else 0
+    core_limit = max_chars - url_budget
+    if core_limit < 40:
+        # Extremely tight: keep URL only if present, else hard word-safe cut.
+        if url and len(url) <= max_chars:
+            return url
+        core_limit = max_chars
+        url = ""
+
+    cut = core[:core_limit].rstrip(" \n\t,;:")
+    # Sentence boundary inside the window.
+    sentence_end = max(cut.rfind(". "), cut.rfind("! "), cut.rfind("? "))
+    if sentence_end >= int(core_limit * 0.45):
+        cut = cut[: sentence_end + 1].rstrip()
+    else:
+        # Word boundary: drop a partial trailing token.
+        if core_limit < len(core) and not core[core_limit].isspace():
+            sp = cut.rfind(" ")
+            if sp >= int(core_limit * 0.4):
+                cut = cut[:sp].rstrip(" ,;:")
+        # If still ends with a dangling connector, drop it.
+        cut = re.sub(
+            r"(\s+(и|а|но|или|что|как|когда|если|потому|чтобы))\s*$",
+            "",
+            cut,
+            flags=re.IGNORECASE,
+        ).rstrip(" ,;:")
+        if cut and cut[-1] not in ".!?…":
+            # Close cleanly without fake drama ellipsis mid-thought when possible.
+            if len(cut) <= max_chars:
+                pass
+            else:
+                cut = cut[:max_chars].rstrip()
+
+    out = cut
+    if url:
+        out = f"{out} {url}".strip()
+    if len(out) > max_chars:
+        # Last resort: word-safe without URL first, then URL-only.
+        out = out[:max_chars].rsplit(" ", 1)[0].rstrip(" ,;:")
+    return out.strip()
 
 
 def author_system_prompt(*, include_products: bool = True) -> str:
@@ -239,7 +312,7 @@ def author_user_prompt(
     link: str,
     product_id: str = "",
     history_lines: list[str] | None = None,
-    max_chars: int = 420,
+    max_chars: int = 260,
 ) -> str:
     history = ""
     if history_lines:
@@ -249,6 +322,7 @@ def author_user_prompt(
             f"{joined}\n"
         )
     product_line = f"Связанный product_id: {product_id or 'n/a'}\n"
+    target = max(120, min(max_chars, max_chars - (0 if not link else min(80, len(link) + 1))))
     return (
         f"Тип поста: {kind} ({kind_label})\n"
         f"Гео/фокус: {geo_label}\n"
@@ -256,7 +330,10 @@ def author_user_prompt(
         f"Контекст новости: {news_context}\n"
         f"{product_line}"
         f"Утверждённая ссылка (только для продающего и только если уместна): {link or 'нет'}\n"
-        f"Лимит символов: {max_chars}\n"
+        f"Жёсткий лимит символов всего поста включая ссылку: {max_chars}. "
+        f"Цель по тексту без ссылки: до {target} символов.\n"
+        "Пиши коротко и ёмко: суть, цепляющий тезис, экспертная конкретика "
+        "(горы / ретриты / маршруты). Без воды. Закончи законченной фразой.\n"
         f"{history}"
         "Верни JSON с готовым текстом поста."
     )

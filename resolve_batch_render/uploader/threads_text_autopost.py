@@ -34,6 +34,7 @@ from uploader.threads_products import (
 from uploader.threads_prompts import (
     author_system_prompt,
     author_user_prompt,
+    fit_threads_text,
     strip_punct_dashes,
 )
 
@@ -742,7 +743,7 @@ def generate_threads_text(
                 geo = g
                 break
 
-    max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 420)
+    max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)
     prompt = author_user_prompt(
         kind=kind,
         kind_label=labels.get(kind, kind),
@@ -833,8 +834,13 @@ def _normalize_text(text: str, *, kind: str) -> str:
     if any(b in low for b in banned):
         raise RuntimeError("Generated text mentions banned Nepal–Gosaikunda route")
     want = _link_for_kind(kind)
+    max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)
     if kind.startswith("promo"):
-        if want and want not in text:
+        # Reserve room for the approved URL so we never clip mid-word then append.
+        url_room = (len(want) + 1) if want else 0
+        body_limit = max(80, max_chars - url_room)
+        text = fit_threads_text(re.sub(r"https?://\S+", "", text).strip(), max_chars=body_limit)
+        if want:
             text = f"{text.rstrip()} {want}".strip()
         found = re.findall(r"https?://\S+", text)
         if len(found) > 1:
@@ -845,10 +851,7 @@ def _normalize_text(text: str, *, kind: str) -> str:
             text = text.replace("2026", "2027")
     else:
         text = re.sub(r"https?://\S+", "", text).strip()
-    max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 500)
-    if len(text) > max_chars:
-        text = text[: max_chars - 1].rstrip(" ,.;") + "…"
-    return text
+    return fit_threads_text(text, max_chars=max_chars)
 
 
 def _recent_kinds(con: Any, limit: int = 10) -> list[str]:
