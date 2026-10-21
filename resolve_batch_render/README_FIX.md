@@ -15,3 +15,11 @@ Production path: `/home/tovgrishkoff/resolve_batch_render`
 - Initialize `ig_caption = ""` before the Instagram try-block (applied live in `uploader/main.py`).
 
 Files mirrored here for review; deploy is the live volume-mounted directory + compose recreate.
+
+## Verification (2026-10-21)
+
+- Feed file: `output/publish_ready/CRUISE__POOL.mp4` (122 MB, h264 1080x1920 + aac).
+- YouTube: **posted** `vjxys6VAVBU`.
+- Pinterest: **posted**.
+- Instagram: first account published (`media_id=18124532362870923`), staggering to second account.
+- Containers `reels-autopost` / `yt-autopost` / `pinterest-autopost` recreated with the fix.
