@@ -1,0 +1,126 @@
+version: "3.8"
+
+x-autopost-resources: &autopost_resources
+  mem_limit: 512m
+  mem_reservation: 128m
+  memswap_limit: 512m
+
+x-autopost-base: &autopost-base
+  build:
+    context: .
+    dockerfile: Dockerfile.autopost
+  image: resolve-batch-render-autopost:latest
+  restart: unless-stopped
+  <<: *autopost_resources
+  working_dir: /app
+  env_file:
+    - .env
+  volumes:
+    - ./:/app
+    # Match LOCAL_MEDIA_ROOT/output from .env so queued paths like
+    # ~/.cache/resolve_batch_render/output/reels/*.mov resolve inside the container.
+    - ./output:/home/tovgrishkoff/.cache/resolve_batch_render/output
+
+services:
+  reels-autopost:
+    <<: *autopost-base
+    container_name: reels-autopost
+    # 10-bit HEVC (~50 Mbps) feed transcodes SIGKILL at the shared 512m cap
+    # when IG + YT both encode the same reel. Match stories/pinterest headroom.
+    mem_limit: 768m
+    memswap_limit: 768m
+    command: [
+      "python", "-m", "uploader.main",
+      "--tz", "Europe/Moscow",
+      "autopost", "--interval-sec", "30"
+    ]
+
+  yt-autopost:
+    <<: *autopost-base
+    container_name: yt-autopost
+    # Same 10-bit HEVC feed path as reels-autopost (shared publish_ready/).
+    mem_limit: 768m
+    memswap_limit: 768m
+    command: [
+      "python", "-m", "uploader.main",
+      "--tz", "Europe/Moscow",
+      "autopost-yt", "--interval-sec", "30"
+    ]
+
+  threads-text-autopost:
+    <<: *autopost-base
+    container_name: threads-text-autopost
+    command: [
+      "python", "-m", "uploader.main",
+      "--tz", "Europe/Moscow",
+      "autopost-threads-text", "--interval-sec", "120"
+    ]
+
+  # Replies under @grishkoff_travel posts: substance + one question.
+  threads-replies:
+    <<: *autopost-base
+    container_name: threads-replies
+    environment:
+      PYTHONUNBUFFERED: "1"
+    command: [
+      "python", "-m", "uploader.main",
+      "--tz", "Europe/Moscow",
+      "autopost-threads-replies", "--interval-sec", "180"
+    ]
+
+  # Pinterest OFF until API ready. Opt-in only:
+  #   docker-compose -f docker-compose.autopost.yml --profile pinterest up -d pinterest-autopost
+  pinterest-autopost:
+    <<: *autopost-base
+    container_name: pinterest-autopost
+    profiles: ["pinterest"]
+    # 10-bit HEVC feed transcodes SIGKILL at the shared 512m cap (swap off).
+    mem_limit: 768m
+    memswap_limit: 768m
+    command: [
+      "python", "-m", "uploader.main",
+      "--tz", "Europe/Moscow",
+      "autopost-pinterest", "--interval-sec", "30"
+    ]
+
+  # YouTube comment auto-reply bot.
+  # Requires one-time OAuth with `youtube.force-ssl` scope BEFORE this starts
+  # producing replies (see uploader/README.md).
+  # Defaults to DRY-RUN (set YT_COMMENTS_DRY_RUN=0 in .env to actually post).
+  # NOT started by default: opt in with the "comments" profile, e.g.
+  #   docker compose -f docker-compose.autopost.yml --profile comments up -d yt-comments
+  yt-comments:
+    <<: *autopost-base
+    container_name: yt-comments
+    profiles: ["comments"]
+    environment:
+      # So `docker logs` shows loguru print sink immediately (no stdout buffering).
+      PYTHONUNBUFFERED: "1"
+    command: [
+      "python", "-m", "uploader.yt_comments.main",
+      "run"
+    ]
+
+  # Telegram Stories @grishkoff (promotion_new_account) — 1 reel / ~48h from queue
+  #   docker-compose -f docker-compose.autopost.yml --profile stories up -d tg-stories-autopost
+  tg-stories-autopost:
+    <<: *autopost-base
+    container_name: tg-stories-autopost
+    # 4K HEVC story transcodes SIGKILL at the shared 512m cap (swap off).
+    profiles: ["stories"]
+    mem_limit: 768m
+    memswap_limit: 768m
+    environment:
+      PYTHONUNBUFFERED: "1"
+      TG_STORIES_ACCOUNTS_JSON: /app/secrets/bali_accounts_config.json
+      TG_STORIES_SESSION_NAME: promotion_new_account
+    volumes:
+      - ./:/app
+      - ./output:/home/tovgrishkoff/.cache/resolve_batch_render/output
+      - /home/tovgrishkoff/PIAR/telegram_promotion_system_bali/accounts_config.json:/app/secrets/bali_accounts_config.json:ro
+      - ./sessions:/app/sessions
+    command: [
+      "python", "-m", "uploader.main",
+      "--tz", "Europe/Moscow",
+      "autopost-tg-stories", "--interval-sec", "60"
+    ]

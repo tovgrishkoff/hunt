@@ -1,0 +1,10 @@
+--- a/uploader/main.py
++++ b/uploader/main.py
+@@
+         if due is None:
+             _time.sleep(max(5, int(ns.interval_sec)))
+             continue
+ 
++        ig_caption = ""
+         try:
+             gate, ready_path = _park_until_ready(con, due)
