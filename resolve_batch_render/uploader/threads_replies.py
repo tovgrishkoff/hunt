@@ -21,7 +21,7 @@ import httpx
 from loguru import logger
 
 from uploader.meta_accounts import MetaPublishTarget, threads_targets
-from uploader.threads_products import approved_urls
+from uploader.threads_products import approved_urls, product_url
 from uploader.threads_prompts import commentator_system_prompt, strip_punct_dashes
 from uploader.threads_publisher import ThreadsPublishError, publish_threads_reply
 
@@ -89,6 +89,84 @@ def is_low_effort(text: str, min_letters: int) -> bool:
 
 def has_question(text: str) -> bool:
     return "?" in (text or "") or "？" in (text or "")
+
+
+_INTEREST_RE = re.compile(
+    r"(сколько|цена|стоим|когда|дат[аыу]|как\s+попасть|программ|тур\b|едут|"
+    r"поед[уе]|интерес|хочу|можно\b|подробн|условия|мест[ао]|бронь|"
+    r"кайлас|бали|ретрит|инди|тибет|эверест|ссылк|напиш|расскажи|"
+    r"скинь|дам|подробнее|акклимат|кора\b)",
+    flags=re.IGNORECASE,
+)
+
+
+def program_url_for_context(post_text: str, comment_text: str = "") -> str:
+    """Pick the best approved program URL from post/comment topic."""
+    blob = f"{post_text or ''}\n{comment_text or ''}".lower()
+    catalog = product_url("catalog", fallback="https://jayshambo.com/tours")
+    if any(k in blob for k in ("кайлас", "тибет", "кора", "долма", "лхас", "эверест")):
+        return product_url(
+            "kailas_lhasa_2027",
+            fallback="https://jayshambo.com/tours/kai-las-svyaschennaya-kora-iz-lhasy",
+        )
+    if any(k in blob for k in ("инди", "гоа", "холи", "варанас", "8 марта")):
+        return product_url(
+            "india_private_8march_2027",
+            fallback=(
+                "https://jayshambo.com/tours/"
+                "dusha-indii-tam-gde-ostanavlivaetsya-vremya"
+            ),
+        )
+    if any(k in blob for k in ("сакральн", "убуд", "храм")):
+        return product_url(
+            "bali_sacred",
+            fallback=(
+                "https://jayshambo.com/tours/"
+                "put-k-sebe-retreat-puteshestvie-po-sakralnomu-bali"
+            ),
+        )
+    if any(k in blob for k in ("выходн", "weekend")):
+        return product_url(
+            "bali_weekend",
+            fallback="https://jayshambo.com/tours/retrit-vyhodnogo-dnya-bali",
+        )
+    if any(k in blob for k in ("бали", "ретрит", "чангу", "океан")):
+        return product_url(
+            "bali_premium_ocean",
+            fallback=(
+                "https://jayshambo.com/tours/"
+                "puteshestvie-k-sebe-bali-tury-avtorskie-retrit-tury"
+            ),
+        )
+    return catalog
+
+
+def discussion_wants_program_link(
+    comment_text: str,
+    *,
+    reason: str = "",
+) -> bool:
+    """True when a real discussion under the post should get a program URL."""
+    reason_l = (reason or "").strip().lower()
+    if reason_l in {"insult", "skip"}:
+        return False
+    if reason_l in {"tour_request", "question"}:
+        return True
+    text = comment_text or ""
+    if has_question(text):
+        return True
+    return bool(_INTEREST_RE.search(text))
+
+
+def ensure_program_link(reply_text: str, program_url: str) -> str:
+    """Append approved program URL once if the reply has none."""
+    body = (reply_text or "").strip()
+    url = (program_url or "").strip()
+    if not body or not url:
+        return body
+    if _URL_RE.search(body):
+        return body
+    return f"{body.rstrip()}\n\n{url}".strip()
 
 
 def clean_reply(
@@ -415,13 +493,17 @@ def _draft_reply(
         "THREADS_REPLIES_CLAUDE_MODEL",
         _env("CLAUDE_MODEL", "claude-sonnet-4-5-20250929"),
     )
+    program = program_url_for_context(post_text, comment_text)
     user_msg = (
         f"Пост:\n{(post_text or '')[:700]}\n\n"
         f"Комментарий @{author}:\n{comment_text}\n\n"
+        f"Утверждённая ссылка на программу для этого поста: {program}\n\n"
         "Ответь голосом Григория по сути этого комментария. "
         "Уточняющий вопрос только если он реально помогает. "
-        "Ссылку ставь только при запросе поездки или явной релевантности "
-        "и только из утверждённых URL карточек продуктов."
+        "Если под постом началось обсуждение (вопрос, интерес к поездке, "
+        "даты, цена, маршрут, как попасть) — в ответе дай эту ссылку на "
+        "программу один раз. В корневых постах ссылок нет, в комментарии можно. "
+        "Чужие URL не используй."
     )
     client = Anthropic(api_key=api_key)
     message = client.messages.create(
@@ -435,7 +517,25 @@ def _draft_reply(
     if not raw:
         raise RuntimeError("Claude returned empty content")
     logger.info(f"[threads-replies] llm=claude model={model}")
-    return parse_decision(extract_json_object(raw))
+    decision = parse_decision(extract_json_object(raw))
+    if decision.get("reply") and discussion_wants_program_link(
+        comment_text, reason=str(decision.get("reason") or "")
+    ):
+        decision["response"] = ensure_program_link(
+            str(decision.get("response") or ""), program
+        )
+        # Re-run clean/approve check after possible URL append.
+        decision = parse_decision(
+            json.dumps(
+                {
+                    "reply": True,
+                    "response": decision["response"],
+                    "reason": decision.get("reason") or "tour_request",
+                },
+                ensure_ascii=False,
+            )
+        )
+    return decision
 
 
 def run_once(cfg: ReplySettings) -> dict[str, int]:

@@ -7,10 +7,13 @@ import unittest
 from uploader.threads_replies import (
     answered_parent_ids,
     clean_reply,
+    discussion_wants_program_link,
+    ensure_program_link,
     extract_json_object,
     has_question,
     is_low_effort,
     parse_decision,
+    program_url_for_context,
 )
 from uploader.threads_prompts import strip_punct_dashes
 
@@ -76,6 +79,24 @@ class ThreadsReplyRulesTest(unittest.TestCase):
     def test_clean_reply_strips_dashes(self) -> None:
         body = clean_reply("Комфорт — не про люкс.")
         self.assertNotIn("—", body)
+
+    def test_program_url_for_kailas_discussion(self) -> None:
+        url = program_url_for_context(
+            "Кора 3 дня, 52 км, акклиматизация в Лхасе.",
+            "Сколько стоит и когда даты?",
+        )
+        self.assertIn("kai-las", url)
+        self.assertTrue(
+            discussion_wants_program_link(
+                "Сколько стоит программа?", reason="question"
+            )
+        )
+        linked = ensure_program_link("Вот программа и условия.", url)
+        self.assertIn(url, linked)
+        self.assertEqual(
+            ensure_program_link(f"Уже есть {url}", url),
+            f"Уже есть {url}",
+        )
 
 
 if __name__ == "__main__":
