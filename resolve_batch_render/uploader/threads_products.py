@@ -123,6 +123,11 @@ def approved_urls() -> set[str]:
     if catalog:
         urls.add(catalog.rstrip("/"))
         urls.add(catalog)
+    # Always allow Lead Hunt bot link in replies when interest is shown.
+    lead = product_url("lead_hunbot", fallback="https://t.me/Lead_Hunbot")
+    if lead:
+        urls.add(lead.rstrip("/"))
+        urls.add(lead)
     return urls
 
 

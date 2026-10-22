@@ -122,6 +122,27 @@
       "cta_action": "program_page"
     },
     {
+      "id": "lead_hunbot",
+      "name": "Lead Hunt — поиск клиентов и заявок в Telegram",
+      "priority": 2,
+      "role": "tool",
+      "status": "booking_open",
+      "formats": ["service"],
+      "url": "https://t.me/Lead_Hunbot",
+      "notes": [
+        "Soft daily Threads line: case/scenario posts about finding clients, villas, jobs via niche Telegram search.",
+        "Root posts: no URL. Soft CTA like «Напиши ЛИДЫ».",
+        "Put https://t.me/Lead_Hunbot only in replies when the person shows interest in the service.",
+        "Do not invent named clients or fake deals; describe scenarios and how niche matching works.",
+        "One leadhunt post per day max inside the 5-post pack."
+      ],
+      "price": null,
+      "price_basis": null,
+      "inclusions": [],
+      "exclusions": [],
+      "cta_action": "interest_or_inquiry"
+    },
+    {
       "id": "catalog",
       "name": "Каталог туров Jay Shambo",
       "priority": 9,

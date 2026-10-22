@@ -29,6 +29,8 @@ from uploader.threads_text_autopost import (
     BALI_FOCUS_ANGLES,
     GEO_POOL,
     KAILAS_FOCUS_ANGLES,
+    LEADHUNT_FOCUS_ANGLES,
+    _cta_for_kind,
     _mentions_one_day_kora,
     _normalize_text,
     _pick_kind,
@@ -184,8 +186,28 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
             _pick_kind([], window_idx=i, con=None, day_key="")
             for i in range(5)
         ]
-        selling = sum(1 for k in kinds if str(k).startswith("promo"))
+        selling = sum(
+            1
+            for k in kinds
+            if str(k).startswith("promo") and "leadhunt" not in str(k)
+        )
         self.assertLessEqual(selling, 3)
+
+    def test_leadhunt_case_line_has_soft_cta_no_url(self) -> None:
+        self.assertEqual(_role_of_kind("case_leadhunt"), "leadhunt")
+        self.assertEqual(_product_id_for_kind("case_leadhunt"), "lead_hunbot")
+        self.assertTrue(LEADHUNT_FOCUS_ANGLES)
+        out = _normalize_text(
+            "Выбираешь ниши в Telegram, бот присылает релевантные заявки на услугу.",
+            kind="case_leadhunt",
+        )
+        self.assertNotRegex(out, r"https?://")
+        self.assertIn("ЛИДЫ", out)
+        self.assertIn("ЛИДЫ", _cta_for_kind("case_leadhunt"))
+        cfg = load_products_config()
+        ids = {p["id"] for p in cfg["products"]}
+        self.assertIn("lead_hunbot", ids)
+        self.assertIn("t.me/Lead_Hunbot", approved_urls())
 
     def test_kailas_focus_angles_cover_requested_themes(self) -> None:
         joined = " ".join(KAILAS_FOCUS_ANGLES).lower()

@@ -98,6 +98,26 @@ class ThreadsReplyRulesTest(unittest.TestCase):
             f"Уже есть {url}",
         )
 
+    def test_leadhunt_link_only_on_service_interest(self) -> None:
+        post = "Выбираешь ниши в Telegram — бот шлёт заявки на услугу."
+        url = program_url_for_context(post, "А как подключить бота для лидов?")
+        self.assertIn("Lead_Hunbot", url)
+        self.assertTrue(
+            discussion_wants_program_link(
+                "Хочу такого бота для поиска клиентов",
+                reason="question",
+                post_text=post,
+            )
+        )
+        # Generic villa chat without service interest should not force Lead Hunt.
+        self.assertFalse(
+            discussion_wants_program_link(
+                "Красивая вилла",
+                reason="experience",
+                post_text="Цены на жильё в Чангу",
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

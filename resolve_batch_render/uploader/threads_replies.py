@@ -99,10 +99,33 @@ _INTEREST_RE = re.compile(
     flags=re.IGNORECASE,
 )
 
+_LEADHUNT_INTEREST_RE = re.compile(
+    r"(лид|клиент|заявк|ниш[аиеу]|бот\b|lead\s*hunt|hunbot|"
+    r"телеграм.{0,20}(поиск|клиент|заявк)|поиск\s+клиент|"
+    r"вилл[аоуы].{0,30}(найти|ищу|бот)|работ[ауы].{0,20}(чат|ниш|бот)|"
+    r"напиш[иу].{0,10}лид)",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+
+LEAD_HUNBOT_URL = "https://t.me/Lead_Hunbot"
+
 
 def program_url_for_context(post_text: str, comment_text: str = "") -> str:
     """Pick the best approved program URL from post/comment topic."""
     blob = f"{post_text or ''}\n{comment_text or ''}".lower()
+    # Lead Hunt only when the thread/comment is about the service itself.
+    if _LEADHUNT_INTEREST_RE.search(blob) or any(
+        k in blob
+        for k in (
+            "лиды",
+            "lead hunt",
+            "hunbot",
+            "поиск клиентов",
+            "ниши в telegram",
+            "ниши в телеграм",
+        )
+    ):
+        return product_url("lead_hunbot", fallback=LEAD_HUNBOT_URL)
     catalog = product_url("catalog", fallback="https://jayshambo.com/tours")
     if any(k in blob for k in ("кайлас", "тибет", "кора", "долма", "лхас", "эверест")):
         return product_url(
@@ -145,14 +168,22 @@ def discussion_wants_program_link(
     comment_text: str,
     *,
     reason: str = "",
+    post_text: str = "",
 ) -> bool:
     """True when a real discussion under the post should get a program URL."""
     reason_l = (reason or "").strip().lower()
     if reason_l in {"insult", "skip"}:
         return False
+    text = comment_text or ""
+    # Lead Hunt link only on explicit service interest (not every villa chat).
+    post_l = (post_text or "").lower()
+    leadhunt_post = any(
+        k in post_l for k in ("лид", "ниш", "заявк", "lead hunt", "телеграм")
+    ) and any(k in post_l for k in ("бот", "ниш", "заявк", "клиент", "lead"))
+    if leadhunt_post or _LEADHUNT_INTEREST_RE.search(text):
+        return bool(_LEADHUNT_INTEREST_RE.search(text) or "лид" in text.lower())
     if reason_l in {"tour_request", "question"}:
         return True
-    text = comment_text or ""
     if has_question(text):
         return True
     return bool(_INTEREST_RE.search(text))
@@ -497,13 +528,14 @@ def _draft_reply(
     user_msg = (
         f"Пост:\n{(post_text or '')[:700]}\n\n"
         f"Комментарий @{author}:\n{comment_text}\n\n"
-        f"Утверждённая ссылка на программу для этого поста: {program}\n\n"
+        f"Утверждённая ссылка для ответа (тур или Lead Hunt по теме): {program}\n\n"
         "Ответь голосом Григория по сути этого комментария. "
         "Уточняющий вопрос только если он реально помогает. "
-        "Если под постом началось обсуждение (вопрос, интерес к поездке, "
-        "даты, цена, маршрут, как попасть) — в ответе дай эту ссылку на "
-        "программу один раз. В корневых постах ссылок нет, в комментарии можно. "
-        "Чужие URL не используй."
+        "Если обсуждают поездку — дай ссылку на программу. "
+        "Если интересуются поиском клиентов/заявок/ниш/ботом Lead Hunt — "
+        "дай https://t.me/Lead_Hunbot. "
+        "Ссылку Lead Hunt не ставь, если человек просто пишет про жильё или путешествие "
+        "без интереса к сервису. В корне ссылок нет. Чужие URL не используй."
     )
     client = Anthropic(api_key=api_key)
     message = client.messages.create(
@@ -519,7 +551,9 @@ def _draft_reply(
     logger.info(f"[threads-replies] llm=claude model={model}")
     decision = parse_decision(extract_json_object(raw))
     if decision.get("reply") and discussion_wants_program_link(
-        comment_text, reason=str(decision.get("reason") or "")
+        comment_text,
+        reason=str(decision.get("reason") or ""),
+        post_text=post_text,
     ):
         decision["response"] = ensure_program_link(
             str(decision.get("response") or ""), program

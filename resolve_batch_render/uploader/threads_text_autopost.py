@@ -1,8 +1,8 @@
 """Scheduled native TEXT posts for Threads @grishkoff_travel (META_2).
 
 Cadence: ~5 root posts/day, Mon–Sat (Sunday off).
-Daily pack: 2 discussion + 2 value-warmup + 1 selling (order shuffled).
-Focus: Asia/Bali utility for followers + seasonal retreat sales; Kailas rarer.
+Daily pack: 1 discussion + 2 value-warmup + 1 tour selling + 1 Lead Hunt soft case.
+Focus: Asia/Bali utility, Bali NYE retreats, soft Lead Hunt cases; Kailas rarer.
 Prompts: Notion Jay Shambo server spec (common + author).
 """
 
@@ -146,6 +146,16 @@ BALI_FOCUS_ANGLES: list[str] = [
     "visa run: Сингапур/Куала/Дили — цена трёх дней vs продление",
     "новогодние каникулы на Бали 2026–2027: ретрит, не тусовка; без обещания ужина 31.12",
     "премиальный / сакральный / weekend ретрит: чем отличаются пакеты",
+]
+
+# Soft Lead Hunt cases (1/day): scenarios, not invented named clients.
+LEADHUNT_FOCUS_ANGLES: list[str] = [
+    "сценарий: выбрал ниши в Telegram — бот присылает заявки на услугу, без ручного скролла чатов",
+    "сценарий: поиск клиентов на Бали (мастера, риелторы, услуги) через релевантные ниши",
+    "сценарий: поиск аренды виллы/жилья — отслеживание объявлений и предложений по нишам",
+    "сценарий: поиск работы/вакансий в тематических чатах, а не бесконечный ручной мониторинг",
+    "сценарий: отклики и предложения поступают в бота, вы фильтруете только нужное",
+    "чем отличается от спама: ниши выбираете вы, бот шлёт релевантное, ссылку даём только если сервис интересен",
 ]
 
 # Practical Asia value angles for follower growth (discussion / warmup).
@@ -429,12 +439,16 @@ def _tour_urls() -> dict[str, str]:
         "bali_weekend",
         fallback="https://jayshambo.com/tours/retrit-vyhodnogo-dnya-bali",
     )
+    leadhunt = product_url(
+        "lead_hunbot", fallback="https://t.me/Lead_Hunbot"
+    )
     return {
         "kailas": kailas,
         "bali": bali,
         "india": india,
         "bali_sacred": bali_sacred,
         "bali_weekend": bali_weekend,
+        "leadhunt": leadhunt,
         "catalog": product_url(
             "catalog", fallback="https://jayshambo.com/tours"
         ),
@@ -462,10 +476,12 @@ def _pick_geo(recent_geos: list[str]) -> dict[str, str]:
 
 def _role_of_kind(kind: str) -> str:
     base = str(kind).split(":", 1)[0]
+    if base in {"case_leadhunt", "promo_leadhunt"}:
+        return "leadhunt"
     if base.startswith("promo"):
         return "selling"
     if base in {"warmup", "tip", "geo_tip", "story", "news", "relocation"}:
-        return "warmup" if base in {"warmup", "tip", "geo_tip", "story", "news"} else "warmup"
+        return "warmup"
     if base == "discussion":
         return "discussion"
     return "other"
@@ -478,7 +494,7 @@ def _day_role_counts(con: Any, day_key: str) -> dict[str, int]:
         "AND scheduled_at LIKE ?",
         (f"{day_key}%",),
     ).fetchall()
-    counts = {"discussion": 0, "warmup": 0, "selling": 0}
+    counts = {"discussion": 0, "warmup": 0, "selling": 0, "leadhunt": 0}
     for row in rows:
         role = _role_of_kind(str(row[0] or ""))
         if role in counts:
@@ -534,23 +550,24 @@ def _pick_kind(
     con: Any | None = None,
     day_key: str = "",
 ) -> str:
-    """Fill daily pack: 2 discussion, 2 value-warmup, 1 selling (followers + sales)."""
+    """Fill daily pack: 1 discussion, 2 value-warmup, 1 tour sell, 1 Lead Hunt case."""
     targets = {
-        "discussion": 2,
+        "discussion": 1,
         "warmup": 2,
         "selling": 1,
+        "leadhunt": 1,
     }
-    counts = {"discussion": 0, "warmup": 0, "selling": 0}
+    counts = {"discussion": 0, "warmup": 0, "selling": 0, "leadhunt": 0}
     if con is not None and day_key:
         counts = _day_role_counts(con, day_key)
     missing = [role for role, need in targets.items() if counts[role] < need]
     if not missing:
-        # Day already full of roles; keep organic discussion rather than spam promo.
         return "discussion"
-    # Prefer underfilled roles; slight bias by window for variety.
     random.shuffle(missing)
     if window_idx <= 1 and "discussion" in missing:
         role = "discussion"
+    elif window_idx == 2 and "leadhunt" in missing:
+        role = "leadhunt"
     elif window_idx >= 3 and "selling" in missing:
         role = "selling"
     else:
@@ -558,7 +575,9 @@ def _pick_kind(
     if role == "discussion":
         return "discussion"
     if role == "warmup":
-        return random.choice(["warmup", "geo_tip", "tip"])
+        return random.choice(["warmup", "geo_tip", "tip", "story"])
+    if role == "leadhunt":
+        return "case_leadhunt"
     return _pick_selling_kind(recent_kinds)
 
 
@@ -569,6 +588,8 @@ def _product_id_for_kind(kind: str) -> str:
         "promo_bali": "bali_premium_ocean",
         "promo_bali_sacred": "bali_sacred",
         "promo_bali_weekend": "bali_weekend",
+        "case_leadhunt": "lead_hunbot",
+        "promo_leadhunt": "lead_hunbot",
     }
     return mapping.get(kind, "")
 
@@ -576,6 +597,10 @@ def _product_id_for_kind(kind: str) -> str:
 def _link_for_kind(kind: str) -> str:
     """Approved product URL for replies/operator context — never for root posts."""
     urls = _tour_urls()
+    if kind in {"case_leadhunt", "promo_leadhunt"}:
+        return urls.get("leadhunt") or product_url(
+            "lead_hunbot", fallback="https://t.me/Lead_Hunbot"
+        )
     if kind == "promo_kailas":
         return urls["kailas"]
     if kind == "promo_india":
@@ -590,7 +615,9 @@ def _link_for_kind(kind: str) -> str:
 
 
 def _cta_for_kind(kind: str) -> str:
-    """Soft DM code-word CTA for selling posts (no URL)."""
+    """Soft DM code-word CTA for selling / soft-tool posts (no URL)."""
+    if kind in {"case_leadhunt", "promo_leadhunt"} or "leadhunt" in kind:
+        return "Напиши «ЛИДЫ»"
     if kind == "promo_kailas" or "kailas" in kind:
         return "Напиши «КАЙЛАС»"
     if kind == "promo_india" or "india" in kind:
@@ -848,6 +875,11 @@ def generate_threads_text(
         "promo_bali": "продающий: премиальный Бали / новогодние каникулы без ложного NYE",
         "promo_bali_sacred": "продающий: сакральный Бали, не смешивать с премиум-пакетом",
         "promo_bali_weekend": "продающий: короткий ретрит выходного дня",
+        "case_leadhunt": (
+            "мягкий кейс Lead Hunt: как ниши в Telegram дают заявки "
+            "(клиенты / вилла / работа). Без URL. Без выдуманных имён клиентов."
+        ),
+        "promo_leadhunt": "мягкий кейс Lead Hunt без URL",
     }
     geo = geo or random.choice(GEO_POOL)
     link = _link_for_kind(kind)
@@ -889,6 +921,13 @@ def generate_threads_text(
         else:
             focus = random.choice(BALI_FOCUS_ANGLES)
         geo_angles = f"Фокус этого поста: {focus}. Фон: {geo_angles}"
+    elif kind in {"case_leadhunt", "promo_leadhunt"}:
+        focus = random.choice(LEADHUNT_FOCUS_ANGLES)
+        geo_angles = (
+            f"Фокус этого поста: {focus}. "
+            "Скрытая реклама через сценарий/кейс. Без ссылки. "
+            "CTA только кодовым словом «ЛИДЫ». Не выдумывай имена клиентов."
+        )
     elif geo.get("key") in {"asia", "vietnam", "maldives", "china", "india"} and not kind.startswith(
         "promo"
     ):
@@ -1023,13 +1062,13 @@ def _normalize_text(text: str, *, kind: str) -> str:
     # Reach rule: never publish URLs in root Threads text posts.
     text = _strip_urls(text)
     max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)
-    if kind.startswith("promo"):
+    if kind.startswith("promo") or kind in {"case_leadhunt", "promo_leadhunt"}:
         # Never sell 2026 Kailas as the offer.
         if "kailas" in kind and re.search(r"\b2026\b", text) and "2027" not in text:
             text = text.replace("2026", "2027")
         cta = _cta_for_kind(kind)
         if cta and not re.search(
-            r"напиши\s*[«\"']?(КАЙЛАС|РЕТРИТ|ИНДИЯ)",
+            r"напиши\s*[«\"']?(КАЙЛАС|РЕТРИТ|ИНДИЯ|ЛИДЫ|БОТ)",
             text,
             flags=re.IGNORECASE,
         ):
@@ -1056,6 +1095,8 @@ def _source_id_for(kind: str, *, geo: dict[str, str] | None, news: dict[str, str
     if kind == "news" and news:
         return f"news:{news['hash']}"
     product_id = _product_id_for_kind(kind)
+    if kind in {"case_leadhunt", "promo_leadhunt"} and product_id:
+        return f"{kind}:{product_id}"
     if kind.startswith("promo") and product_id:
         return f"{kind}:{product_id}"
     if kind in {"geo_tip", "relocation", "tip", "discussion", "story", "warmup"} and geo:
@@ -1149,7 +1190,13 @@ def _refill_queue_unlocked(
             recent, window_idx=window_idx, con=con, day_key=day_key
         )
         geo = _pick_geo(geos_recent)
-        if "bali" in kind:
+        if kind in {"case_leadhunt", "promo_leadhunt"}:
+            # Cases often sit on Bali/Asia freelance & housing context.
+            geo = next(
+                (g for g in GEO_POOL if g["key"] == "bali"),
+                GEO_POOL[0],
+            )
+        elif "bali" in kind:
             geo = next(g for g in GEO_POOL if g["key"] == "bali")
         elif "kailas" in kind:
             geo = next(
@@ -1192,8 +1239,12 @@ def _refill_queue_unlocked(
             logger.exception(f"[threads-text] generate failed kind={kind}")
             continue
 
-        # Soft brand cue on selling posts without punctuation dashes.
-        if kind.startswith("promo") and "jay shambo" not in text.lower():
+        # Soft brand cue on tour selling posts only (not Lead Hunt cases).
+        if (
+            kind.startswith("promo")
+            and "leadhunt" not in kind
+            and "jay shambo" not in text.lower()
+        ):
             text = f"{text.rstrip()}\nJay Shambo Travel, если откликается."
 
         post_id = f"TT-{uuid.uuid4().hex[:10].upper()}"
