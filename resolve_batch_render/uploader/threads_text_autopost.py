@@ -486,6 +486,7 @@ def _product_id_for_kind(kind: str) -> str:
 
 
 def _link_for_kind(kind: str) -> str:
+    """Approved product URL for replies/operator context — never for root posts."""
     urls = _tour_urls()
     if kind == "promo_kailas":
         return urls["kailas"]
@@ -498,6 +499,23 @@ def _link_for_kind(kind: str) -> str:
     if kind.startswith("promo_bali"):
         return urls["bali"]
     return ""
+
+
+def _cta_for_kind(kind: str) -> str:
+    """Soft DM code-word CTA for selling posts (no URL)."""
+    if kind == "promo_kailas" or "kailas" in kind:
+        return "Напиши «КАЙЛАС»"
+    if kind == "promo_india" or "india" in kind:
+        return "Напиши «ИНДИЯ»"
+    if kind.startswith("promo_bali") or "bali" in kind:
+        return "Напиши «РЕТРИТ»"
+    return ""
+
+
+def _strip_urls(text: str) -> str:
+    body = re.sub(r"https?://\S+", "", text or "")
+    body = re.sub(r"\n{3,}", "\n\n", body)
+    return body.strip(" \n\t,;")
 
 
 def _rss_urls() -> list[str]:
@@ -893,24 +911,25 @@ def _normalize_text(text: str, *, kind: str) -> str:
         raise RuntimeError(
             "Generated text claims 1-day Kailas kora (must be 3 days / 52 km)"
         )
-    want = _link_for_kind(kind)
+    # Reach rule: never publish URLs in root Threads text posts.
+    text = _strip_urls(text)
     max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)
     if kind.startswith("promo"):
-        # Reserve room for the approved URL so we never clip mid-word then append.
-        url_room = (len(want) + 1) if want else 0
-        body_limit = max(80, max_chars - url_room)
-        text = fit_threads_text(re.sub(r"https?://\S+", "", text).strip(), max_chars=body_limit)
-        if want:
-            text = f"{text.rstrip()} {want}".strip()
-        found = re.findall(r"https?://\S+", text)
-        if len(found) > 1:
-            for extra in found[1:]:
-                text = text.replace(extra, "", 1)
         # Never sell 2026 Kailas as the offer.
         if "kailas" in kind and re.search(r"\b2026\b", text) and "2027" not in text:
             text = text.replace("2026", "2027")
-    else:
-        text = re.sub(r"https?://\S+", "", text).strip()
+        cta = _cta_for_kind(kind)
+        if cta and not re.search(
+            r"напиши\s*[«\"']?(КАЙЛАС|РЕТРИТ|ИНДИЯ)",
+            text,
+            flags=re.IGNORECASE,
+        ):
+            # Leave room for CTA line without mid-word clip.
+            body_limit = max(80, max_chars - len(cta) - 2)
+            text = fit_threads_text(text, max_chars=body_limit)
+            text = f"{text.rstrip()}\n\n{cta}".strip()
+    if re.search(r"https?://", text):
+        raise RuntimeError("Root Threads post must not contain URLs")
     return fit_threads_text(text, max_chars=max_chars)
 
 

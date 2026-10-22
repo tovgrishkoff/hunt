@@ -84,6 +84,23 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
     def test_author_prompt_asks_for_short_dense_posts(self) -> None:
         self.assertIn("180–260", AUTHOR_PROMPT)
         self.assertIn("без воды", AUTHOR_PROMPT.lower())
+        self.assertIn("запрещены любые URL", COMMON_PROMPT)
+        self.assertIn("Никаких URL", AUTHOR_PROMPT)
+
+    def test_normalize_strips_urls_and_adds_cta(self) -> None:
+        out = _normalize_text(
+            "Кайлас 2027: кора 3 дня, 52 км, акклиматизация в Лхасе. "
+            "https://jayshambo.com/tours/kai-las-svyaschennaya-kora-iz-lhasy",
+            kind="promo_kailas",
+        )
+        self.assertNotRegex(out, r"https?://")
+        self.assertIn("КАЙЛАС", out)
+        bali = _normalize_text(
+            "Ретрит на Бали: океан и тихий темп. https://jayshambo.com/tours/x",
+            kind="promo_bali",
+        )
+        self.assertNotRegex(bali, r"https?://")
+        self.assertIn("РЕТРИТ", bali)
 
     def test_daily_pack_roles(self) -> None:
         self.assertEqual(_role_of_kind("discussion:bali"), "discussion")

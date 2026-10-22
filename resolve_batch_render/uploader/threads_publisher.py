@@ -415,6 +415,15 @@ def publish_threads_text(
     body = (text or "").strip()
     if not body:
         raise ThreadsPublishError("Empty text")
+    # Root text posts: strip URLs (they crush reach). Links belong in replies.
+    if re.search(r"https?://\S+", body):
+        logger.warning(
+            f"[Threads TEXT] stripping URL(s) from root post account={target.label}"
+        )
+        body = re.sub(r"https?://\S+", "", body)
+        body = re.sub(r"\n{3,}", "\n\n", body).strip(" \n\t,;")
+    if not body:
+        raise ThreadsPublishError("Empty text after URL strip")
     # Threads API hard cap is 500; never clip mid-word.
     if len(body) > 500:
         from uploader.threads_prompts import fit_threads_text
