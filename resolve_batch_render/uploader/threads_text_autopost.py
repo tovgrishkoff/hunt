@@ -47,7 +47,7 @@ GEO_POOL: list[dict[str, str]] = [
     {
         "key": "kailas",
         "label": "Кайлас / Тибет",
-        "angles": "кора 52 км, Долма-Ла 5630 м, смысл vs галочка, акклиматизация, пермит",
+        "angles": "кора 3 дня / маршрут 52 км (НИКОГДА не за 1 день), Долма-Ла 5630 м, смысл vs галочка, акклиматизация, пермит",
     },
     {
         "key": "maldives",
@@ -822,6 +822,34 @@ def _generate_with_openai(prompt: str) -> str:
     return _extract_json_text(raw)
 
 
+_ONE_DAY_KORA_RE = re.compile(
+    r"(?:"
+    r"52\s*(?:км|километр\w*)\s*за\s*(?:один\s+)?(?:1\s+)?день"
+    r"|за\s*(?:один|1)\s*день.{0,40}(?:52|кор)"
+    r"|(?:кор\w*).{0,40}за\s*(?:один|1)\s*день"
+    r"|веду\s+кор\w*.{0,30}(?:за\s*)?(?:один|1)\s*день"
+    r"|кор\w*\s+за\s*(?:один|1)\s*день"
+    r")",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+
+
+def _mentions_one_day_kora(text: str) -> bool:
+    """True if text claims the Kailas kora is done in one day."""
+    low = (text or "").lower().replace("ё", "е")
+    if "кор" not in low and "кайлас" not in low and "kailash" not in low:
+        return False
+    if _ONE_DAY_KORA_RE.search(low):
+        return True
+    # «52 км … за день» without «три/3»
+    if re.search(r"52\s*(?:км|километр)", low) and re.search(
+        r"за\s+день\b", low
+    ):
+        if not re.search(r"(?:за\s+)?(?:три|3)\s+дн", low):
+            return True
+    return False
+
+
 def _normalize_text(text: str, *, kind: str) -> str:
     text = text.replace("\r", "").strip()
     text = re.sub(r"[ \t]+\n", "\n", text)
@@ -833,6 +861,10 @@ def _normalize_text(text: str, *, kind: str) -> str:
     low = text.lower()
     if any(b in low for b in banned):
         raise RuntimeError("Generated text mentions banned Nepal–Gosaikunda route")
+    if _mentions_one_day_kora(text):
+        raise RuntimeError(
+            "Generated text claims 1-day Kailas kora (must be 3 days / 52 km)"
+        )
     want = _link_for_kind(kind)
     max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)
     if kind.startswith("promo"):
@@ -955,7 +987,7 @@ def _refill_queue_unlocked(
                 {
                     "key": "kailas",
                     "label": "Кайлас / Тибет",
-                    "angles": "кора, высота, смысл пути vs галочка, подготовка 2027",
+                    "angles": "кора 3 дня / 52 км (не за 1 день), высота, смысл пути vs галочка, подготовка 2027",
                 },
             )
         elif "india" in kind:

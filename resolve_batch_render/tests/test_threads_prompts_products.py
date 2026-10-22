@@ -25,6 +25,9 @@ from uploader.threads_prompts import (
     fit_threads_text,
 )
 from uploader.threads_text_autopost import (
+    GEO_POOL,
+    _mentions_one_day_kora,
+    _normalize_text,
     _pick_kind,
     _product_id_for_kind,
     _role_of_kind,
@@ -109,6 +112,32 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {"THREADS_AVATAR_ID": "notion-avatar"}, clear=False):
             self.assertTrue(avatar_available())
             require_avatar_for_autopublish()
+
+    def test_kailas_kora_is_three_days_not_one(self) -> None:
+        kailas = next(g for g in GEO_POOL if g["key"] == "kailas")
+        self.assertIn("3 дня", kailas["angles"])
+        self.assertIn("52 км", kailas["angles"])
+        self.assertIn("1 день", kailas["angles"])
+        self.assertIn("стандартная кора длится 3 дня", COMMON_PROMPT)
+        self.assertIn("52 км", COMMON_PROMPT)
+        self.assertTrue(
+            _mentions_one_day_kora(
+                "Кора вокруг Кайласа — 52 километра за один день на высоте выше 5000."
+            )
+        )
+        self.assertTrue(
+            _mentions_one_day_kora("Я веду кору за 1 день: 52 км вокруг Кайласа.")
+        )
+        self.assertFalse(
+            _mentions_one_day_kora(
+                "Кора вокруг Кайласа — 52 км за три дня, перевал Долма-Ла 5630 м."
+            )
+        )
+        with self.assertRaises(RuntimeError):
+            _normalize_text(
+                "Кора вокруг Кайласа — 52 км за один день. Я веду группы.",
+                kind="promo_kailas",
+            )
 
 
 if __name__ == "__main__":
