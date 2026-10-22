@@ -130,11 +130,12 @@
       "formats": ["service"],
       "url": "https://t.me/Lead_Hunbot",
       "notes": [
-        "Soft daily Threads line: case/scenario posts about finding clients, villas, jobs via niche Telegram search.",
-        "Root posts: no URL. Soft CTA like «Напиши ЛИДЫ».",
-        "Put https://t.me/Lead_Hunbot only in replies when the person shows interest in the service.",
+        "Soft daily Threads line (1/day in the 5-post pack): case/scenario posts — no URL in root.",
+        "Two audiences to rotate: (A) local services — beauty, photo/video, realtor, cleaning, transfer, bike; (B) tourism — tour agents, retreat organizers, traveler requests for housing/transfer/photo.",
+        "Geo rotate inside cases: Bali first, also Phuket/Samui, Nha Trang/Danang, Tbilisi, Istanbul (same bot niches, different chats).",
+        "Root CTA: «Напиши ЛИДЫ». Put https://t.me/Lead_Hunbot only in replies when the person shows interest in the service itself.",
         "Do not invent named clients or fake deals; describe scenarios and how niche matching works.",
-        "One leadhunt post per day max inside the 5-post pack."
+        "Weekly hint: Mon beauty/service, Tue tourism/retreat, Wed housing, Thu other-country, Fri photo/content, Sat speed-of-reply on island, Sun jobs or transfer — still soft cases, not hard ads."
       ],
       "price": null,
       "price_basis": null,

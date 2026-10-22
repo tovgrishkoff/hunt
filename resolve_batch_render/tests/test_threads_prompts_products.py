@@ -216,6 +216,30 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
         self.assertIn("lead_hunbot", ids)
         self.assertIn("https://t.me/Lead_Hunbot", approved_urls())
 
+    def test_leadhunt_angles_cover_services_and_tourism(self) -> None:
+        joined = " ".join(LEADHUNT_FOCUS_ANGLES).lower()
+        for needle in (
+            "мастер",
+            "фотограф",
+            "риелтор",
+            "турагент",
+            "ретрит",
+            "пхукет",
+            "нячанг",
+            "тбилиси",
+            "стамбул",
+            "ниши",
+        ):
+            self.assertIn(needle, joined)
+        tourism = _normalize_text(
+            "Турагент выбирает ниши в Telegram — бот шлёт заявки "
+            "«ищу ретрит», без ручного скролла чатов.",
+            kind="case_leadhunt",
+        )
+        self.assertTrue(_is_leadhunt_on_topic(tourism))
+        self.assertIn("ЛИДЫ", tourism)
+        self.assertNotRegex(tourism, r"https?://")
+
     def test_kailas_focus_angles_cover_requested_themes(self) -> None:
         joined = " ".join(KAILAS_FOCUS_ANGLES).lower()
         self.assertIn("акклиматизация", joined)
