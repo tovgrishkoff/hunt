@@ -26,6 +26,7 @@ from uploader.threads_prompts import (
 )
 from uploader.threads_text_autopost import (
     GEO_POOL,
+    KAILAS_FOCUS_ANGLES,
     _mentions_one_day_kora,
     _normalize_text,
     _pick_kind,
@@ -138,6 +139,26 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
                 "Кора вокруг Кайласа — 52 км за один день. Я веду группы.",
                 kind="promo_kailas",
             )
+
+    def test_kailas_focus_angles_cover_requested_themes(self) -> None:
+        joined = " ".join(KAILAS_FOCUS_ANGLES).lower()
+        self.assertIn("акклиматизация", joined)
+        self.assertIn("эверест", joined)
+        self.assertIn("восьмитысячник", joined)
+        self.assertIn("тибетская медицина", joined)
+        self.assertIn("фарма", joined)
+        kailas = next(g for g in GEO_POOL if g["key"] == "kailas")
+        for needle in (
+            "акклиматизация",
+            "эвереста",
+            "восьмитысячников",
+            "тибетская медицина",
+            "фарма",
+        ):
+            self.assertIn(needle, kailas["angles"].lower())
+        self.assertIn("пять восьмитысячников", COMMON_PROMPT)
+        self.assertIn("базовый лагерь Эвереста", COMMON_PROMPT)
+        self.assertIn("тибетская медицина", COMMON_PROMPT)
 
 
 if __name__ == "__main__":

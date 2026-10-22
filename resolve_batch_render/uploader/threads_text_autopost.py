@@ -47,7 +47,14 @@ GEO_POOL: list[dict[str, str]] = [
     {
         "key": "kailas",
         "label": "Кайлас / Тибет",
-        "angles": "кора 3 дня / маршрут 52 км (НИКОГДА не за 1 день), Долма-Ла 5630 м, смысл vs галочка, акклиматизация, пермит",
+        "angles": (
+            "кора 3 дня / маршрут 52 км (НИКОГДА не за 1 день), Долма-Ла 5630 м, "
+            "акклиматизация в Тибете (Лхаса → набор высоты), "
+            "базовый лагерь Эвереста и Ронгбук, "
+            "пять восьмитысячников Тибета (Эверест, Лхоцзе, Макалу, Чо-Ойю, Шишапангма), "
+            "тибетская медицина и горная фарма (травы, традиция Sowa Rigpa, без обещания лечения), "
+            "смысл vs галочка, пермит"
+        ),
     },
     {
         "key": "maldives",
@@ -94,6 +101,16 @@ GEO_POOL: list[dict[str, str]] = [
         "label": "Южная Америка",
         "angles": "хабы перелётов, визы, что брать в один заезд",
     },
+]
+
+# Rotating single-post focuses for Kailas / Tibet (one thought per post).
+KAILAS_FOCUS_ANGLES: list[str] = [
+    "акклиматизация в Тибете: Лхаса ~3650 м, набор высоты до Дарчена и Долма-Ла, темп важнее героизма",
+    "базовый лагерь Эвереста (северная сторона) и монастырь Ронгбук на маршруте из Лхасы",
+    "пять восьмитысячников, которые видно в Тибете: Эверест, Лхоцзе, Макалу, Чо-Ойю, Шишапангма",
+    "тибетская медицина в горах: традиция, травы, горная фарма; не обещать лечение или чудо",
+    "кора 3 дня / 52 км, Долма-Ла 5630 м: нагрузка реальная, без однодневного рекорда",
+    "пермит и логистика из Лхасы: без самостоятельного «просто приехал и пошёл»",
 ]
 
 DEFAULT_RSS = (
@@ -743,12 +760,23 @@ def generate_threads_text(
                 geo = g
                 break
 
+    geo_angles = geo.get("angles", "практика путешествий")
+    # For Kailas posts, pin one rotating focus so themes (EBC, 8000ers,
+    # acclimatization, Tibetan medicine) actually appear in the feed.
+    if (
+        geo.get("key") == "kailas"
+        or "kailas" in kind
+        or product_id == "kailas_lhasa_2027"
+    ):
+        focus = random.choice(KAILAS_FOCUS_ANGLES)
+        geo_angles = f"Фокус этого поста: {focus}. Фон: {geo_angles}"
+
     max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)
     prompt = author_user_prompt(
         kind=kind,
         kind_label=labels.get(kind, kind),
         geo_label=geo.get("label", "путешествия"),
-        geo_angles=geo.get("angles", "практика путешествий"),
+        geo_angles=geo_angles,
         news_context=news_context,
         link=link,
         product_id=product_id,
@@ -987,7 +1015,11 @@ def _refill_queue_unlocked(
                 {
                     "key": "kailas",
                     "label": "Кайлас / Тибет",
-                    "angles": "кора 3 дня / 52 км (не за 1 день), высота, смысл пути vs галочка, подготовка 2027",
+                    "angles": (
+                        "кора 3 дня / 52 км (не за 1 день), акклиматизация в Тибете, "
+                        "EBC/Ронгбук, 5 восьмитысячников, тибетская медицина/горная фарма, "
+                        "подготовка 2027"
+                    ),
                 },
             )
         elif "india" in kind:
