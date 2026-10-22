@@ -25,11 +25,13 @@ from uploader.threads_prompts import (
     fit_threads_text,
 )
 from uploader.threads_text_autopost import (
+    BALI_FOCUS_ANGLES,
     GEO_POOL,
     KAILAS_FOCUS_ANGLES,
     _mentions_one_day_kora,
     _normalize_text,
     _pick_kind,
+    _pick_selling_kind,
     _product_id_for_kind,
     _role_of_kind,
 )
@@ -156,6 +158,22 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
                 "Кора вокруг Кайласа — 52 км за один день. Я веду группы.",
                 kind="promo_kailas",
             )
+
+    def test_bali_nye_is_primary_commercial_push(self) -> None:
+        bali = next(g for g in GEO_POOL if g["key"] == "bali")
+        self.assertGreaterEqual(int(bali.get("weight") or 0), 30)
+        self.assertIn("новогодн", bali["angles"].lower())
+        self.assertTrue(any("новогодн" in a.lower() for a in BALI_FOCUS_ANGLES))
+        self.assertIn("Бали", COMMON_PROMPT)
+        self.assertIn("реже", COMMON_PROMPT.lower())
+        # After recent kailas promo, next selling should avoid immediate kailas spam.
+        picks = {_pick_selling_kind(["promo_kailas"] * 3) for _ in range(20)}
+        self.assertTrue(picks)
+        self.assertTrue(
+            any(p.startswith("promo_bali") or p == "promo_india" for p in picks)
+        )
+        ids = flagship_product_ids_for_day()
+        self.assertEqual(ids[0], "bali_premium_ocean")
 
     def test_kailas_focus_angles_cover_requested_themes(self) -> None:
         joined = " ".join(KAILAS_FOCUS_ANGLES).lower()

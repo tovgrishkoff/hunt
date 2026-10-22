@@ -18,7 +18,7 @@
     {
       "id": "kailas_lhasa_2027",
       "name": "Кайлас из Лхасы",
-      "priority": 1,
+      "priority": 3,
       "role": "flagship",
       "status": "interest_collection",
       "season": "2027",
@@ -44,7 +44,7 @@
       "id": "india_private_8march_2027",
       "name": "Индивидуальное путешествие по Индии к 8 марта",
       "priority": 2,
-      "role": "flagship",
+      "role": "seasonal_flagship",
       "status": "announcement",
       "season": "2027",
       "duration_days": 10,
@@ -64,15 +64,17 @@
     {
       "id": "bali_premium_ocean",
       "name": "Премиальный ретрит Бали с океаном и отелями",
-      "priority": 3,
-      "role": "seasonal",
+      "priority": 1,
+      "role": "seasonal_flagship",
       "status": "booking_open",
       "season": "nye_2026_2027",
       "formats": ["group", "private_couple"],
       "url": "https://jayshambo.com/tours/puteshestvie-k-sebe-bali-tury-avtorskie-retrit-tury",
       "notes": [
+        "Primary commercial push now: Bali New Year holidays 2026–2027 and ocean retreat.",
         "New Year holiday package is not automatically a 31 Dec celebration dinner.",
-        "Clarify deposit and any 'without prepayment' wording before promising booking terms."
+        "Clarify deposit and any 'without prepayment' wording before promising booking terms.",
+        "In root Threads posts use CTA «Напиши РЕТРИТ» without URL; put program URL only in discussion replies."
       ],
       "price": null,
       "price_basis": null,
@@ -83,13 +85,14 @@
     {
       "id": "bali_sacred",
       "name": "Природный ретрит по сакральному Бали",
-      "priority": 3,
-      "role": "seasonal",
+      "priority": 1,
+      "role": "seasonal_flagship",
       "status": "booking_open",
       "season": "nye_2026_2027",
       "formats": ["group", "private_couple"],
       "url": "https://jayshambo.com/tours/put-k-sebe-retreat-puteshestvie-po-sakralnomu-bali",
       "notes": [
+        "Co-primary with ocean retreat for NYE / Asia push; keep packages distinct.",
         "Resolve 7/10 day and meal-condition mismatches before stating them as fact.",
         "Do not mix services or prices with the premium ocean retreat."
       ],

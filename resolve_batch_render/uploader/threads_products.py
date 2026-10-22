@@ -167,13 +167,13 @@ def products_prompt_block() -> str:
 
 
 def flagship_product_ids_for_day() -> list[str]:
-    """Base daily presence: Kailas 2027, India 8 Mar, Bali seasonal."""
+    """Seasonal push: Bali NYE/retreats first, India next, Kailas rarer."""
     preferred = [
-        "kailas_lhasa_2027",
-        "india_private_8march_2027",
         "bali_premium_ocean",
         "bali_sacred",
         "bali_weekend",
+        "india_private_8march_2027",
+        "kailas_lhasa_2027",
     ]
     have = {str(p.get("id")) for p in active_products()}
     return [pid for pid in preferred if pid in have]

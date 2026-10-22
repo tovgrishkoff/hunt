@@ -38,11 +38,16 @@ from uploader.threads_prompts import (
     strip_punct_dashes,
 )
 
-GEO_POOL: list[dict[str, str]] = [
+GEO_POOL: list[dict[str, Any]] = [
     {
         "key": "bali",
         "label": "Бали",
-        "angles": "визы/visa run, Чангу vs Убуд, сезон дождей, удалёнка, ретрит vs тусовка",
+        "angles": (
+            "новогодние каникулы 2026–2027, ретрит с океаном и отелями, "
+            "сакральный Бали, ретрит выходного дня, Чангу vs Убуд, "
+            "сезон дождей, visa run, без ложного ужина 31.12"
+        ),
+        "weight": 36,
     },
     {
         "key": "kailas",
@@ -55,52 +60,75 @@ GEO_POOL: list[dict[str, str]] = [
             "тибетская медицина и горная фарма (травы, традиция Sowa Rigpa, без обещания лечения), "
             "смысл vs галочка, пермит"
         ),
+        "weight": 6,
     },
     {
         "key": "maldives",
         "label": "Мальдивы",
         "angles": "local islands vs resort, трансферы, сезоны, бюджет без overwater",
+        "weight": 8,
     },
     {
         "key": "vietnam",
         "label": "Вьетнам",
         "angles": "e-visa, Дананг/Нячанг/Дalat, еда, симки, переезды север-юг",
+        "weight": 14,
     },
     {
         "key": "china",
         "label": "Китай",
         "angles": "оплата/Alipay, VPN мифы, маршруты, виза, города vs природа",
+        "weight": 10,
     },
     {
         "key": "india",
         "label": "Индия / Гоа",
-        "angles": "ретрит vs туризм, Гоа север/юг, Холи, ашрамы без розовых очков",
+        "angles": "ретрит vs туризм, Гоа север/юг, Холи, ашрамы без розовых очков, к 8 марта",
+        "weight": 12,
     },
     {
         "key": "asia",
         "label": "Азия (общий)",
-        "angles": "хабы пересадок, сезонность, ошибки первой длинной поездки",
+        "angles": (
+            "хабы пересадок, сезонность, ошибки первой длинной поездки, "
+            "куда ехать на НГ: Бали vs Таиланд vs Вьетнам"
+        ),
+        "weight": 16,
     },
     {
         "key": "south_africa",
         "label": "Южная Африка",
         "angles": "Кейптаун, сафари без люкса, безопасность, сезоны",
+        "weight": 2,
     },
     {
         "key": "mexico",
         "label": "Мексика",
         "angles": "Канкун vs Мерида vs CDMX, цифровой номад, безопасность районов",
+        "weight": 2,
     },
     {
         "key": "peru",
         "label": "Перу",
         "angles": "Мачу-Пикчу окна, высота, Куско, бюджет трек",
+        "weight": 2,
     },
     {
         "key": "latam",
         "label": "Южная Америка",
         "angles": "хабы перелётов, визы, что брать в один заезд",
+        "weight": 2,
     },
+]
+
+# Seasonal focus angles for Bali NYE / retreat sales (one thought per post).
+BALI_FOCUS_ANGLES: list[str] = [
+    "новогодние каникулы на Бали 2026–2027: ретрит, не тусовка; без обещания ужина 31.12",
+    "премиальный ретрит с океаном и отелями: кому подходит тишина у воды",
+    "сакральный Бали: храмы, природа, другой темп, не путать с ocean-пакетом",
+    "ретрит выходного дня: короткий заезд, понятный формат для пробы",
+    "Чангу vs Убуд на НГ: коворкинги/океан vs рисовые поля и йога",
+    "сезон дождей: час ливня не отменяет ретрит, если выбран правильный район",
 ]
 
 # Rotating single-post focuses for Kailas / Tibet (one thought per post).
@@ -244,25 +272,37 @@ def _last_scheduled_at(con: Any) -> datetime | None:
         return None
 
 
+def _day_scheduled_times(con: Any, day_key: str) -> list[datetime]:
+    rows = con.execute(
+        "SELECT scheduled_at FROM upload_queue "
+        "WHERE platform='threads_text' AND status IN ('planned','posted') "
+        "AND scheduled_at LIKE ?",
+        (f"{day_key}%",),
+    ).fetchall()
+    out: list[datetime] = []
+    for row in rows:
+        try:
+            out.append(datetime.fromisoformat(str(row[0])))
+        except ValueError:
+            continue
+    return out
+
+
 def pick_random_slot(
     tz: ZoneInfo, *, con: Any | None = None
 ) -> tuple[str, int]:
-    """Return (iso slot, window_index). Mon–Sat only; 5 windows → daily pack."""
+    """Return (iso slot, window_index). Fill nearest underfilled days to 5/day."""
     now = datetime.now(tz=tz)
     per_day = max(1, _env_int("THREADS_TEXT_MAX_PER_DAY", 5))
-    # Spread ~5 posts across the day (~2h gaps).
+    # Spread posts across the same day (~2h gaps). Do NOT use global last_at —
+    # that pushed slots weeks ahead and left near days half-empty.
     min_gap_h = max(0.75, _env_float("THREADS_TEXT_MIN_GAP_HOURS", 2.0))
     wins = _windows()
     weights = [1.0, 1.05, 1.0, 1.1, 1.15][: len(wins)]
     while len(weights) < len(wins):
         weights.append(1.0)
 
-    last_at = _last_scheduled_at(con) if con is not None else None
-    earliest = now + timedelta(minutes=20)
-    if last_at is not None:
-        gap_floor = last_at + timedelta(hours=min_gap_h)
-        if gap_floor > earliest:
-            earliest = gap_floor
+    floor_now = now + timedelta(minutes=20)
 
     candidates: list[tuple[datetime, int]] = []
     for day_offset in range(0, 21):
@@ -270,11 +310,10 @@ def pick_random_slot(
         if not _is_posting_day(day):
             continue
         day_key = day.isoformat()
+        day_times: list[datetime] = []
         if con is not None:
-            scheduled_today = _day_count(con, day_key) + _day_planned_count(
-                con, day_key
-            )
-            if scheduled_today >= per_day:
+            day_times = _day_scheduled_times(con, day_key)
+            if len(day_times) >= per_day:
                 continue
 
         order = list(range(len(wins)))
@@ -288,7 +327,7 @@ def pick_random_slot(
             if end_min <= start_min:
                 continue
             span = max(1, end_min - start_min)
-            for _ in range(8):
+            for _ in range(10):
                 minute = start_min + random.randint(0, span)
                 slot = datetime(
                     day.year,
@@ -298,7 +337,12 @@ def pick_random_slot(
                     minute % 60,
                     tzinfo=tz,
                 )
-                if slot <= earliest:
+                if slot <= floor_now:
+                    continue
+                if any(
+                    abs((slot - other).total_seconds()) < min_gap_h * 3600
+                    for other in day_times
+                ):
                     continue
                 candidates.append((slot, wi))
                 break
@@ -368,15 +412,23 @@ def _tour_urls() -> dict[str, str]:
     }
 
 
+def _weighted_choice(items: list[dict[str, str]]) -> dict[str, str]:
+    if not items:
+        return random.choice(GEO_POOL)
+    weights = [max(1, int(g.get("weight") or 1)) for g in items]
+    return random.choices(items, weights=weights, k=1)[0]
+
+
 def _pick_geo(recent_geos: list[str]) -> dict[str, str]:
     # Nepal / Gosaikunda must never appear as a promo geo.
+    # Commercial push: Asia + Bali NYE; LatAm/Africa rare.
     blocked = {"nepal", "gosaikunda"}
     pool = [
         g
         for g in GEO_POOL
         if g["key"] not in recent_geos[-4:] and g["key"] not in blocked
     ]
-    return random.choice(pool or GEO_POOL)
+    return _weighted_choice(pool or GEO_POOL)
 
 
 def _role_of_kind(kind: str) -> str:
@@ -426,17 +478,24 @@ def _promo_kinds_available() -> list[str]:
 
 
 def _pick_selling_kind(recent_kinds: list[str]) -> str:
+    """Weight selling posts toward Bali NYE retreats; Kailas rarer."""
     options = _promo_kinds_available()
-    recent_bases = [str(k).split(":", 1)[0] for k in recent_kinds[-8:]]
-    fresh = [k for k in options if k not in recent_bases]
+    recent_bases = [str(k).split(":", 1)[0] for k in recent_kinds[-10:]]
+    # At most one Kailas promo in the last ~10 scheduled kinds.
+    if "promo_kailas" in recent_bases:
+        options = [k for k in options if k != "promo_kailas"] or options
+    fresh = [k for k in options if k not in recent_bases[-4:]]
     pool = fresh or options
-    # Prefer flagships early in the day pack.
-    preferred = [
-        k
-        for k in ("promo_kailas", "promo_india", "promo_bali")
-        if k in pool
-    ]
-    return random.choice(preferred or pool)
+    # Seasonal sales mix: Bali ocean/sacred dominate, India medium, Kailas rare.
+    weights_map = {
+        "promo_bali": 42,
+        "promo_bali_sacred": 28,
+        "promo_bali_weekend": 10,
+        "promo_india": 12,
+        "promo_kailas": 8,
+    }
+    weights = [weights_map.get(k, 5) for k in pool]
+    return random.choices(pool, weights=weights, k=1)[0]
 
 
 def _pick_kind(
@@ -779,14 +838,20 @@ def generate_threads_text(
                 break
 
     geo_angles = geo.get("angles", "практика путешествий")
-    # For Kailas posts, pin one rotating focus so themes (EBC, 8000ers,
-    # acclimatization, Tibetan medicine) actually appear in the feed.
+    # Pin one rotating focus so seasonal themes actually appear.
     if (
         geo.get("key") == "kailas"
         or "kailas" in kind
         or product_id == "kailas_lhasa_2027"
     ):
         focus = random.choice(KAILAS_FOCUS_ANGLES)
+        geo_angles = f"Фокус этого поста: {focus}. Фон: {geo_angles}"
+    elif (
+        geo.get("key") == "bali"
+        or "bali" in kind
+        or product_id.startswith("bali_")
+    ):
+        focus = random.choice(BALI_FOCUS_ANGLES)
         geo_angles = f"Фокус этого поста: {focus}. Фон: {geo_angles}"
 
     max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)
@@ -802,16 +867,19 @@ def generate_threads_text(
         max_chars=max_chars,
     )
 
-    provider = _env("THREADS_TEXT_LLM", "claude").lower()
+    provider = _env("THREADS_TEXT_LLM", "auto").lower()
     text = ""
     if provider in {"claude", "anthropic", "auto"}:
         try:
             text = _generate_with_claude(prompt)
             logger.info(f"[threads-text] llm=claude kind={kind}")
         except Exception:
-            if provider != "auto":
-                raise
-            logger.exception("[threads-text] Claude failed → OpenAI fallback")
+            # Missing anthropic package / API issues → OpenAI so the 5/day pack still fills.
+            if provider in {"claude", "anthropic"}:
+                logger.exception("[threads-text] Claude failed → OpenAI fallback")
+            else:
+                logger.exception("[threads-text] Claude failed → OpenAI fallback")
+            text = ""
     if not text:
         text = _generate_with_openai(prompt)
         logger.info(f"[threads-text] llm=openai kind={kind}")
@@ -1000,20 +1068,34 @@ def _refill_queue_unlocked(
         "SELECT COUNT(*) FROM upload_queue "
         "WHERE platform='threads_text' AND status='planned'"
     ).fetchone()[0]
-    # Keep about 3 days of the 5-post pack ahead.
+    # Keep about 3 days of the 5-post pack ahead AND fill holes in near days.
     min_q = _env_int("THREADS_TEXT_QUEUE_MIN", 15)
-    if int(planned or 0) >= min_q:
-        logger.info(f"[threads-text] queue ok planned={planned}")
+    per_day = max(1, _env_int("THREADS_TEXT_MAX_PER_DAY", 5))
+    tz = ZoneInfo(tz_name)
+    now = datetime.now(tz=tz)
+    holes = 0
+    for day_offset in range(0, 10):
+        day = (now + timedelta(days=day_offset)).date()
+        if not _is_posting_day(day):
+            continue
+        day_key = day.isoformat()
+        have = _day_count(con, day_key) + _day_planned_count(con, day_key)
+        if have < per_day:
+            holes += per_day - have
+    if int(planned or 0) >= min_q and holes <= 0:
+        logger.info(f"[threads-text] queue ok planned={planned} holes=0")
         return 0
 
-    tz = ZoneInfo(tz_name)
     recent = _recent_kinds(con)
     avoid = _recent_captions(con)
     geos_recent = _recent_geos(con)
-    need = max(0, min_q - int(planned or 0))
+    need = max(holes, max(0, min_q - int(planned or 0)))
     to_add = min(n, max(need, 1) if need else 0)
     if int(planned or 0) == 0:
         to_add = min(n, max(min_q, 10))
+    logger.info(
+        f"[threads-text] refill planned={planned} holes={holes} to_add={to_add}"
+    )
 
     logger.info(
         f"[threads-text] daily flagships={flagship_product_ids_for_day()}"
