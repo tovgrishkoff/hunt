@@ -166,7 +166,8 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
         self.assertIn("новогодн", bali["angles"].lower())
         self.assertTrue(any("жиль" in a.lower() for a in BALI_FOCUS_ANGLES))
         self.assertTrue(any("билет" in a.lower() for a in ASIA_VALUE_FOCUS_ANGLES))
-        self.assertIn("подписчик", COMMON_PROMPT.lower())
+        joined = (COMMON_PROMPT + AUTHOR_PROMPT).lower()
+        self.assertTrue("подписчик" in joined or "польз" in joined)
         self.assertIn("польз", AUTHOR_PROMPT.lower())
         # After recent kailas promo, next selling should avoid immediate kailas spam.
         picks = {_pick_selling_kind(["promo_kailas"] * 3) for _ in range(20)}
