@@ -900,7 +900,15 @@ def generate_threads_text(
 
     geo_angles = geo.get("angles", "практика путешествий")
     # Pin one rotating focus so seasonal themes actually appear.
-    if (
+    # Lead Hunt first: cases pin geo=bali for context, but must not inherit Bali tips.
+    if kind in {"case_leadhunt", "promo_leadhunt"}:
+        focus = random.choice(LEADHUNT_FOCUS_ANGLES)
+        geo_angles = (
+            f"Фокус этого поста: {focus}. "
+            "Скрытая реклама через сценарий/кейс. Без ссылки. "
+            "CTA только кодовым словом «ЛИДЫ». Не выдумывай имена клиентов."
+        )
+    elif (
         geo.get("key") == "kailas"
         or "kailas" in kind
         or product_id == "kailas_lhasa_2027"
@@ -921,13 +929,6 @@ def generate_threads_text(
         else:
             focus = random.choice(BALI_FOCUS_ANGLES)
         geo_angles = f"Фокус этого поста: {focus}. Фон: {geo_angles}"
-    elif kind in {"case_leadhunt", "promo_leadhunt"}:
-        focus = random.choice(LEADHUNT_FOCUS_ANGLES)
-        geo_angles = (
-            f"Фокус этого поста: {focus}. "
-            "Скрытая реклама через сценарий/кейс. Без ссылки. "
-            "CTA только кодовым словом «ЛИДЫ». Не выдумывай имена клиентов."
-        )
     elif geo.get("key") in {"asia", "vietnam", "maldives", "china", "india"} and not kind.startswith(
         "promo"
     ):
@@ -1044,6 +1045,27 @@ def _mentions_one_day_kora(text: str) -> bool:
     return False
 
 
+_LEADHUNT_TOPIC_RE = re.compile(
+    r"(ниш|заявк|клиент|lead\s*hunt|hunbot|телеграм|telegram|"
+    r"бот\b|ваканс|поиск\s+клиент|релевантн)",
+    flags=re.IGNORECASE,
+)
+
+
+def _is_leadhunt_on_topic(text: str) -> bool:
+    """True when a Lead Hunt case actually talks about niches/leads/bot.
+
+    Ignore the soft CTA line («Напиши ЛИДЫ») — alone it is not on-topic proof.
+    """
+    body = re.sub(
+        r"напиши\s*[«\"']?лиды[»\"']?",
+        " ",
+        text or "",
+        flags=re.IGNORECASE,
+    )
+    return bool(_LEADHUNT_TOPIC_RE.search(body))
+
+
 def _normalize_text(text: str, *, kind: str) -> str:
     text = text.replace("\r", "").strip()
     text = re.sub(r"[ \t]+\n", "\n", text)
@@ -1058,6 +1080,10 @@ def _normalize_text(text: str, *, kind: str) -> str:
     if _mentions_one_day_kora(text):
         raise RuntimeError(
             "Generated text claims 1-day Kailas kora (must be 3 days / 52 km)"
+        )
+    if kind in {"case_leadhunt", "promo_leadhunt"} and not _is_leadhunt_on_topic(text):
+        raise RuntimeError(
+            "Lead Hunt case off-topic (need niches/leads/Telegram bot scenario)"
         )
     # Reach rule: never publish URLs in root Threads text posts.
     text = _strip_urls(text)
@@ -1156,7 +1182,8 @@ def _refill_queue_unlocked(
     tz = ZoneInfo(tz_name)
     now = datetime.now(tz=tz)
     holes = 0
-    for day_offset in range(0, 10):
+    hole_horizon = max(10, _env_int("THREADS_TEXT_LEADHUNT_HORIZON_DAYS", 14))
+    for day_offset in range(0, hole_horizon):
         day = (now + timedelta(days=day_offset)).date()
         if not _is_posting_day(day):
             continue
@@ -1347,6 +1374,158 @@ def publish_due_threads_text(*, db_path: str, tz_name: str) -> bool:
     return True
 
 
+def ensure_daily_leadhunt_cases(*, db_path: str, tz_name: str) -> int:
+    """Guarantee 1 on-topic Lead Hunt soft case per posting day (next ~10 days).
+
+    Full days without a case: cancel one planned warmup to free the slot, then
+    generate ``case_leadhunt``. Off-topic cases are cancelled and regenerated.
+    """
+    if not _env_bool("THREADS_TEXT_AUTOPOST", True):
+        return 0
+    if not _env_bool("THREADS_TEXT_LEADHUNT_DAILY", True):
+        return 0
+
+    tz = ZoneInfo(tz_name)
+    now = datetime.now(tz=tz)
+    con = connect(db_path)
+    per_day = max(1, _env_int("THREADS_TEXT_MAX_PER_DAY", 5))
+    horizon = max(3, _env_int("THREADS_TEXT_LEADHUNT_HORIZON_DAYS", 14))
+    added = 0
+
+    for day_offset in range(0, horizon):
+        day = (now + timedelta(days=day_offset)).date()
+        if not _is_posting_day(day):
+            continue
+        day_key = day.isoformat()
+        rows = con.execute(
+            "SELECT reel_id, source_id, caption, scheduled_at FROM upload_queue "
+            "WHERE platform='threads_text' AND status='planned' "
+            "AND scheduled_at LIKE ? ORDER BY scheduled_at",
+            (f"{day_key}%",),
+        ).fetchall()
+
+        lead_rows = [
+            r
+            for r in rows
+            if _role_of_kind(str(r[1] or "")) == "leadhunt"
+        ]
+        good = [
+            r
+            for r in lead_rows
+            if _is_leadhunt_on_topic(str(r[2] or ""))
+        ]
+        for bad in lead_rows:
+            if bad in good:
+                continue
+            con.execute(
+                "UPDATE upload_queue SET status='cancelled', "
+                "updated_at=?, last_error=? WHERE reel_id=?",
+                (
+                    datetime.now(tz=tz).isoformat(timespec="seconds"),
+                    "off-topic leadhunt case",
+                    bad[0],
+                ),
+            )
+            logger.warning(
+                f"[threads-text] cancelled off-topic leadhunt {bad[0]}"
+            )
+        con.commit()
+
+        if good:
+            # Keep exactly one good case; cancel extras.
+            for extra in good[1:]:
+                con.execute(
+                    "UPDATE upload_queue SET status='cancelled', "
+                    "updated_at=? WHERE reel_id=?",
+                    (
+                        datetime.now(tz=tz).isoformat(timespec="seconds"),
+                        extra[0],
+                    ),
+                )
+            con.commit()
+            continue
+
+        # Need a new case: free a warmup slot if the day is already full.
+        planned_n = _day_planned_count(con, day_key) + _day_count(con, day_key)
+        if planned_n >= per_day:
+            victim = None
+            for r in rows:
+                rid = str(r[0] or "")
+                # Skip already-cancelled off-topic leadhunt rows.
+                if any(str(b[0]) == rid for b in lead_rows if b not in good):
+                    continue
+                if _role_of_kind(str(r[1] or "")) == "warmup":
+                    victim = r
+                    break
+            if victim is None:
+                for r in rows:
+                    rid = str(r[0] or "")
+                    if any(str(b[0]) == rid for b in lead_rows if b not in good):
+                        continue
+                    if _role_of_kind(str(r[1] or "")) == "discussion":
+                        victim = r
+                        break
+            if victim is None:
+                logger.warning(
+                    f"[threads-text] cannot free slot for leadhunt on {day_key}"
+                )
+                continue
+            slot = str(victim[3])
+            con.execute(
+                "UPDATE upload_queue SET status='cancelled', "
+                "updated_at=?, last_error=? WHERE reel_id=?",
+                (
+                    datetime.now(tz=tz).isoformat(timespec="seconds"),
+                    "replaced by daily leadhunt case",
+                    victim[0],
+                ),
+            )
+            con.commit()
+            logger.info(
+                f"[threads-text] freed {victim[0]} ({victim[1]}) → leadhunt {day_key}"
+            )
+        else:
+            # Prefer midday window for soft tool case on this day.
+            mid = datetime(day.year, day.month, day.day, 13, 5, tzinfo=tz)
+            if mid <= now:
+                mid = now + timedelta(minutes=35)
+            slot = mid.isoformat(timespec="seconds")
+
+        geo = next((g for g in GEO_POOL if g["key"] == "bali"), GEO_POOL[0])
+        try:
+            text = generate_threads_text(
+                kind="case_leadhunt",
+                avoid_openings=_recent_captions(con),
+                geo=geo,
+            )
+        except Exception:
+            logger.exception(
+                f"[threads-text] leadhunt generate failed day={day_key}"
+            )
+            continue
+
+        post_id = f"TT-{uuid.uuid4().hex[:10].upper()}"
+        sid = _source_id_for("case_leadhunt", geo=geo, news=None)
+        upsert_item(
+            con,
+            reel_id=post_id,
+            scheduled_at=slot,
+            video_path="",
+            caption=text,
+            status="planned",
+            source="threads_text_gen",
+            source_id=sid,
+            platform="threads_text",
+        )
+        added += 1
+        logger.success(
+            f"[threads-text] daily leadhunt {post_id} at {slot}"
+        )
+
+    return added
+
+
 def threads_text_tick(*, db_path: str, tz_name: str) -> None:
     refill_queue(db_path=db_path, tz_name=tz_name)
+    ensure_daily_leadhunt_cases(db_path=db_path, tz_name=tz_name)
     publish_due_threads_text(db_path=db_path, tz_name=tz_name)

@@ -31,6 +31,7 @@ from uploader.threads_text_autopost import (
     KAILAS_FOCUS_ANGLES,
     LEADHUNT_FOCUS_ANGLES,
     _cta_for_kind,
+    _is_leadhunt_on_topic,
     _mentions_one_day_kora,
     _normalize_text,
     _pick_kind,
@@ -204,10 +205,16 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
         self.assertNotRegex(out, r"https?://")
         self.assertIn("ЛИДЫ", out)
         self.assertIn("ЛИДЫ", _cta_for_kind("case_leadhunt"))
+        self.assertTrue(_is_leadhunt_on_topic(out))
+        with self.assertRaises(RuntimeError):
+            _normalize_text(
+                "Байк на Бали удобен в Чангу, Grab дороже но безопаснее.",
+                kind="case_leadhunt",
+            )
         cfg = load_products_config()
         ids = {p["id"] for p in cfg["products"]}
         self.assertIn("lead_hunbot", ids)
-        self.assertIn("t.me/Lead_Hunbot", approved_urls())
+        self.assertIn("https://t.me/Lead_Hunbot", approved_urls())
 
     def test_kailas_focus_angles_cover_requested_themes(self) -> None:
         joined = " ".join(KAILAS_FOCUS_ANGLES).lower()
