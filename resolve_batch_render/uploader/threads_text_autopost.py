@@ -1,7 +1,8 @@
 """Scheduled native TEXT posts for Threads @grishkoff_travel (META_2).
 
 Cadence: ~5 root posts/day, Mon–Sat (Sunday off).
-Daily pack: 2 discussion + 1 warmup + 2 selling (order shuffled).
+Daily pack: 2 discussion + 2 value-warmup + 1 selling (order shuffled).
+Focus: Asia/Bali utility for followers + seasonal retreat sales; Kailas rarer.
 Prompts: Notion Jay Shambo server spec (common + author).
 """
 
@@ -43,9 +44,10 @@ GEO_POOL: list[dict[str, Any]] = [
         "key": "bali",
         "label": "Бали",
         "angles": (
-            "новогодние каникулы 2026–2027, ретрит с океаном и отелями, "
-            "сакральный Бали, ретрит выходного дня, Чангу vs Убуд, "
-            "сезон дождей, visa run, без ложного ужина 31.12"
+            "польза для подписчиков: цены жилья Чангу/Убуд, аренда vs отель, "
+            "экскурсии без переплаты, байк/Grab, где есть/не есть океан, "
+            "лайфхаки дешёвых билетов в DPS, visa run стоимость, "
+            "новогодние каникулы 2026–2027 и ретрит (ocean/sacred/weekend) без ложного ужина 31.12"
         ),
         "weight": 36,
     },
@@ -65,33 +67,46 @@ GEO_POOL: list[dict[str, Any]] = [
     {
         "key": "maldives",
         "label": "Мальдивы",
-        "angles": "local islands vs resort, трансферы, сезоны, бюджет без overwater",
+        "angles": (
+            "цены local vs resort, трансферы speedboat/гидросамолёт, "
+            "сезоны, бюджет без overwater, симки, где жить на месяц"
+        ),
         "weight": 8,
     },
     {
         "key": "vietnam",
         "label": "Вьетнам",
-        "angles": "e-visa, Дананг/Нячанг/Дalat, еда, симки, переезды север-юг",
+        "angles": (
+            "e-visa сроки/цена, жильё Дананг/Нячанг/Далат, "
+            "поезда и sleeper bus, еда чек, симки, лайфхаки билетов HAN/SGN/DAD"
+        ),
         "weight": 14,
     },
     {
         "key": "china",
         "label": "Китай",
-        "angles": "оплата/Alipay, VPN мифы, маршруты, виза, города vs природа",
+        "angles": (
+            "Alipay/WeChat Pay для иностранца, VPN мифы, жильё без Airbnb, "
+            "поезда vs самолёт, виза, цены на еду и метро"
+        ),
         "weight": 10,
     },
     {
         "key": "india",
         "label": "Индия / Гоа",
-        "angles": "ретрит vs туризм, Гоа север/юг, Холи, ашрамы без розовых очков, к 8 марта",
+        "angles": (
+            "жильё север/юг Гоа цены, такси/байк, что реально стоит день, "
+            "виза e-visa, лайфхаки билетов, ретрит vs туризм, к 8 марта"
+        ),
         "weight": 12,
     },
     {
         "key": "asia",
         "label": "Азия (общий)",
         "angles": (
-            "хабы пересадок, сезонность, ошибки первой длинной поездки, "
-            "куда ехать на НГ: Бали vs Таиланд vs Вьетнам"
+            "лайфхаки дешёвых билетов (даты±3, хабы, ночные рейсы), "
+            "где жить месяц дешевле, симки/eSIM, страхование, "
+            "ошибки первой длинной поездки, НГ: Бали vs Таиланд vs Вьетнам"
         ),
         "weight": 16,
     },
@@ -123,12 +138,26 @@ GEO_POOL: list[dict[str, Any]] = [
 
 # Seasonal focus angles for Bali NYE / retreat sales (one thought per post).
 BALI_FOCUS_ANGLES: list[str] = [
+    "цены жилья: вилла/комната Чангу vs Убуд на месяц — что реально платят",
+    "экскурсии без переплаты: когда брать водителя на день, а когда Grab хватает",
+    "лайфхак билетов в Денпасар: гибкие даты, стыковка через Сингапур/Куала, когда дорожает НГ",
+    "байк vs Grab: страховка, залог, где не стоит брать скутер",
+    "еда и чек на день: варунг vs кафе для удалёнщиков",
+    "visa run: Сингапур/Куала/Дили — цена трёх дней vs продление",
     "новогодние каникулы на Бали 2026–2027: ретрит, не тусовка; без обещания ужина 31.12",
-    "премиальный ретрит с океаном и отелями: кому подходит тишина у воды",
-    "сакральный Бали: храмы, природа, другой темп, не путать с ocean-пакетом",
-    "ретрит выходного дня: короткий заезд, понятный формат для пробы",
-    "Чангу vs Убуд на НГ: коворкинги/океан vs рисовые поля и йога",
-    "сезон дождей: час ливня не отменяет ретрит, если выбран правильный район",
+    "премиальный / сакральный / weekend ретрит: чем отличаются пакеты",
+]
+
+# Practical Asia value angles for follower growth (discussion / warmup).
+ASIA_VALUE_FOCUS_ANGLES: list[str] = [
+    "лайфхак дешёвых авиабилетов: смотреть ±3 дня, вылет будни, хаб вместо прямого",
+    "где жить месяц в Азии дешевле: критерии района, не только цена за ночь",
+    "симка и eSIM: что брать в первую неделю, чтобы не переплатить",
+    "экскурсии: чужой тур vs свой маршрут — где теряются деньги",
+    "честный чек на день: жильё + еда + транспорт без розовых цифр",
+    "страхование и багаж: что проверить до оплаты билета",
+    "сезонность: когда цены на жильё и билеты прыгают к праздникам",
+    "ошибка новичка: купить билет до визы / жилья / понимания района",
 ]
 
 # Rotating single-post focuses for Kailas / Tibet (one thought per post).
@@ -505,11 +534,11 @@ def _pick_kind(
     con: Any | None = None,
     day_key: str = "",
 ) -> str:
-    """Fill the Notion daily pack: 2 discussion, 1 warmup, 2 selling."""
+    """Fill daily pack: 2 discussion, 2 value-warmup, 1 selling (followers + sales)."""
     targets = {
         "discussion": 2,
-        "warmup": 1,
-        "selling": 2,
+        "warmup": 2,
+        "selling": 1,
     }
     counts = {"discussion": 0, "warmup": 0, "selling": 0}
     if con is not None and day_key:
@@ -851,7 +880,19 @@ def generate_threads_text(
         or "bali" in kind
         or product_id.startswith("bali_")
     ):
-        focus = random.choice(BALI_FOCUS_ANGLES)
+        # Value tips for followers on discussion/warmup; retreat angles on promo.
+        if kind.startswith("promo"):
+            focus = random.choice(
+                [a for a in BALI_FOCUS_ANGLES if "ретрит" in a.lower() or "новогод" in a.lower()]
+                or BALI_FOCUS_ANGLES
+            )
+        else:
+            focus = random.choice(BALI_FOCUS_ANGLES)
+        geo_angles = f"Фокус этого поста: {focus}. Фон: {geo_angles}"
+    elif geo.get("key") in {"asia", "vietnam", "maldives", "china", "india"} and not kind.startswith(
+        "promo"
+    ):
+        focus = random.choice(ASIA_VALUE_FOCUS_ANGLES)
         geo_angles = f"Фокус этого поста: {focus}. Фон: {geo_angles}"
 
     max_chars = _env_int("THREADS_TEXT_MAX_CHARS", 260)

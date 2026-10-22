@@ -25,6 +25,7 @@ from uploader.threads_prompts import (
     fit_threads_text,
 )
 from uploader.threads_text_autopost import (
+    ASIA_VALUE_FOCUS_ANGLES,
     BALI_FOCUS_ANGLES,
     GEO_POOL,
     KAILAS_FOCUS_ANGLES,
@@ -163,9 +164,10 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
         bali = next(g for g in GEO_POOL if g["key"] == "bali")
         self.assertGreaterEqual(int(bali.get("weight") or 0), 30)
         self.assertIn("новогодн", bali["angles"].lower())
-        self.assertTrue(any("новогодн" in a.lower() for a in BALI_FOCUS_ANGLES))
-        self.assertIn("Бали", COMMON_PROMPT)
-        self.assertIn("реже", COMMON_PROMPT.lower())
+        self.assertTrue(any("жиль" in a.lower() for a in BALI_FOCUS_ANGLES))
+        self.assertTrue(any("билет" in a.lower() for a in ASIA_VALUE_FOCUS_ANGLES))
+        self.assertIn("подписчик", COMMON_PROMPT.lower())
+        self.assertIn("польз", AUTHOR_PROMPT.lower())
         # After recent kailas promo, next selling should avoid immediate kailas spam.
         picks = {_pick_selling_kind(["promo_kailas"] * 3) for _ in range(20)}
         self.assertTrue(picks)
@@ -174,6 +176,15 @@ class ThreadsPromptsProductsTest(unittest.TestCase):
         )
         ids = flagship_product_ids_for_day()
         self.assertEqual(ids[0], "bali_premium_ocean")
+
+    def test_daily_pack_favors_value_over_double_promo(self) -> None:
+        # With empty day counts, late window still may pick selling once, not twice.
+        kinds = [
+            _pick_kind([], window_idx=i, con=None, day_key="")
+            for i in range(5)
+        ]
+        selling = sum(1 for k in kinds if str(k).startswith("promo"))
+        self.assertLessEqual(selling, 3)
 
     def test_kailas_focus_angles_cover_requested_themes(self) -> None:
         joined = " ".join(KAILAS_FOCUS_ANGLES).lower()
