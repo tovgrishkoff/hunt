@@ -61,15 +61,25 @@ def postprocess_like_monitor(text: str, niches: Set[str]) -> Set[str]:
     return niches
 
 
-def test_crypto_transfer_not_realty() -> None:
-    text = (
+CRYPTO_TEXTS = [
+    (
         "Куплю вашу крипту за евро наличкой или переводом в Бандунге. "
         "Встреча в Dago"
-    )
-    found = niches_from_patterns(text)
-    assert "Обмен валют" in found, found
-    assert "Продажа недвижимости" not in found, found
-    assert "Сдача недвижимости" not in found, found
+    ),
+    (
+        "Куплю вашу крипту за евро наличкой или переводом в Бинтане. "
+        "Встреча Lagoi Plaza, Jl. Raya Lagoi No. 3"
+    ),
+    "Куплю вашу крипту за евро наличкой или переводом. Джокьякарта - Jl. Malioboro No. 56",
+]
+
+
+def test_crypto_transfer_not_realty() -> None:
+    for text in CRYPTO_TEXTS:
+        found = niches_from_patterns(text)
+        assert "Обмен валют" in found, (text, found)
+        assert "Продажа недвижимости" not in found, (text, found)
+        assert "Сдача недвижимости" not in found, (text, found)
 
 
 def test_real_house_buy_still_matches() -> None:
@@ -77,21 +87,26 @@ def test_real_house_buy_still_matches() -> None:
     assert "Продажа недвижимости" in niches_from_patterns("Куплю квартиру на Бали")
     assert "Продажа недвижимости" in niches_from_patterns("Продам виллу 3br Canggu")
     assert "Сдача недвижимости" in niches_from_patterns("Сниму дом в Убуде на месяц")
+    assert "Сдача недвижимости" in niches_from_patterns("Аренда дома в Чангу на месяц")
 
 
 def test_housing_context_ignores_perevodom() -> None:
     assert not HOUSING_CONTEXT_RE.search("оплата переводом в бандунге")
+    assert not HOUSING_CONTEXT_RE.search("перевод на номер карты")
+    assert not HOUSING_CONTEXT_RE.search("есть евро в бельгии")
+    assert not HOUSING_CONTEXT_RE.search("встреча lagoi plaza, jl. raya lagoi no. 3")
     assert HOUSING_CONTEXT_RE.search("куплю дом в чангу")
+    assert HOUSING_CONTEXT_RE.search("комната в номере с завтраком")
     assert CURRENCY_CONTEXT_RE.search("крипту за евро переводом")
 
 
 def test_postprocess_drops_realty_for_crypto() -> None:
-    text = "Куплю вашу крипту за евро наличкой или переводом в Бандунге"
-    result = postprocess_like_monitor(
-        text, {"Обмен валют", "Продажа недвижимости"}
-    )
-    assert "Продажа недвижимости" not in result
-    assert "Обмен валют" in result
+    for text in CRYPTO_TEXTS:
+        result = postprocess_like_monitor(
+            text, {"Обмен валют", "Продажа недвижимости"}
+        )
+        assert "Продажа недвижимости" not in result, text
+        assert "Обмен валют" in result, text
 
 
 if __name__ == "__main__":
