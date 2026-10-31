@@ -214,6 +214,12 @@ class Database:
                     "индия": "goa",
                     "юар": "cape_town",
                     "россия": "russia",
+                    "армения": "armenia",
+                    "сербия": "serbia",
+                    "черногория": "montenegro",
+                    "испания": "spain",
+                    "уругвай": "uruguay",
+                    "украина": "ukraine",
                 }
                 if country:
                     country_lower = country.lower()
