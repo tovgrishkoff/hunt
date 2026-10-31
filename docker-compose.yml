@@ -60,6 +60,7 @@ services:
       - ./backup_working_version/ai_classifier.py:/app/ai_classifier.py:ro
       - ./backup_working_version/ai_sniper.py:/app/ai_sniper.py:ro
       - ./backup_working_version/gpt_judge.py:/app/gpt_judge.py:ro
+      - ./backup_working_version/known_chats.json:/app/known_chats.json
     depends_on:
       - postgres
     networks:
