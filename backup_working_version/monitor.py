@@ -69,6 +69,16 @@ REAL_ESTATE_NEGATIVE_KEYWORDS = {
     "состоянии",
 }
 
+# Валюта/крипта: при явном обменном контексте не держим ниши недвижимости
+CURRENCY_CONTEXT_RE = re.compile(
+    r"(?:"
+    r"\bкрипт\w*\b|\busdt\b|\busdc\b|\bтезер\w*\b|\bbitcoin\b|\bbtc\b|\beth\b|"
+    r"\bевро\b|\bдоллар\w*\b|\bрубл\w*\b|\bвалют\w*\b|\bобмен\w*\b|\bконвертац\w*\b|"
+    r"\bналичк\w*\b|\bнал\b|\bперевод(?:ом|а|у|е|ы)?\b"
+    r")",
+    re.IGNORECASE,
+)
+
 REAL_ESTATE_LAND_CONTEXT_KEYWORDS = {"участок", "соток", "земля"}
 
 TRANSPORT_CONTEXT_KEYWORDS = {
@@ -85,10 +95,21 @@ TRANSPORT_CONTEXT_KEYWORDS = {
     "шлем",
 }
 
+# "дом" нельзя искать как подстроку: ловит "переводом"/"ходом"/"рядом".
+HOUSING_CONTEXT_RE = re.compile(
+    r"(?:"
+    r"жиль\w*|квартир\w*|\bдом(?:а|ов|ом|у|е|ам|ами|ах)?\b|вилл\w*|"
+    r"апартамент\w*|\bапарт\w*|\bкомнат\w*|\bномер\w*|\bстуди\w*|"
+    r"\bstudio\b|\bbedroom\b|\b\d+\s*br\b|прожив\w*|спальн\w*|"
+    r"ванн\w*|кухн\w*|уборк\w*|бель\w*|полотенц\w*|бассейн\w*|"
+    r"охраняем\w*|комьюнит\w*"
+    r")",
+    re.IGNORECASE,
+)
+
 HOUSING_CONTEXT_KEYWORDS = {
     "жиль",
     "квартир",
-    "дом",
     "вилл",
     "апартамент",
     "апарт",
@@ -721,7 +742,8 @@ class MessageMonitor:
 
         has_negative = any(word in text_lower for word in REAL_ESTATE_NEGATIVE_KEYWORDS)
         has_transport_context = any(w in text_lower for w in TRANSPORT_CONTEXT_KEYWORDS)
-        has_housing_context = any(w in text_lower for w in HOUSING_CONTEXT_KEYWORDS)
+        has_housing_context = bool(HOUSING_CONTEXT_RE.search(text_lower))
+        has_currency_context = bool(CURRENCY_CONTEXT_RE.search(text_lower))
 
         has_size_word = "размер" in text_lower
         has_land_context = any(w in text_lower for w in REAL_ESTATE_LAND_CONTEXT_KEYWORDS)
@@ -729,7 +751,13 @@ class MessageMonitor:
 
         # Убираем недвижимость при явном НЕ-недвижимость контексте, либо при транспорте БЕЗ признаков жилья.
         # Важно: сообщения про жильё могут упоминать "прокат байков" как удобство — это не повод убирать недвижимость.
-        if has_negative or has_size_without_land or (has_transport_context and not has_housing_context):
+        # Крипта/валюта без жилья: "куплю ... переводом" раньше давало ложную "Продажа недвижимости".
+        if (
+            has_negative
+            or has_size_without_land
+            or (has_transport_context and not has_housing_context)
+            or (has_currency_context and not has_housing_context)
+        ):
             return set(n for n in niches if n not in REAL_ESTATE_NICHES)
 
         return niches
@@ -771,8 +799,20 @@ class MessageMonitor:
             return set()
         # ----------------------------------------------------------------
         
-        has_housing_context = any(w in text_lower for w in HOUSING_CONTEXT_KEYWORDS)
+        has_housing_context = bool(HOUSING_CONTEXT_RE.search(text_lower))
         has_strong_bike_context = any(w in text_lower for w in BIKE_STRONG_KEYWORDS)
+        has_currency_context = bool(CURRENCY_CONTEXT_RE.search(text_lower))
+
+        # Обмен валют/крипты без явного жилья — убираем ложные ниши недвижимости.
+        if (
+            niches & REAL_ESTATE_NICHES
+            and ("Обмен валют" in niches or has_currency_context)
+            and not has_housing_context
+        ):
+            logger.info(
+                "🔍 Убираем ниши недвижимости: контекст обмена валют/крипты без жилья"
+            )
+            niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
 
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
         if "Сдача недвижимости" in niches and "Аренда байков" in niches:
