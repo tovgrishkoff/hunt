@@ -1,5 +1,5 @@
 from telethon import TelegramClient, events
-from telethon.tl.types import PeerChannel, PeerChat, PeerUser
+from telethon.tl.types import PeerChannel, PeerChat, PeerUser, User
 from telethon.tl.functions.messages import ExportChatInviteRequest
 import re
 from patterns import PATTERNS
@@ -37,6 +37,20 @@ except FileNotFoundError:
     known_chats = {}
     monitored_chats = []
     logger.info("Файл known_chats.json не найден, начинаем с пустого списка чатов")
+
+# Чаты, которые вручную выкинули из мониторинга (казино/мусор/бан/DM)
+excluded_chats: dict = {}
+for _excl_path in ("data/excluded_chats.json", "excluded_chats.json"):
+    try:
+        with open(_excl_path, "r", encoding="utf-8") as f:
+            _excl_data = json.load(f)
+        excluded_chats = _excl_data.get("chats") or _excl_data
+        logger.info(f"Загружено {len(excluded_chats)} excluded чатов из {_excl_path}")
+        break
+    except FileNotFoundError:
+        continue
+    except Exception as e:
+        logger.warning(f"Не удалось загрузить excluded_chats: {e}")
 
 # Ваш Telegram ID для теста
 test_user_id = 210147380
@@ -210,9 +224,24 @@ async def main():
     @client.on(events.NewMessage())
     async def handler(event):
         try:
+            # Личные переписки монитор-аккаунта — не лиды (баг: уходили в рассылку)
+            if event.is_private or isinstance(getattr(event, "chat", None), User):
+                return
+
             chat = await event.get_chat()
+            if isinstance(chat, User):
+                return
+
             chat_id = str(chat.id)
             chat_title = chat.title if hasattr(chat, 'title') else 'Private Chat'
+
+            if chat_id in excluded_chats:
+                logger.info(
+                    f"🚫 Чат в excluded ({excluded_chats.get(chat_id, {}).get('reason', 'manual')}): "
+                    f"{chat_title} (ID: {chat_id})"
+                )
+                return
+
             logger.info(f"[Monitor] Получено сообщение в чате: {chat_title} (ID: {chat_id})")
             logger.info(f"[Monitor] Текст сообщения: {event.message.text}")
 
@@ -231,11 +260,11 @@ async def main():
                 )
                 return
 
-            # Сохраняем новый чат, если он ещё не известен
+            # Сохраняем новый чат, если он ещё не известен (и не excluded)
             if chat_id not in known_chats:
                 known_chats[chat_id] = {
                     'title': chat_title,
-                    'type': 'Private',
+                    'type': getattr(chat, '__class__', type(chat)).__name__,
                     'first_seen': str(event.message.date)
                 }
                 monitored_chats.append(chat_id)
@@ -324,6 +353,7 @@ async def main():
                 message_link=message_link,
                 chat_username=chat_username,
                 chat_join_link=chat_join_link,
+                chat_id=chat_id,
                 sender_username=sender_username,
                 sender_id=sender_id,
                 sender_first_name=sender_first_name,

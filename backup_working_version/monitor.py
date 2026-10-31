@@ -29,6 +29,28 @@ STOP_PHRASES = [
     "joined the group",
 ]
 
+# Ручная разметка страны по chat_id / title (data/chat_country_overrides.json)
+CHAT_COUNTRY_OVERRIDES: Dict[str, Dict[str, str]] = {}
+for _ov_path in ("data/chat_country_overrides.json", "chat_country_overrides.json"):
+    try:
+        with open(_ov_path, "r", encoding="utf-8") as _ov_f:
+            _raw = json.load(_ov_f)
+        if isinstance(_raw, dict):
+            CHAT_COUNTRY_OVERRIDES = {
+                str(k): v for k, v in _raw.items() if isinstance(v, dict) and v.get("country")
+            }
+            logger = logging.getLogger(__name__)
+            logger.info(
+                "Загружено %s country overrides из %s",
+                len(CHAT_COUNTRY_OVERRIDES),
+                _ov_path,
+            )
+        break
+    except FileNotFoundError:
+        continue
+    except Exception as _ov_exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning("Не удалось загрузить country overrides: %s", _ov_exc)
+
 _VARIATION_SELECTORS_RE = re.compile(r"[\u200d\uFE0F]")  # ZWJ + VS16
 _EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", re.UNICODE)
 
@@ -1334,6 +1356,7 @@ class MessageMonitor:
         message_link: str = None,
         chat_username: str = None,
         chat_join_link: str = None,
+        chat_id: str = None,
         sender_username: str = None,
         sender_id: int = None,
         sender_first_name: str = None,
@@ -1402,15 +1425,15 @@ class MessageMonitor:
 
         logger.info(f"📊 Найдено ниш: {found_niches} (тип: {message_type}, уверенность: {confidence}%, причина: {reason})")
         
-        # Определяем страну чата по названию / username. Без дефолта «Бали»:
-        # иначе Краснодар и прочие РФ-чаты утекали подписчикам Бали.
-        chat_country = self._get_country_from_chat_title(chat_title) if chat_title else None
-        if not chat_country and chat_username:
-            chat_country = self._get_country_from_chat_title(chat_username)
-        if not chat_country and message_link:
-            chat_country = self._get_country_from_chat_title(message_link)
+        # Страна: ручной override → название/username/ссылка. Без дефолта «Бали».
+        chat_country = self._resolve_chat_country(
+            chat_id=chat_id,
+            chat_title=chat_title,
+            chat_username=chat_username,
+            message_link=message_link,
+        )
         if chat_country:
-            logger.info(f"🌍 Страна определена по названию чата '{chat_title}': {chat_country}")
+            logger.info(f"🌍 Страна определена для чата '{chat_title}': {chat_country}")
         else:
             logger.info(
                 f"🌍 Страна не определена для чата '{chat_title}' — "
@@ -1844,6 +1867,32 @@ class MessageMonitor:
         except Exception as e:
             logger.error(f"❌ Ошибка сохранения обратной связи: {e}")
 
+    def _resolve_chat_country(
+        self,
+        chat_id: str = None,
+        chat_title: str = None,
+        chat_username: str = None,
+        message_link: str = None,
+    ) -> Optional[str]:
+        """Страна чата: override по id/title, иначе эвристика по названию."""
+        if chat_id and str(chat_id) in CHAT_COUNTRY_OVERRIDES:
+            country = CHAT_COUNTRY_OVERRIDES[str(chat_id)].get("country")
+            if country:
+                logger.info(f"🌍 Country override по chat_id={chat_id}: {country}")
+                return country
+        if chat_title:
+            title_key = f"title:{(chat_title or '').lower()}"
+            if title_key in CHAT_COUNTRY_OVERRIDES:
+                country = CHAT_COUNTRY_OVERRIDES[title_key].get("country")
+                if country:
+                    logger.info(f"🌍 Country override по title: {country}")
+                    return country
+        for candidate in (chat_title, chat_username, message_link):
+            country = self._get_country_from_chat_title(candidate) if candidate else None
+            if country:
+                return country
+        return None
+
     def _get_country_from_chat_title(self, chat_title: str) -> str:
         """
         Определяет страну по названию чата / username / ссылке.
@@ -1867,7 +1916,7 @@ class MessageMonitor:
             ],
             "Турция": [
                 "турци", "turkey", "турк", "антали", "анталья", "antalya",
-                "стамбул", "istanbul", "аланья", "алания", "alanya",
+                "стамбул", "istanbul", "алань", "алани", "alanya",
             ],
             "Грузия": [
                 "грузи", "georgia", "тбилиси", "tbilisi", "батуми", "batumi",
@@ -1892,6 +1941,7 @@ class MessageMonitor:
                 "sochi", "самара", "воронеж", "пермь", "уфа", "красноярск",
                 "тюмень", "челябинск", "нижний новгород", "калининград",
                 "владивосток", "ставрополь", "крым", "севастополь", "симферополь",
+                "🇷🇺",
             ],
             "Армения": [
                 "армени", "armenia", "ереван", "erevan", "yerevan", "гюмри",

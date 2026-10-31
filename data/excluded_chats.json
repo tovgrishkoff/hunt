@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "chats": {
+    "2325478886": {
+      "reason": "manual_exclude",
+      "title": "CASINO MAN"
+    },
+    "2256632047": {
+      "reason": "manual_exclude",
+      "title": "CHAT | METRO ROYALE"
+    },
+    "1749930244": {
+      "reason": "manual_exclude",
+      "title": "KARAVAN / L!FE"
+    },
+    "1640607460": {
+      "reason": "private_dm_bug",
+      "title": "Private Chat / DM"
+    },
+    "6230087311": {
+      "reason": "private_dm_bug",
+      "title": "Private Chat / DM"
+    },
+    "1109921736": {
+      "reason": "private_dm_bug",
+      "title": "Private Chat / DM"
+    },
+    "6754446872": {
+      "reason": "private_dm_bug",
+      "title": "Private Chat / DM"
+    },
+    "1185716016": {
+      "reason": "manual_exclude",
+      "title": "ВЛ - ЧАТ (Ukraine)"
+    },
+    "1813112909": {
+      "reason": "manual_exclude",
+      "title": "ГОРБУШКА - ОПТОМ"
+    },
+    "2212410355": {
+      "reason": "manual_exclude",
+      "title": "Отправить / Перевезти посылку"
+    },
+    "2486102333": {
+      "reason": "manual_exclude",
+      "title": "Путешествие по миру"
+    },
+    "1796167655": {
+      "reason": "manual_exclude",
+      "title": "Фриланс чат | Вакансии"
+    },
+    "1110706557": {
+      "reason": "manual_exclude",
+      "title": "ЧАТ ПРЕДПРИНИМАТЕЛЕЙ"
+    }
+  }
+}
