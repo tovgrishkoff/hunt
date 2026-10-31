@@ -207,7 +207,13 @@ class Database:
                     "бали": "bali",
                     "таиланд": "thailand",
                     "турция": "turkey",
-                    "грузия": "georgia"
+                    "грузия": "georgia",
+                    "вьетнам": "vietnam",
+                    "дубай": "dubai",
+                    "сша": "usa",
+                    "индия": "goa",
+                    "юар": "cape_town",
+                    "россия": "russia",
                 }
                 if country:
                     country_lower = country.lower()
