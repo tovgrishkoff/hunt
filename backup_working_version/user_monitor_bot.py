@@ -185,10 +185,15 @@ async def main():
     else:
         logger.info("⚠️ OpenAI API ключ не найден, будет использована только базовая классификация")
     
-    # Создаем бота ТОЛЬКО для отправки сообщений (без polling)
-    # Используем токен основного бота для отправки уведомлений
-    main_bot_token = '8233775715:AAGABqq1Qibf2RmxZm-tB97dtMNxLyqs0y8'
-    bot = Bot(token=main_bot_token)
+    # Создаем бота ТОЛЬКО для отправки сообщений (без polling).
+    # Токен только из env/config — хардкод давал Unauthorized на всех уведомлениях.
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN is empty; set it in the environment")
+    bot = Bot(token=BOT_TOKEN)
+    logger.info(
+        "Bot notify token loaded from config/env (id=%s)",
+        str(BOT_TOKEN).split(":", 1)[0],
+    )
     
     # Создаем монитор
     monitor = MessageMonitor(bot, db, openai_api_key)

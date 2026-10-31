@@ -60,6 +60,22 @@ _HARD_BAN_REGEXES = [
 
 REAL_ESTATE_NICHES = {"Продажа недвижимости", "Сдача недвижимости"}
 
+# В боте подписки хранятся как "Недвижимость (Спрос/Предложение)",
+# а классификатор/паттерны отдают "Сдача недвижимости". Без алиасов аренда
+# не находит подписчиков.
+NICHE_LOOKUP_ALIASES = {
+    "Сдача недвижимости": (
+        "Сдача недвижимости",
+        "Недвижимость (Спрос)",
+        "Недвижимость (Предложение)",
+    ),
+    "Недвижимость (Спрос)": ("Недвижимость (Спрос)", "Сдача недвижимости"),
+    "Недвижимость (Предложение)": (
+        "Недвижимость (Предложение)",
+        "Сдача недвижимости",
+    ),
+}
+
 REAL_ESTATE_NEGATIVE_KEYWORDS = {
     "топпер",
     "матрас",
@@ -1335,9 +1351,19 @@ class MessageMonitor:
         # Получаем всех подписчиков для найденных ниш с учетом страны
         all_subscribers = set()
         for niche in found_niches:
-            subscribers = await self.db.get_subscribers_for_niche(niche, country=chat_country)
-            logger.info(f"👥 Найдено {len(subscribers)} подписчиков для ниши '{niche}'" + (f" и страны '{chat_country}'" if chat_country else "") + f": {subscribers}")
-            all_subscribers.update(subscribers)
+            lookup_names = NICHE_LOOKUP_ALIASES.get(niche, (niche,))
+            niche_subscribers: set = set()
+            for lookup_name in lookup_names:
+                subscribers = await self.db.get_subscribers_for_niche(
+                    lookup_name, country=chat_country
+                )
+                niche_subscribers.update(subscribers)
+            logger.info(
+                f"👥 Найдено {len(niche_subscribers)} подписчиков для ниши '{niche}'"
+                + (f" и страны '{chat_country}'" if chat_country else "")
+                + f" (lookup={list(lookup_names)}): {niche_subscribers}"
+            )
+            all_subscribers.update(niche_subscribers)
         
         if not all_subscribers:
             logger.info("❌ Подписчики не найдены, сообщение не будет разослано")
@@ -1780,10 +1806,10 @@ async def main():
     await client.start()
     logger.info("Telethon клиент успешно запущен")
 
-    # Инициализация базы и монитора
-    # Используем токен основного бота для отправки уведомлений
-    main_bot_token = '7135926908:AAF5r7P-PtPTy2L8SZOm2tNQxqraMHkZyzA'
-    bot = Bot(token=main_bot_token)
+    # Инициализация базы и монитора (legacy entrypoint)
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN is empty; set it in the environment")
+    bot = Bot(token=BOT_TOKEN)
     db = Database(dsn=DB_DSN)
     await db.connect()
     monitor = MessageMonitor(bot, db)
