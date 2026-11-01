@@ -102,7 +102,7 @@ TRANSPORT_CONTEXT_KEYWORDS = {
 HOUSING_CONTEXT_KEYWORDS = {
     "жиль",
     "квартир",
-    "дом",
+    # "дом" нельзя как substring — ловит «рядом», «переводом»
     "вилл",
     "апартамент",
     "апарт",
@@ -123,6 +123,19 @@ HOUSING_CONTEXT_KEYWORDS = {
     "охраняем",
     "комьюнит",
 }
+
+# Жильё с границами слов (не «рядом»/«переводом»)
+_HOUSING_WORD_RE = re.compile(
+    r"(?i)\b("
+    r"квартир\w*|вилл\w*|апартамент\w*|апарт\w*|недвижимост\w*|жиль[её]\w*|"
+    r"комнат\w*|студи\w*|studio|bedroom|спальн\w*|бассейн\w*|"
+    r"дом(?:а|у|ом|е|ов|ам|ами|ах)?"
+    r")\b"
+)
+_FX_CRYPTO_RE = re.compile(
+    r"(?i)\b(usdt|usdc|btc|bitcoin|ethereum|\beth\b|тезер\w*|крипт\w*|trc20|erc20|bep20)\b|"
+    r"обмен\s+валют|курс\s+валют"
+)
 
 BIKE_STRONG_KEYWORDS = {
     "yamaha",
@@ -811,11 +824,18 @@ class MessageMonitor:
 
         has_negative = any(word in text_lower for word in REAL_ESTATE_NEGATIVE_KEYWORDS)
         has_transport_context = any(w in text_lower for w in TRANSPORT_CONTEXT_KEYWORDS)
-        has_housing_context = any(w in text_lower for w in HOUSING_CONTEXT_KEYWORDS)
+        has_housing_context = bool(_HOUSING_WORD_RE.search(text_lower)) or any(
+            w in text_lower for w in HOUSING_CONTEXT_KEYWORDS
+        )
 
         has_size_word = "размер" in text_lower
         has_land_context = any(w in text_lower for w in REAL_ESTATE_LAND_CONTEXT_KEYWORDS)
         has_size_without_land = has_size_word and not has_land_context
+
+        # Крипта/FX без явного жилья → не недвижимость («куплю … переводом», «ищу … рядом»)
+        has_fx_crypto = bool(_FX_CRYPTO_RE.search(text_lower))
+        if has_fx_crypto and not has_housing_context:
+            return set(n for n in niches if n not in REAL_ESTATE_NICHES)
 
         # Убираем недвижимость при явном НЕ-недвижимость контексте, либо при транспорте БЕЗ признаков жилья.
         # Важно: сообщения про жильё могут упоминать "прокат байков" как удобство — это не повод убирать недвижимость.
@@ -861,8 +881,16 @@ class MessageMonitor:
             return set()
         # ----------------------------------------------------------------
         
-        has_housing_context = any(w in text_lower for w in HOUSING_CONTEXT_KEYWORDS)
+        has_housing_context = bool(_HOUSING_WORD_RE.search(text_lower)) or any(
+            w in text_lower for w in HOUSING_CONTEXT_KEYWORDS
+        )
         has_strong_bike_context = any(w in text_lower for w in BIKE_STRONG_KEYWORDS)
+        # Крипта/обмен без жилья — убираем ложные realty-ниши
+        if _FX_CRYPTO_RE.search(text_lower) and not _HOUSING_WORD_RE.search(text_lower):
+            before = set(niches)
+            niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
+            if niches != before:
+                logger.info("🔍 FX/crypto без жилья: убираем ниши недвижимости")
 
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
         if "Недвижимость (Предложение)" in niches and "Аренда байков" in niches:
