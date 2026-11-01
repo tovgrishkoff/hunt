@@ -2,7 +2,20 @@ import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher.filters import Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ChatPermissions, ReplyKeyboardMarkup, KeyboardButton
-from config import TELEGRAM_BOT_TOKEN, ADMIN_CHAT_ID, ADMIN_USERNAME, SOURCE_CHAT_ID, MONITORING_CONFIG, NOTIFICATION_SETTINGS, DB_DSN
+from config import (
+    TELEGRAM_BOT_TOKEN,
+    ADMIN_CHAT_ID,
+    ADMIN_USERNAME,
+    SOURCE_CHAT_ID,
+    MONITORING_CONFIG,
+    NOTIFICATION_SETTINGS,
+    DB_DSN,
+    TRIAL_DAYS,
+    TRIAL_MAX_NICHES,
+    SUBSCRIPTION_DAYS,
+    SUBSCRIPTION_STARS,
+)
+from aiogram.types import LabeledPrice, ContentTypes
 from database import Database
 from datetime import datetime, timezone
 from content import get_topic_content, get_available_topics, get_topic_description, get_topic_keywords
@@ -349,6 +362,14 @@ def register_handlers(dp: Dispatcher, monitor: MessageMonitor, bot: Bot):
     dp.register_message_handler(cmd_niche, Command("niche"))
     dp.register_message_handler(cmd_niche, Command("niches"))
     dp.register_message_handler(cmd_subscribe, Command("subscribe"))
+    dp.register_message_handler(cmd_subscribe, Command("buy"))
+    dp.register_pre_checkout_query_handler(process_pre_checkout_query, lambda q: True)
+    dp.register_message_handler(
+        process_successful_payment, content_types=ContentTypes.SUCCESSFUL_PAYMENT
+    )
+    dp.register_callback_query_handler(
+        callback_pay_subscribe, lambda c: c.data in ("pay_subscribe", "subscribe")
+    )
     dp.register_message_handler(cmd_help, Command("help"))
     dp.register_message_handler(cmd_info, Command("info"))
     dp.register_message_handler(cmd_contact, Command("contact"))
@@ -492,8 +513,8 @@ async def cmd_start(message: Message, state: FSMContext):
                 "✅ *ГОТОВО!* После этого вы начнете получать уведомления о новых сообщениях в выбранных нишах.\n\n"
                 "💡 *ВАЖНО:*\n"
                 "• Без выбора ниш вы *не будете* получать уведомления!\n"
-                "• На триальном периоде можно выбрать только *1 нишу*\n"
-                "• После регистрации вы получили *7-дневный триал*\n\n"
+                f"• На триале можно выбрать до *{TRIAL_MAX_NICHES} ниш*\n"
+                f"• *{TRIAL_DAYS}-дневный триал* начнётся после выбора ниш и «✅ Готово»\n\n"
                 "❓ Если возникнут вопросы, нажмите кнопку *❓ Помощь* в меню.",
                 reply_markup=get_main_menu(),
                 parse_mode="Markdown"
@@ -695,21 +716,93 @@ async def cmd_niche(message: Message):
     except Exception:
         await message.answer("❌ Не удалось открыть меню ниш. Попробуйте позже.")
 
-@dp.message_handler(commands=["subscribe", "subsribe"])
+async def send_subscription_invoice(telegram_bot: Bot, chat_id: int, user_id: int):
+    """Инвойс Telegram Stars (XTR)."""
+    await telegram_bot.send_invoice(
+        chat_id=chat_id,
+        title="Lead Hunter — подписка",
+        description=f"Доступ к лидам на {SUBSCRIPTION_DAYS} дней, все ниши без ограничений.",
+        payload=f"sub_{user_id}_{SUBSCRIPTION_DAYS}d",
+        provider_token="",
+        currency="XTR",
+        prices=[LabeledPrice(label=f"Подписка {SUBSCRIPTION_DAYS} дн.", amount=SUBSCRIPTION_STARS)],
+    )
+
+
+@dp.message_handler(commands=["subscribe", "subsribe", "buy"])
 async def cmd_subscribe(message: Message):
-    """Показать информацию о подписке."""
+    """Оформление подписки: Stars или менеджер."""
     logger.info(f"/subscribe from {message.from_user.id} in chat {message.chat.id}")
+    db = message.bot.get("db")
+    st = await db.get_subscription_status(message.from_user.id)
     subscription_info = (
         f"💳 Оформление подписки\n\n"
         f"Ваш ID: `{message.from_user.id}`\n\n"
-        f"Для оформления подписки:\n"
-        f"1. Выберите ниши через /niche\n"
-        f"2. Свяжитесь с менеджером @huansya0\n"
-        f"3. Укажите ваш ID и желаемые ниши\n"
-        f"4. После оплаты менеджер активирует подписку!\n\n"
-        f"💡 Также можно использовать команду /buy"
     )
-    await message.answer(subscription_info, parse_mode='Markdown', reply_markup=get_main_menu())
+    if st.get("subscription_active"):
+        subscription_info += "✅ У вас уже активна платная подписка.\n"
+    elif st.get("trial_active"):
+        subscription_info += (
+            f"⏳ Триал: осталось {st.get('trial_days_left')} дн., "
+            f"лидов за триал: {st.get('trial_leads_count', 0)}\n\n"
+        )
+    subscription_info += (
+        f"⚡ Оплата в 1 клик — {SUBSCRIPTION_STARS} ⭐ на {SUBSCRIPTION_DAYS} дн.\n"
+        f"Или менеджер @huansya0 (укажите ID).\n"
+    )
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=f"⭐ Оплатить {SUBSCRIPTION_STARS} Stars", callback_data="pay_subscribe")],
+            [InlineKeyboardButton(text="📋 Меню", callback_data="back_to_main")],
+        ]
+    )
+    await message.answer(subscription_info, parse_mode="Markdown", reply_markup=kb)
+
+
+@dp.callback_query_handler(lambda c: c.data in ("pay_subscribe", "subscribe"))
+async def callback_pay_subscribe(callback_query: types.CallbackQuery):
+    await callback_query.answer()
+    try:
+        await send_subscription_invoice(
+            callback_query.bot,
+            callback_query.message.chat.id,
+            callback_query.from_user.id,
+        )
+    except Exception as e:
+        logger.error(f"Invoice error: {e}")
+        await callback_query.message.answer(
+            "Не удалось выставить счёт. Напишите @huansya0 или /subscribe позже."
+        )
+
+
+@dp.pre_checkout_query_handler(lambda q: True)
+async def process_pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery):
+    await pre_checkout_query.bot.answer_pre_checkout_query(
+        pre_checkout_query.id, ok=True
+    )
+
+
+@dp.message_handler(content_types=ContentTypes.SUCCESSFUL_PAYMENT)
+async def process_successful_payment(message: Message):
+    db = message.bot.get("db")
+    pay = message.successful_payment
+    user_id = message.from_user.id
+    days = SUBSCRIPTION_DAYS
+    if pay.invoice_payload and "d" in pay.invoice_payload:
+        try:
+            part = pay.invoice_payload.split("_")[-1]
+            days = int(part.replace("d", ""))
+        except ValueError:
+            pass
+    await db.activate_subscription(
+        user_id, days=days, payment_ref=pay.telegram_payment_charge_id
+    )
+    await message.answer(
+        f"✅ Оплата принята! Подписка активна на {days} дн.\n"
+        "Можете выбрать любое количество ниш в 🗂 Выбрать нишу.",
+        reply_markup=get_main_menu(),
+    )
+    logger.info(f"Stars payment ok user={user_id} charge={pay.telegram_payment_charge_id}")
 
 @dp.message_handler(commands=["help"])
 async def cmd_help(message: Message):
@@ -1113,19 +1206,22 @@ async def show_niches_menu_callback(callback_query: types.CallbackQuery):
     # Проверяем, является ли пользователь администратором
     is_admin = str(user_id) == str(ADMIN_CHAT_ID) or callback_query.from_user.username == ADMIN_USERNAME
     
-    # Проверяем, является ли пользователь триальным
-    is_trial = await db.is_user_on_trial(user_id)
+    paid = await db.has_active_subscription(user_id)
+    st = await db.get_subscription_status(user_id)
     
-    # Создаем текст с описанием
     intro_text = "🗂 Выберите ниши для мониторинга:\n\n"
     intro_text += "📋 Что вы будете получать:\n"
     intro_text += "• Актуальные предложения в выбранных нишах\n"
     intro_text += "• Уведомления о новых услугах и предложениях\n"
     intro_text += "• Возможность быть в курсе рынка\n\n"
     
-    if is_trial and not is_admin:
-        intro_text += "⏳ На триальном периоде можно выбрать только 1 нишу.\n"
-        intro_text += "Оформите подписку для выбора нескольких ниш.\n\n"
+    if not paid and not is_admin:
+        intro_text += (
+            f"⏳ Без подписки — до {TRIAL_MAX_NICHES} ниш на триале ({TRIAL_DAYS} дн. после «Готово»).\n"
+        )
+        if st.get("trial_not_started"):
+            intro_text += "Триал ещё не начат — выберите ниши и нажмите «✅ Готово».\n"
+        intro_text += "Оформите подписку для безлимита.\n\n"
     elif is_admin:
         intro_text += "👑 Вы администратор - можете выбрать любое количество ниш.\n\n"
     
@@ -1133,7 +1229,7 @@ async def show_niches_menu_callback(callback_query: types.CallbackQuery):
     intro_text += "Нажмите на нишу, чтобы выбрать/отменить выбор\n"
     intro_text += "Нажмите 'Готово', чтобы сохранить изменения"
     
-    if not is_trial or is_admin:
+    if paid or is_admin:
         intro_text += "\n\n💡 Совет: Выберите несколько ниш для максимального охвата!"
     
     try:
@@ -1159,19 +1255,22 @@ async def show_niches_menu_button(message: types.Message):
     # Проверяем, является ли пользователь администратором
     is_admin = str(user_id) == str(ADMIN_CHAT_ID) or message.from_user.username == ADMIN_USERNAME
     
-    # Проверяем, является ли пользователь триальным
-    is_trial = await db.is_user_on_trial(user_id)
+    paid = await db.has_active_subscription(user_id)
+    st = await db.get_subscription_status(user_id)
     
-    # Создаем текст с описанием
     intro_text = "🗂 Выберите ниши для мониторинга:\n\n"
     intro_text += "📋 Что вы будете получать:\n"
     intro_text += "• Актуальные предложения в выбранных нишах\n"
     intro_text += "• Уведомления о новых услугах и предложениях\n"
     intro_text += "• Возможность быть в курсе рынка\n\n"
     
-    if is_trial and not is_admin:
-        intro_text += "⏳ На триальном периоде можно выбрать только 1 нишу.\n"
-        intro_text += "Оформите подписку для выбора нескольких ниш.\n\n"
+    if not paid and not is_admin:
+        intro_text += (
+            f"⏳ Без подписки — до {TRIAL_MAX_NICHES} ниш на триале ({TRIAL_DAYS} дн. после «Готово»).\n"
+        )
+        if st.get("trial_not_started"):
+            intro_text += "Триал ещё не начат — выберите ниши и нажмите «✅ Готово».\n"
+        intro_text += "Оформите подписку для безлимита.\n\n"
     elif is_admin:
         intro_text += "👑 Вы администратор - можете выбрать любое количество ниш.\n\n"
     
@@ -1179,7 +1278,7 @@ async def show_niches_menu_button(message: types.Message):
     intro_text += "Нажмите на нишу, чтобы выбрать/отменить выбор\n"
     intro_text += "Нажмите 'Готово', чтобы сохранить изменения"
     
-    if not is_trial or is_admin:
+    if paid or is_admin:
         intro_text += "\n\n💡 Совет: Выберите несколько ниш для максимального охвата!"
     
     await message.answer(
@@ -1199,8 +1298,7 @@ async def process_niche_selection(callback_query: types.CallbackQuery):
         # Проверяем, является ли пользователь администратором
         is_admin = str(user_id) == str(ADMIN_CHAT_ID) or callback_query.from_user.username == ADMIN_USERNAME
         
-        # Проверяем, является ли пользователь триальным
-        is_trial = await db.is_user_on_trial(user_id)
+        paid = await db.has_active_subscription(user_id)
         
         # Инициализируем временное хранение для пользователя, если его нет
         if user_id not in temp_niche_selections:
@@ -1217,17 +1315,16 @@ async def process_niche_selection(callback_query: types.CallbackQuery):
             temp_niche_selections[user_id] = [n for n in temp_niches if n.lower() != niche.lower()]
             logger.info(f"🗑️ Временно удалена ниша '{niche}' у пользователя {user_id}")
         else:
-            # ОГРАНИЧЕНИЕ ДЛЯ ТРИАЛЬНЫХ ПОЛЬЗОВАТЕЛЕЙ: только 1 ниша (НО НЕ ДЛЯ АДМИНИСТРАТОРА)
-            if is_trial and len(temp_niches) >= 1 and not is_admin:
+            if not paid and len(temp_niches) >= TRIAL_MAX_NICHES and not is_admin:
                 await callback_query.answer(
-                    "⏳ На триальном периоде можно выбрать только 1 нишу. Оформите подписку для выбора нескольких ниш.",
-                    show_alert=True
+                    f"⏳ На триале — до {TRIAL_MAX_NICHES} ниш. Оформите подписку (/subscribe) для безлимита.",
+                    show_alert=True,
                 )
                 return
             
             # Добавляем нишу во временное хранение
             temp_niche_selections[user_id].append(niche)
-            logger.info(f"➕ Временно добавлена ниша '{niche}' пользователю {user_id} (триал: {is_trial})")
+            logger.info(f"➕ Временно добавлена ниша '{niche}' пользователю {user_id} (paid={paid})")
         
         # Получаем обновленную клавиатуру
         db = callback_query.bot.get("db")
@@ -1265,15 +1362,26 @@ async def process_niches_done(callback_query: types.CallbackQuery):
         
         # Сохраняем временные ниши в базу данных
         logger.info(f"💾 Сохраняем ниши в базу данных для пользователя {user_id}: {temp_niches}")
-        await db.update_user_niches(user_id, temp_niches)
+        trial_started = False
+        if temp_niches:
+            before = await db.get_subscription_status(user_id)
+            await db.update_user_niches(user_id, temp_niches)
+            after = await db.get_subscription_status(user_id)
+            trial_started = before.get("trial_not_started") and after.get("trial_active")
+        else:
+            await db.update_user_niches(user_id, temp_niches)
         
-        # Проверяем, что ниши действительно сохранились
         saved_niches = await db.get_user_niches(user_id)
         logger.info(f"✅ Проверка сохраненных ниш для пользователя {user_id}: {saved_niches}")
         
         if temp_niches:
             logger.info(f"💾 Сохранены ниши для пользователя {user_id}: {temp_niches}")
             text = "✅ Ваши ниши успешно сохранены:\n\n" + "\n".join(f"• {n}" for n in temp_niches)
+            if trial_started:
+                text += (
+                    f"\n\n🎁 Триал на {TRIAL_DAYS} дн. начался! "
+                    f"Лиды пойдут в выбранные ниши."
+                )
         else:
             logger.info(f"🗑️ Очищены ниши у пользователя {user_id}")
             text = "❌ Вы не выбрали ни одной ниши. Используйте кнопку '🗂 Выбрать нишу' для выбора ниш."
@@ -1855,6 +1963,8 @@ async def cmd_send_reminders(message: Message):
         for user in users:
             stats['total'] += 1
             user_id = user['user_id']
+            if user.get("bot_blocked"):
+                continue
             categories = json.loads(user.get('categories', '[]')) if user.get('categories') else []
             countries = json.loads(user.get('countries', '[]')) if user.get('countries') else []
             subscription_active = user.get('subscription_active', False)

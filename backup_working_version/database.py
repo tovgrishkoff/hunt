@@ -1,9 +1,22 @@
 import asyncpg
 import json
 import logging
-from typing import List
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_ts(value) -> Optional[datetime]:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return None
 
 class Database:
     def __init__(self, dsn):
@@ -12,6 +25,7 @@ class Database:
 
     async def connect(self):
         self.pool = await asyncpg.create_pool(dsn=self.dsn)
+        await self.ensure_conversion_schema()
 
     async def close(self):
         if self.pool:
@@ -49,71 +63,211 @@ class Database:
                 message_id
             )
 
-    async def add_subscriber(self, user_id, categories):
-        """Добавляет нового подписчика или обновляет существующего"""
+    async def ensure_conversion_schema(self):
+        """Колонки для конверсии: триал, лиды, блокировка бота, напоминания."""
+        if not self.pool:
+            return
         async with self.pool.acquire() as conn:
-            from datetime import datetime, timedelta, timezone
-            from config import TRIAL_DAYS
-            
+            await conn.execute(
+                """
+                ALTER TABLE subscribers
+                ADD COLUMN IF NOT EXISTS trial_leads_count INTEGER DEFAULT 0,
+                ADD COLUMN IF NOT EXISTS bot_blocked BOOLEAN DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMP WITH TIME ZONE,
+                ADD COLUMN IF NOT EXISTS trial_reminder_d2_sent BOOLEAN DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS trial_reminder_d1_sent BOOLEAN DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS trial_reminder_d0_sent BOOLEAN DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS trial_zero_leads_reminder_sent BOOLEAN DEFAULT FALSE
+                """
+            )
+
+    async def add_subscriber(self, user_id, categories):
+        """Добавляет подписчика. Триал не стартует до выбора ≥1 ниши (start_trial_if_needed)."""
+        async with self.pool.acquire() as conn:
             try:
-                # Проверяем, существует ли пользователь
                 existing_user = await conn.fetchrow(
-                    'SELECT user_id, trial_until FROM subscribers WHERE user_id = $1',
-                    user_id
+                    "SELECT user_id FROM subscribers WHERE user_id = $1",
+                    user_id,
                 )
-                
                 if existing_user:
-                    # Пользователь существует - обновляем только категории, не трогаем триал
                     await conn.execute(
-                        '''
+                        """
                         UPDATE subscribers SET categories = $2, updated_at = CURRENT_TIMESTAMP
                         WHERE user_id = $1
-                        ''',
-                        user_id, json.dumps(categories)
+                        """,
+                        user_id,
+                        json.dumps(categories),
                     )
-                    logger.info(f"✅ Обновлены категории для существующего пользователя {user_id}")
+                    logger.info(
+                        f"✅ Обновлены категории для существующего пользователя {user_id}"
+                    )
                 else:
-                    # Новый пользователь - создаем с триалом
-                    trial_until = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
                     await conn.execute(
-                        '''
+                        """
                         INSERT INTO subscribers (user_id, categories, countries, settings, trial_until)
-                        VALUES ($1, $2, $3, $4, $5)
-                        ''',
-                        user_id, json.dumps(categories), json.dumps([]), json.dumps({}), trial_until
+                        VALUES ($1, $2, $3, $4, NULL)
+                        """,
+                        user_id,
+                        json.dumps(categories),
+                        json.dumps([]),
+                        json.dumps({}),
                     )
-                    logger.info(f"✅ Новый пользователь {user_id} создан с триалом на {TRIAL_DAYS} дней (до {trial_until})")
+                    logger.info(
+                        f"✅ Новый пользователь {user_id} создан (триал после выбора ниш)"
+                    )
+                if categories:
+                    await self.start_trial_if_needed(user_id, conn=conn)
             except Exception as e:
-                logger.error(f"❌ Ошибка при создании/обновлении пользователя {user_id}: {e}")
-                # Пробуем создать без дополнительных полей (для обратной совместимости)
-                try:
-                    # Проверяем, существует ли пользователь
-                    existing_user = await conn.fetchrow(
-                        'SELECT user_id FROM subscribers WHERE user_id = $1',
-                        user_id
-                    )
-                    
-                    if existing_user:
-                        await conn.execute(
-                            '''
-                            UPDATE subscribers SET categories = $2 WHERE user_id = $1
-                            ''',
-                            user_id, json.dumps(categories)
-                        )
-                    else:
-                        # Новый пользователь - создаем с триалом
-                        trial_until = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
-                        await conn.execute(
-                            '''
-                            INSERT INTO subscribers (user_id, categories, trial_until)
-                            VALUES ($1, $2, $3)
-                            ''',
-                            user_id, json.dumps(categories), trial_until
-                        )
-                        logger.info(f"✅ Пользователь {user_id} создан в упрощенном режиме с триалом на {TRIAL_DAYS} дней")
-                except Exception as e2:
-                    logger.error(f"❌ Критическая ошибка при создании пользователя {user_id}: {e2}")
-                    raise
+                logger.error(
+                    f"❌ Ошибка при создании/обновлении пользователя {user_id}: {e}"
+                )
+                raise
+
+    async def start_trial_if_needed(self, user_id: int, conn=None) -> bool:
+        """Запускает триал при первом сохранении ≥1 ниши, если нет платной подписки."""
+        from config import TRIAL_DAYS
+
+        async def _run(c):
+            row = await c.fetchrow(
+                """
+                SELECT subscription_active, subscription_until, trial_until, categories
+                FROM subscribers WHERE user_id = $1
+                """,
+                user_id,
+            )
+            if not row:
+                return False
+            now = datetime.now(timezone.utc)
+            sub_until = _parse_ts(row.get("subscription_until"))
+            if row.get("subscription_active") is True and (
+                sub_until is None or sub_until > now
+            ):
+                return False
+            if row.get("trial_until") is not None:
+                return False
+            categories = json.loads(row["categories"]) if row["categories"] else []
+            if not categories:
+                return False
+            trial_until = now + timedelta(days=TRIAL_DAYS)
+            await c.execute(
+                """
+                UPDATE subscribers
+                SET trial_until = $2, trial_started_at = $3, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $1
+                """,
+                user_id,
+                trial_until,
+                now,
+            )
+            logger.info(
+                f"🎁 Триал {TRIAL_DAYS} дн. для {user_id} до {trial_until.isoformat()}"
+            )
+            return True
+
+        if conn:
+            return await _run(conn)
+        async with self.pool.acquire() as c:
+            return await _run(c)
+
+    async def get_subscription_status(self, user_id: int) -> Dict[str, Any]:
+        """Единая логика: trial_until + subscription_active."""
+        user = await self.get_user(user_id)
+        now = datetime.now(timezone.utc)
+        if not user:
+            return {
+                "exists": False,
+                "subscription_active": False,
+                "trial_active": False,
+                "trial_not_started": True,
+                "on_trial": False,
+                "trial_days_left": None,
+                "trial_leads_count": 0,
+            }
+        sub_until = _parse_ts(user.get("subscription_until"))
+        trial_until = _parse_ts(user.get("trial_until"))
+        subscription_active = user.get("subscription_active") is True and (
+            sub_until is None or sub_until > now
+        )
+        trial_active = (
+            not subscription_active
+            and trial_until is not None
+            and trial_until > now
+        )
+        trial_not_started = trial_until is None and not subscription_active
+        days_left = None
+        if trial_active and trial_until:
+            days_left = max(0, (trial_until.date() - now.date()).days)
+        leads = int(user.get("trial_leads_count") or 0)
+        return {
+            "exists": True,
+            "subscription_active": subscription_active,
+            "trial_active": trial_active,
+            "trial_not_started": trial_not_started,
+            "on_trial": trial_active,
+            "trial_until": trial_until,
+            "trial_days_left": days_left,
+            "trial_leads_count": leads,
+            "bot_blocked": bool(user.get("bot_blocked")),
+        }
+
+    async def has_active_subscription(self, user_id: int) -> bool:
+        st = await self.get_subscription_status(user_id)
+        return st["subscription_active"]
+
+    async def increment_trial_leads_count(self, user_id: int, delta: int = 1):
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE subscribers
+                SET trial_leads_count = COALESCE(trial_leads_count, 0) + $2
+                WHERE user_id = $1
+                """,
+                user_id,
+                delta,
+            )
+
+    async def set_bot_blocked(self, user_id: int, blocked: bool = True):
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE subscribers SET bot_blocked = $2 WHERE user_id = $1",
+                user_id,
+                blocked,
+            )
+
+    async def activate_subscription(
+        self, user_id: int, days: int = 30, payment_ref: Optional[str] = None
+    ):
+        """Активация платной подписки в Postgres (Stars / менеджер)."""
+        now = datetime.now(timezone.utc)
+        until = now + timedelta(days=days)
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT user_id FROM subscribers WHERE user_id = $1", user_id
+            )
+            if not row:
+                await conn.execute(
+                    """
+                    INSERT INTO subscribers (user_id, categories, subscription_active, subscription_until)
+                    VALUES ($1, '[]', TRUE, $2)
+                    """,
+                    user_id,
+                    until,
+                )
+            else:
+                await conn.execute(
+                    """
+                    UPDATE subscribers
+                    SET subscription_active = TRUE,
+                        subscription_until = $2,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = $1
+                    """,
+                    user_id,
+                    until,
+                )
+        logger.info(
+            f"💳 Подписка активирована для {user_id} до {until.isoformat()} ref={payment_ref}"
+        )
 
     async def get_subscribers_for_category(self, category):
         async with self.pool.acquire() as conn:
@@ -195,7 +349,14 @@ class Database:
                 now = datetime.now(timezone.utc)
                 
                 # Получаем всех подписчиков с их категориями, странами и статусом подписки
-                rows = await conn.fetch('SELECT user_id, categories, countries, subscription_active, subscription_until, trial_until FROM subscribers')
+                rows = await conn.fetch(
+                    """
+                    SELECT user_id, categories, countries, subscription_active,
+                           subscription_until, trial_until, bot_blocked
+                    FROM subscribers
+                    WHERE COALESCE(bot_blocked, FALSE) = FALSE
+                    """
+                )
                 subscribers = []
                 
                 # Нормализуем искомую нишу
@@ -378,22 +539,28 @@ class Database:
     async def update_user_niches(self, user_id, niches):
         """Обновляет ниши пользователя (полная замена)"""
         async with self.pool.acquire() as conn:
-            # Проверяем, существует ли пользователь
-            row = await conn.fetchrow('SELECT user_id FROM subscribers WHERE user_id = $1', user_id)
+            row = await conn.fetchrow(
+                "SELECT user_id FROM subscribers WHERE user_id = $1", user_id
+            )
             if row:
-                # Обновляем существующего пользователя
                 await conn.execute(
-                    'UPDATE subscribers SET categories = $1 WHERE user_id = $2',
-                    json.dumps(niches), user_id
+                    "UPDATE subscribers SET categories = $1 WHERE user_id = $2",
+                    json.dumps(niches),
+                    user_id,
                 )
                 logger.info(f"💾 Обновлены ниши пользователя {user_id}: {niches}")
             else:
-                # Создаем нового пользователя
                 await conn.execute(
-                    'INSERT INTO subscribers (user_id, categories) VALUES ($1, $2)',
-                    user_id, json.dumps(niches)
+                    """
+                    INSERT INTO subscribers (user_id, categories, trial_until)
+                    VALUES ($1, $2, NULL)
+                    """,
+                    user_id,
+                    json.dumps(niches),
                 )
                 logger.info(f"👤 Создан новый пользователь {user_id} с нишами: {niches}")
+        if niches:
+            await self.start_trial_if_needed(user_id)
 
     # ==================== МЕТОДЫ ДЛЯ РАБОТЫ СО СТРАНАМИ ====================
     
@@ -559,45 +726,6 @@ class Database:
                 }
     
     async def is_user_on_trial(self, user_id):
-        """
-        Проверяет, находится ли пользователь на триале (не имеет активной подписки)
-        Возвращает True если пользователь на триале, False если имеет подписку
-        """
-        async with self.pool.acquire() as conn:
-            # Создаем колонки для подписки, если их нет
-            try:
-                await conn.execute(
-                    """
-                    ALTER TABLE subscribers 
-                    ADD COLUMN IF NOT EXISTS subscription BOOLEAN DEFAULT FALSE,
-                    ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP
-                    """
-                )
-            except Exception:
-                pass  # Колонки уже существуют
-            
-            row = await conn.fetchrow(
-                'SELECT subscription, trial_ends_at FROM subscribers WHERE user_id = $1',
-                user_id
-            )
-            
-            if not row:
-                # Если пользователя нет в базе, считаем его триальным
-                return True
-            
-            # Если есть активная подписка - не триал
-            if row.get('subscription', False):
-                return False
-            
-            # Если есть trial_ends_at, проверяем, не истек ли триал
-            trial_ends_at = row.get('trial_ends_at')
-            if trial_ends_at:
-                from datetime import datetime
-                if isinstance(trial_ends_at, str):
-                    trial_ends_at = datetime.fromisoformat(trial_ends_at.replace('Z', '+00:00'))
-                # Если триал истек, считаем что пользователь не на триале (нужна подписка)
-                if datetime.now() > trial_ends_at:
-                    return False
-            
-            # По умолчанию считаем триальным
-            return True
+        """Активный триал: trial_until в будущем и нет платной подписки."""
+        st = await self.get_subscription_status(user_id)
+        return st["trial_active"]

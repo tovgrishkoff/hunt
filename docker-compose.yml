@@ -94,6 +94,7 @@ services:
       - ./logs:/app/logs
       - ./data:/app/data
       - ./active_reminders.py:/app/active_reminders.py
+      - ./trial_pre_expiry_reminders.py:/app/trial_pre_expiry_reminders.py
       - ./start_active_reminders.py:/app/start_active_reminders.py
       - ./active_reminders.log:/app/active_reminders.log
       - ./active_reminders_service.log:/app/active_reminders_service.log

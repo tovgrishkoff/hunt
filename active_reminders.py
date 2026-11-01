@@ -142,6 +142,7 @@ async def get_expired_users(conn, days_since_expiry=7):
         WHERE s.subscription_active = FALSE
         AND s.trial_until IS NOT NULL
         AND s.trial_until < $1
+        AND COALESCE(s.bot_blocked, FALSE) = FALSE
         AND s.user_id != 210147380
         ORDER BY s.trial_until DESC
     ''', expiry_threshold)
@@ -178,7 +179,9 @@ async def update_reminder_tracking(conn, user_id, now):
             reminder_count = reminder_tracking.reminder_count + 1
     ''', user_id, now)
 
-async def send_reminder_to_user(user_id, message_text, reminder_number, bot_token=None):
+async def send_reminder_to_user(
+    user_id, message_text, reminder_number, bot_token=None, parse_mode="Markdown"
+):
     """Отправляет напоминание пользователю через Telegram API"""
     if bot_token is None:
         bot_token = BOT_TOKEN or os.getenv('BOT_TOKEN')
@@ -193,7 +196,7 @@ async def send_reminder_to_user(user_id, message_text, reminder_number, bot_toke
         # Создаем клавиатуру с кнопками
         keyboard = {
             "inline_keyboard": [
-                [{"text": "💎 Оформить подписку", "callback_data": "subscribe"}],
+                [{"text": "⭐ Оформить подписку", "callback_data": "pay_subscribe"}],
                 [{"text": "📋 Меню", "callback_data": "menu"}]
             ]
         }
@@ -201,7 +204,7 @@ async def send_reminder_to_user(user_id, message_text, reminder_number, bot_toke
         data = {
             "chat_id": user_id,
             "text": message_text,
-            "parse_mode": "Markdown",
+            "parse_mode": parse_mode,
             "reply_markup": keyboard
         }
         
@@ -210,13 +213,78 @@ async def send_reminder_to_user(user_id, message_text, reminder_number, bot_toke
         if response.status_code == 200:
             logger.info(f"✅ Напоминание #{reminder_number} отправлено пользователю {user_id}")
             return True
-        else:
-            logger.error(f"❌ Ошибка отправки пользователю {user_id}: {response.text}")
-            return False
+        if response.status_code == 403 or "blocked" in response.text.lower():
+            logger.warning(f"🚫 Пользователь {user_id} заблокировал бота")
+            return "blocked"
+        logger.error(f"❌ Ошибка отправки пользователю {user_id}: {response.text}")
+        return False
             
     except Exception as e:
         logger.error(f"❌ Ошибка отправки пользователю {user_id}: {e}")
         return False
+
+ZERO_LEADS_MESSAGE = """
+📊 <b>7 дней в триале — 0 лидов</b>
+
+Вы уже настроили ниши, но за неделю не пришло ни одного уведомления. Частые причины:
+
+• В нише мало спроса в выбранных чатах (попробуйте соседнюю нишу или снимите фильтр стран)
+• Слишком узкий фильтр по странам
+• Триал совпал с тихим периодом в чатах
+
+Напишите @huansya0 — поможем подобрать ниши. Или оформите подписку и расширьте охват:
+"""
+
+
+async def send_zero_leads_trial_reminders(conn, bot_token):
+    """Один раз: ≥7 дней триала и 0 лидов."""
+    await conn.execute(
+        """
+        ALTER TABLE subscribers
+        ADD COLUMN IF NOT EXISTS trial_zero_leads_reminder_sent BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS trial_started_at TIMESTAMP WITH TIME ZONE,
+        ADD COLUMN IF NOT EXISTS trial_leads_count INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS bot_blocked BOOLEAN DEFAULT FALSE
+        """
+    )
+    now = datetime.now(timezone.utc)
+    threshold = now - timedelta(days=7)
+    users = await conn.fetch(
+        """
+        SELECT user_id, trial_leads_count, categories
+        FROM subscribers
+        WHERE subscription_active IS NOT TRUE
+          AND trial_until IS NOT NULL
+          AND trial_until > $1
+          AND COALESCE(trial_started_at, created_at) <= $2
+          AND COALESCE(trial_leads_count, 0) = 0
+          AND COALESCE(trial_zero_leads_reminder_sent, FALSE) = FALSE
+          AND COALESCE(bot_blocked, FALSE) = FALSE
+          AND categories IS NOT NULL
+          AND categories::text NOT IN ('[]', 'null', '')
+        """,
+        now,
+        threshold,
+    )
+    sent = 0
+    for u in users:
+        uid = u["user_id"]
+        result = await send_reminder_to_user(
+            uid, ZERO_LEADS_MESSAGE, 0, bot_token, parse_mode="HTML"
+        )
+        if result is True:
+            await conn.execute(
+                "UPDATE subscribers SET trial_zero_leads_reminder_sent = TRUE WHERE user_id = $1",
+                uid,
+            )
+            sent += 1
+        elif result == "blocked":
+            await conn.execute(
+                "UPDATE subscribers SET bot_blocked = TRUE WHERE user_id = $1", uid
+            )
+        await asyncio.sleep(0.5)
+    logger.info(f"📭 Zero-leads trial reminders sent: {sent}")
+
 
 async def send_active_reminders():
     """Основная функция отправки активных напоминаний"""
@@ -244,6 +312,15 @@ async def send_active_reminders():
     try:
         # Создаем таблицу для отслеживания
         await create_reminder_tracking_table(conn)
+
+        try:
+            from trial_pre_expiry_reminders import send_trial_pre_expiry_reminders
+
+            await send_trial_pre_expiry_reminders()
+        except Exception as e:
+            logger.error(f"Pre-expiry reminders error: {e}")
+
+        await send_zero_leads_trial_reminders(conn, bot_token)
         
         # Получаем пользователей с истекшими триалами (более 7 дней назад)
         logger.info("🔍 Поиск пользователей с истекшими триалами...")
@@ -278,10 +355,17 @@ async def send_active_reminders():
             message_text = REMINDER_MESSAGES[reminder_count % len(REMINDER_MESSAGES)]
             
             # Отправляем напоминание (используем bot_token из области видимости функции)
-            if await send_reminder_to_user(user_id, message_text, reminder_count + 1, bot_token):
-                # Обновляем информацию о последнем напоминании
+            result = await send_reminder_to_user(
+                user_id, message_text, reminder_count + 1, bot_token
+            )
+            if result is True:
                 await update_reminder_tracking(conn, user_id, now)
                 sent += 1
+            elif result == "blocked":
+                await conn.execute(
+                    "UPDATE subscribers SET bot_blocked = TRUE WHERE user_id = $1", user_id
+                )
+                failed += 1
             else:
                 failed += 1
             

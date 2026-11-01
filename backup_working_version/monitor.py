@@ -1696,15 +1696,35 @@ class MessageMonitor:
                     InlineKeyboardButton("🔧 Исправить классификацию", callback_data=f"correct_{message_id}_{user_id}")
                 )
 
+                sub_status = await self.db.get_subscription_status(user_id)
+                if sub_status.get("trial_active") and sub_status.get("trial_days_left") is not None:
+                    days_left = sub_status["trial_days_left"]
+                    notification += (
+                        f"\n\n⏳ <b>Триал:</b> осталось {days_left} дн."
+                    )
+                    keyboard.add(
+                        InlineKeyboardButton(
+                            "💳 Оформить подписку", callback_data="pay_subscribe"
+                        )
+                    )
+
                 await self.bot.send_message(
                     user_id, 
                     notification, 
                     parse_mode="HTML",
                     reply_markup=keyboard
                 )
+                if sub_status.get("trial_active"):
+                    await self.db.increment_trial_leads_count(user_id)
                 logger.info(f"✅ Уведомление с кнопками отправлено пользователю {user_id}")
                 
             except Exception as e:
+                err = str(e).lower()
+                if "403" in err or "blocked" in err or "forbidden" in err:
+                    try:
+                        await self.db.set_bot_blocked(user_id, True)
+                    except Exception:
+                        pass
                 logger.error(f"❌ Ошибка отправки уведомления пользователю {user_id}: {e}")
         
         logger.info("=== Обработка сообщения завершена ===")
