@@ -1671,6 +1671,19 @@ class MessageMonitor:
         urgency = classification_result.get('urgency', 'не срочно')
         budget = classification_result.get('budget', '')
 
+        # Чат «Барахолка» без явного жилья — AI часто врёт «Продажа недвижимости»
+        if (
+            chat_title
+            and re.search(r"барахол", chat_title, re.IGNORECASE)
+            and (found_niches & REAL_ESTATE_NICHES)
+            and not _HOUSING_WORD_RE.search(message_text or "")
+        ):
+            logger.info(
+                f"🔍 Чат барахолка '{chat_title}' без жилья: "
+                f"убираем {found_niches & REAL_ESTATE_NICHES}"
+            )
+            found_niches = set(n for n in found_niches if n not in REAL_ESTATE_NICHES)
+
         if not found_niches:
             logger.info("❌ Категории не найдены, сообщение не будет разослано")
             return
