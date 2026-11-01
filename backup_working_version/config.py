@@ -265,7 +265,7 @@ NOTIFICATION_SETTINGS = {
     "weekly": "Раз в неделю"
 }
 
-TRIAL_DAYS = int(os.getenv("TRIAL_DAYS", "14"))
+TRIAL_DAYS = int(os.getenv("TRIAL_DAYS", "7"))
 TRIAL_MAX_NICHES = int(os.getenv("TRIAL_MAX_NICHES", "3"))
 SUBSCRIPTION_DAYS = int(os.getenv("SUBSCRIPTION_DAYS", "30"))
 # Telegram Stars (XTR). Пустой provider_token — оплата Stars.
