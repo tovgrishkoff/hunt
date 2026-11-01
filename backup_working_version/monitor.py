@@ -419,6 +419,11 @@ class MessageMonitor:
             offer_markers = [
                 "предлагаю",
                 "сдам",
+                "сдаю",
+                "сдаем",
+                "сдаётся",
+                "сдается",
+                "сдаются",
                 "продам",
                 "делаю",
                 "работаю",
@@ -427,6 +432,39 @@ class MessageMonitor:
                 "записываю",
                 "свободные окна",
                 "прайс",
+                "в аренду",
+                "прокат",
+            ]
+            search_markers = search_markers + [
+                "заказать",
+                "заказ",
+                "хочу",
+                "арендую",
+                "арендовать",
+                "снять",
+                "кто сда",
+                "кто сдает",
+                "кто сдаёт",
+                "обменяю",
+                "обменяем",
+                "меняю",
+                "меняем",
+                "looking for",
+                "need a",
+                "need an",
+                "seeking",
+                "want to rent",
+                "to rent",
+            ]
+            offer_markers = offer_markers + [
+                "обменяю",
+                "обменяем",
+                "меняю",
+                "меняем",
+                "for rent",
+                "available for rent",
+                "renting out",
+                "for sale",
             ]
             if any(w in text for w in search_markers):
                 msg_type = "ПОИСК"
@@ -869,6 +907,28 @@ class MessageMonitor:
         ):
             niches = set(n for n in niches if n != "Продажа недвижимости")
             logger.info("🔍 Арендный спрос: убираем ложную нишу 'Продажа недвижимости'")
+
+        # EN offer vs demand: "available for rent" / "renting out" — это предложение
+        en_offer = bool(
+            re.search(
+                r"\b(available\s+for\s+rent|for\s+rent|renting\s+out)\b",
+                text_lower,
+            )
+        )
+        en_demand = bool(
+            re.search(
+                r"\b(looking\s+for|seeking|want\s+to\s+rent|need\s+to\s+rent)\b",
+                text_lower,
+            )
+        )
+        if (
+            en_offer
+            and not en_demand
+            and "Недвижимость (Предложение)" in niches
+            and "Недвижимость (Спрос)" in niches
+        ):
+            niches = set(n for n in niches if n != "Недвижимость (Спрос)")
+            logger.info("🔍 EN rental offer: убираем ложный 'Недвижимость (Спрос)'")
         return niches
 
     def _match_job_bait_spam(self, text: str) -> Optional[str]:
@@ -1082,7 +1142,16 @@ class MessageMonitor:
         ]
 
         for keyword in spam_keywords:
-            if keyword in text_lower:
+            # Word-boundary для обычных слов: иначе «ставки» ловит «приставки»
+            if re.search(r"[^\w\s]", keyword, flags=re.UNICODE):
+                hit = keyword in text_lower
+            else:
+                hit = re.search(
+                    rf"(?<!\w){re.escape(keyword)}(?!\w)",
+                    text_lower,
+                    flags=re.UNICODE,
+                ) is not None
+            if hit:
                 logger.info(f"❌ Найдено спам-слово: {keyword}")
                 return True
 
