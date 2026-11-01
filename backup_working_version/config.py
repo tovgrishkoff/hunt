@@ -255,7 +255,15 @@ MONITORING_CONFIG = {
         "@leylita_angel_369": "",
         "@ElizavetBelkina": "",
         "@larisafloret": ""
-    }
+    },
+    # Бан без username (по Telegram user_id)
+    "disallowed_user_ids": {
+        8334072844: "Сницаренко — Дубай чат, фейк заказы на монтаж/видео",
+    },
+    # Бан по отображаемому имени (lower)
+    "disallowed_display_names": {
+        "сницаренко": "ID 8334072844",
+    },
 }
 
 TELEGRAM_BOT_TOKEN = BOT_TOKEN

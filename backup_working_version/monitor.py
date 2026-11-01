@@ -173,7 +173,15 @@ class MessageMonitor:
         self.db = db
         self.listening_chats = MONITORING_CONFIG["listening_chats"]
         self.disallowed_keywords = MONITORING_CONFIG["disallowed_keywords"]
-        self.disallowed_users = MONITORING_CONFIG["disallowed_users"]
+        self.disallowed_users = MONITORING_CONFIG.get("disallowed_users") or {}
+        self.disallowed_user_ids = {
+            int(k): v
+            for k, v in (MONITORING_CONFIG.get("disallowed_user_ids") or {}).items()
+        }
+        self.disallowed_display_names = {
+            str(k).strip().lower(): v
+            for k, v in (MONITORING_CONFIG.get("disallowed_display_names") or {}).items()
+        }
         self.user_keywords: Dict[int, Dict[str, List[str]]] = {}
         self.topic_keywords: Dict[str, Set[str]] = {}
         self.user_topics: Dict[int, Set[str]] = {}
@@ -239,6 +247,41 @@ class MessageMonitor:
     def _escape_html(value: str) -> str:
         """Экранирует текст для безопасного HTML parse_mode в Telegram."""
         return html.escape(value or "")
+
+    def _is_blocked_sender(
+        self,
+        sender_id: Optional[int] = None,
+        sender_username: Optional[str] = None,
+        sender_first_name: Optional[str] = None,
+        sender_last_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """Бан автора по ID / @username / отображаемому имени."""
+        if sender_id is not None:
+            try:
+                sid = int(sender_id)
+            except (TypeError, ValueError):
+                sid = None
+            if sid is not None and sid in self.disallowed_user_ids:
+                return f"user_id={sid} ({self.disallowed_user_ids[sid]})"
+
+        if sender_username:
+            uname = sender_username.strip().lstrip("@").lower()
+            for key in self.disallowed_users:
+                key_norm = str(key).strip().lstrip("@").lower()
+                if key_norm and key_norm == uname:
+                    return f"@{uname}"
+
+        full_name = f"{sender_first_name or ''} {sender_last_name or ''}".strip().lower()
+        if full_name:
+            if full_name in self.disallowed_display_names:
+                return f"name={full_name}"
+            # Частичное совпадение по токенам (фамилия без имени)
+            for banned_name in self.disallowed_display_names:
+                if banned_name and banned_name in full_name.split():
+                    return f"name_token={banned_name}"
+                if banned_name and banned_name == full_name:
+                    return f"name={banned_name}"
+        return None
 
     def _is_hard_banned(self, message_text: str) -> Optional[str]:
         """
@@ -1556,6 +1599,13 @@ class MessageMonitor:
         # 0) Проверка is_bot: сообщения от ботов игнорируем сразу (приветствия/админ-боты)
         if sender_is_bot:
             logger.info("🚫 Сообщение от бота (sender_is_bot=True), пропускаем")
+            return
+
+        blocked = self._is_blocked_sender(
+            sender_id, sender_username, sender_first_name, sender_last_name
+        )
+        if blocked:
+            logger.info(f"🚫 Автор в бан-листе: {blocked} — пропускаем")
             return
 
         # 0.1) Стоп-фразы приветствий/вступления
