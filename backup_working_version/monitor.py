@@ -58,15 +58,10 @@ _HARD_BAN_REGEXES = [
     ),
 ]
 
-REAL_ESTATE_NICHES = {"Продажа недвижимости", "Сдача недвижимости"}
-
-# UI-подписки и паттерны используют разные имена ниш.
-# Без алиасов «Сдача недвижимости» не доходит до подписчиков «Недвижимость (Спрос)».
-NICHE_ALIASES: Dict[str, Set[str]] = {
-    "Сдача недвижимости": {"Сдача недвижимости", "Недвижимость (Спрос)"},
-    "Недвижимость (Спрос)": {"Сдача недвижимости", "Недвижимость (Спрос)"},
-    "Продажа недвижимости": {"Продажа недвижимости", "Недвижимость (Предложение)"},
-    "Недвижимость (Предложение)": {"Продажа недвижимости", "Недвижимость (Предложение)"},
+REAL_ESTATE_NICHES = {
+    "Продажа недвижимости",
+    "Недвижимость (Спрос)",
+    "Недвижимость (Предложение)",
 }
 
 REAL_ESTATE_NEGATIVE_KEYWORDS = {
@@ -385,6 +380,7 @@ class MessageMonitor:
                 message_text, found_niches
             )
             found_niches = self._postprocess_niches(message_text, found_niches)
+            found_niches = self._resolve_realty_demand_vs_sale(message_text, found_niches)
 
         if found_niches:
             logger.info(f"✅ Pre-filter: ниши найдены по паттернам: {found_niches}. AI не вызываем.")
@@ -815,21 +811,46 @@ class MessageMonitor:
         has_strong_bike_context = any(w in text_lower for w in BIKE_STRONG_KEYWORDS)
 
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
-        if "Сдача недвижимости" in niches and "Аренда байков" in niches:
+        if "Недвижимость (Предложение)" in niches and "Аренда байков" in niches:
             if has_housing_context and not has_strong_bike_context:
                 niches = set(n for n in niches if n != "Аренда байков")
 
         return niches
 
-    @staticmethod
-    def _expand_niche_aliases(niches: Set[str]) -> Set[str]:
-        """Расширяет найденные ниши UI-алиасами для поиска подписчиков."""
-        expanded: Set[str] = set()
-        for niche in niches or set():
-            expanded.add(niche)
-            for alias in NICHE_ALIASES.get(niche, set()):
-                expanded.add(alias)
-        return expanded
+    def _resolve_realty_demand_vs_sale(
+        self, message_text: str, niches: Set[str]
+    ) -> Set[str]:
+        """
+        Недвижимость (Спрос) и Продажа — разные ниши.
+        Если явно арендный спрос (сниму/на месяц), убираем ложную Продажу.
+        """
+        if not niches:
+            return niches
+        text_lower = (message_text or "").lower()
+        rental_demand = bool(
+            re.search(
+                r"\b(сниму|снимаю|снимаем|снять|арендую|арендуем|арендовать)\b|"
+                r"\bна\s+(месяц|недел|год|сутки|день)\b|"
+                r"\bпосуточно\b|"
+                r"\bдолгосрочн\w*\s+аренда\b",
+                text_lower,
+            )
+        )
+        sale_intent = bool(
+            re.search(
+                r"\b(куплю|покупаю|покупаем|продам|продаю|продаем|продается|риелтор)\b",
+                text_lower,
+            )
+        )
+        if (
+            "Недвижимость (Спрос)" in niches
+            and "Продажа недвижимости" in niches
+            and rental_demand
+            and not sale_intent
+        ):
+            niches = set(n for n in niches if n != "Продажа недвижимости")
+            logger.info("🔍 Арендный спрос: убираем ложную нишу 'Продажа недвижимости'")
+        return niches
 
     def _match_job_bait_spam(self, text: str) -> Optional[str]:
         """
@@ -1435,15 +1456,14 @@ class MessageMonitor:
             chat_country = "Бали"
             logger.info(f"🌍 Страна не определена по названию чата, используем 'Бали' по умолчанию")
         
-        # Получаем всех подписчиков для найденных ниш (+ UI-алиасы) с учетом страны
+        # Получаем всех подписчиков для найденных ниш с учетом страны
         all_subscribers = set()
-        lookup_niches = self._expand_niche_aliases(found_niches)
-        for niche in lookup_niches:
+        for niche in found_niches:
             subscribers = await self.db.get_subscribers_for_niche(niche, country=chat_country)
             logger.info(
                 f"👥 Найдено {len(subscribers)} подписчиков для ниши '{niche}'"
                 + (f" и страны '{chat_country}'" if chat_country else "")
-                + f" (lookup={sorted(lookup_niches)}): {subscribers}"
+                + f": {subscribers}"
             )
             all_subscribers.update(subscribers)
         
@@ -1483,13 +1503,10 @@ class MessageMonitor:
                 user_niches = await self.db.get_user_niches(user_id)
                 logger.info(f"📋 Пользователь {user_id} подписан на ниши: {user_niches}")
 
-                # Пересечение с учётом алиасов (Сдача ↔ Недвижимость (Спрос) и т.п.)
-                expanded_found = {
-                    n.lower() for n in self._expand_niche_aliases(found_niches)
-                }
-                common_niches = [
-                    n for n in user_niches if n.lower() in expanded_found
-                ]
+                # Проверяем, есть ли пересечение ниш
+                common_niches = set(n.lower() for n in user_niches) & set(
+                    n.lower() for n in found_niches
+                )
                 if not common_niches:
                     logger.info(f"⚠️ У пользователя {user_id} нет общих ниш с найденными")
                     continue

@@ -8,7 +8,10 @@ load_dotenv()
 API_ID = 14402545  # Ваш API ID (должен быть числом)
 API_HASH = '9b5c94fcbaafb98d0862714bbba83d10'  # Ваш API Hash
 PHONE_NUMBER = '+380630632244'  # Ваш номер телефона
-BOT_TOKEN = os.getenv('BOT_TOKEN', '8233775715:AAGABqq1Qibf2RmxZm-tB97dtMNxLyqs0y8')  # Читаем из переменных окружения
+# Только из env — без захардкоженного fallback (отозванный токен давал Unauthorized).
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN env var is required")
 
 # Database configuration
 # Используем переменные окружения для Docker, иначе значения по умолчанию
