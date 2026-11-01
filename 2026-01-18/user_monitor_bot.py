@@ -185,9 +185,11 @@ async def main():
     else:
         logger.info("⚠️ OpenAI API ключ не найден, будет использована только базовая классификация")
     
-    # Создаем бота ТОЛЬКО для отправки сообщений (без polling)
-    # Используем токен основного бота для отправки уведомлений
-    main_bot_token = '8233775715:AAGABqq1Qibf2RmxZm-tB97dtMNxLyqs0y8'
+    # Создаем бота ТОЛЬКО для отправки сообщений (без polling).
+    # Токен только из env/config — без хардкода.
+    main_bot_token = BOT_TOKEN or os.getenv("BOT_TOKEN")
+    if not main_bot_token:
+        raise RuntimeError("BOT_TOKEN is not set — cannot send lead notifications")
     bot = Bot(token=main_bot_token)
     
     # Создаем монитор

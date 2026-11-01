@@ -15,9 +15,11 @@ from dotenv import load_dotenv
 # Загружаем переменные окружения
 load_dotenv()
 
-# Используем токен основного бота для тестирования кнопок
-BOT_TOKEN = "7135926908:AAF5r7P-PtPTy2L8SZOm2tNQxqraMHkZyzA"
-TEST_USER_ID = "210147380"
+# Токен только из env — без хардкода
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN env var is required")
+TEST_USER_ID = os.getenv("TEST_USER_ID", "210147380")
 
 async def test_buttons():
     """Тестирует работу кнопок релевантности"""

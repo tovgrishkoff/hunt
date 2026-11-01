@@ -1737,10 +1737,10 @@ async def main():
     await client.start()
     logger.info("Telethon клиент успешно запущен")
 
-    # Инициализация базы и монитора
-    # Используем токен основного бота для отправки уведомлений
-    main_bot_token = '7135926908:AAF5r7P-PtPTy2L8SZOm2tNQxqraMHkZyzA'
-    bot = Bot(token=main_bot_token)
+    # Инициализация базы и монитора — токен только из env/config
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN env var is required")
+    bot = Bot(token=BOT_TOKEN)
     db = Database(dsn=DB_DSN)
     await db.connect()
     monitor = MessageMonitor(bot, db)
