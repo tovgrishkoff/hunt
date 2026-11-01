@@ -368,7 +368,22 @@ class Database:
                     "бали": "bali",
                     "таиланд": "thailand",
                     "турция": "turkey",
-                    "грузия": "georgia"
+                    "грузия": "georgia",
+                    "вьетнам": "vietnam",
+                    "дубай": "dubai",
+                    "дубай / оаэ": "dubai",
+                    "оаэ": "dubai",
+                    "россия": "russia",
+                    "армения": "armenia",
+                    "сербия": "serbia",
+                    "гоа": "goa",
+                    "гоа / индия": "goa",
+                    "индия": "goa",
+                    "кейптаун": "cape_town",
+                    "кейптаун / юар": "cape_town",
+                    "юар": "cape_town",
+                    "сша": "usa",
+                    "usa": "usa",
                 }
                 if country:
                     country_lower = country.lower()

@@ -1594,14 +1594,20 @@ class MessageMonitor:
 
         logger.info(f"📊 Найдено ниш: {found_niches} (тип: {message_type}, уверенность: {confidence}%, причина: {reason})")
         
-        # Определяем страну чата по названию чата
+        # Страна по названию / username / ссылке. Без дефолта «Бали» —
+        # иначе РФ и прочие чаты утекали подписчикам Бали.
         chat_country = self._get_country_from_chat_title(chat_title) if chat_title else None
+        if not chat_country and chat_username:
+            chat_country = self._get_country_from_chat_title(chat_username)
+        if not chat_country and message_link:
+            chat_country = self._get_country_from_chat_title(message_link)
         if chat_country:
             logger.info(f"🌍 Страна определена по названию чата '{chat_title}': {chat_country}")
         else:
-            # Если не определили по названию, по умолчанию считаем что это Бали (для обратной совместимости)
-            chat_country = "Бали"
-            logger.info(f"🌍 Страна не определена по названию чата, используем 'Бали' по умолчанию")
+            logger.info(
+                f"🌍 Страна не определена для чата '{chat_title}' — "
+                "не подставляем Бали; пользователи с фильтром стран не получат"
+            )
         
         # Подписчики по найденным нишам + legacy «Сдача»↔«Предложение» (Спрос отдельно)
         all_subscribers = set()
@@ -2052,27 +2058,71 @@ class MessageMonitor:
 
     def _get_country_from_chat_title(self, chat_title: str) -> str:
         """
-        Определяет страну по названию чата
-        Используется, когда chat_id недоступен
+        Определяет страну по названию чата / username / ссылке.
+        Возвращает русское имя — database.country_name_mapping мапит в коды UI.
         """
         if not chat_title:
             return None
-        
+
         chat_title_lower = chat_title.lower()
-        
-        # Маппинг ключевых слов в названиях чатов на страны
+
         country_keywords = {
-            "Бали": ["бали", "bali", "индонези", "ubud", "чангу", "семеньяк", "кута"],
-            "Таиланд": ["таиланд", "thailand", "пхукет", "phuket", "самуи", "samui", "паттай", "pattaya"],
-            "Турция": ["турци", "turkey", "турк", "антали", "antalya", "стамбул", "istanbul"],
-            "Грузия": ["грузи", "georgia", "тбилиси", "tbilisi", "батуми", "batumi"]
+            "Бали": [
+                "бали", "bali", "индонези", "indonesia", "ubud", "убуд",
+                "чангу", "canggu", "семеньяк", "seminyak", "кута", "kuta",
+                "денпасар", "denpasar", "нусад", "nusa dua", "нусапен",
+            ],
+            "Таиланд": [
+                "таиланд", "thailand", "пхукет", "phuket", "самуи", "samui",
+                "паттай", "pattaya", "бангкок", "bangkok", "чианг",
+            ],
+            "Турция": [
+                "турци", "turkey", "турк", "антали", "antalya", "стамбул",
+                "istanbul", "аланья", "alanya",
+            ],
+            "Грузия": [
+                "грузи", "georgia", "тбилиси", "tbilisi", "батуми", "batumi",
+            ],
+            "Вьетнам": [
+                "вьетнам", "vietnam", "нячанг", "nhatrang", "nha trang",
+                "фукуок", "phu quoc", "дананг", "danang", "хошимин",
+            ],
+            "Дубай": [
+                "дубай", "dubai", "оаэ", "uae", "абу-даби", "abu dhabi",
+            ],
+            "США": [
+                "los angeles", "california", "майами", "miami",
+                "нью-йорк", "new york", " usa", "сша",
+            ],
+            "Индия": [
+                "гоа", "goa", "индия", "india", "бомбей", "mumbai",
+            ],
+            "ЮАР": [
+                "кейптаун", "cape town", "cape_town", "юар", "south africa",
+            ],
+            "Армения": [
+                "армени", "armenia", "ереван", "yerevan",
+            ],
+            "Сербия": [
+                "серби", "serbia", "белград", "belgrade", "белград",
+            ],
+            "Россия": [
+                "росси", " russia", "краснодар", "krasnodar", "ростов", "rostov",
+                "москва", "moscow", "мск", "питер", "петербург", "spb", "спб",
+                "екатеринбург", "новосибирск", "казань", "сочи", "sochi",
+                "самара", "воронеж", "пермь", "уфа", "красноярск", "тюмень",
+                "челябинск", "нижний новгород", "калининград", "владивосток",
+                "ставрополь", "крым", "севастополь", "симферополь",
+            ],
         }
-        
+
         for country, keywords in country_keywords.items():
             if any(keyword in chat_title_lower for keyword in keywords):
-                logger.info(f"🌍 Страна '{country}' определена по названию чата '{chat_title}'")
+                logger.info(
+                    f"🌍 Страна '{country}' определена по названию чата '{chat_title}'"
+                )
                 return country
-        
+
         return None
 
 async def main():
