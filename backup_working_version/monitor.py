@@ -145,6 +145,18 @@ _APPLIANCE_MACHINE_RE = re.compile(
     r"рожков\w*"
     r")"
 )
+# Барахолка / мелочь в лирах — не недвижимость
+_FLEA_MARKET_RE = re.compile(
+    r"(?i)("
+    r"барахолк|"
+    r"\b\d{1,5}\s*лир\w*\b|"
+    r"\bлир\w*\b|"
+    r"нижн\w*\s+ряд|"
+    r"верхн\w*\s+ряд|"
+    r"ряд\s+по\s+\d|"
+    r"за\s+все\s+\d+\s*лир"
+    r")"
+)
 _VEHICLE_STRONG_RE = re.compile(
     r"(?i)\b("
     r"авто(?:мобил\w*)?|toyota|bmw|mercedes|hyundai|kia|suzuki|"
@@ -897,6 +909,10 @@ class MessageMonitor:
         if has_fx_crypto and not has_housing_context:
             return set(n for n in niches if n not in REAL_ESTATE_NICHES)
 
+        # Барахолка / «продам по 250лир, нижний ряд» без жилья → не недвижимость
+        if _FLEA_MARKET_RE.search(text_lower) and not has_housing_context:
+            return set(n for n in niches if n not in REAL_ESTATE_NICHES)
+
         # Убираем недвижимость при явном НЕ-недвижимость контексте, либо при транспорте БЕЗ признаков жилья.
         # Важно: сообщения про жильё могут упоминать "прокат байков" как удобство — это не повод убирать недвижимость.
         if has_negative or has_size_without_land or (has_transport_context and not has_housing_context):
@@ -957,6 +973,12 @@ class MessageMonitor:
             if not _VEHICLE_STRONG_RE.search(text_lower):
                 niches.discard("Аренда авто")
                 logger.info("🔍 Бытовая техника (не авто): убираем 'Аренда авто'")
+
+        # Барахолка / лиры без жилья — AI часто путает с продажей недвижимости
+        if (niches & REAL_ESTATE_NICHES) and _FLEA_MARKET_RE.search(text_lower):
+            if not _HOUSING_WORD_RE.search(text_lower):
+                niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
+                logger.info("🔍 Барахолка/лиры без жилья: убираем ниши недвижимости")
 
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
         if "Недвижимость (Предложение)" in niches and "Аренда байков" in niches:
