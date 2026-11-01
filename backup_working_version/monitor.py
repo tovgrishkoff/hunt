@@ -136,6 +136,23 @@ _FX_CRYPTO_RE = re.compile(
     r"(?i)\b(usdt|usdc|btc|bitcoin|ethereum|\beth\b|тезер\w*|крипт\w*|trc20|erc20|bep20)\b|"
     r"обмен\s+валют|курс\s+валют"
 )
+# Бытовая «машина» ≠ авто
+_APPLIANCE_MACHINE_RE = re.compile(
+    r"(?i)("
+    r"кофе\s*машин|кофемашин|кофевар|espresso|эспрессо|"
+    r"стиральн\w*\s*машин|посудомо\w*|посудомоеч|"
+    r"швейн\w*\s*машин|вязальн\w*\s*машин|сушильн\w*\s*машин|"
+    r"рожков\w*"
+    r")"
+)
+_VEHICLE_STRONG_RE = re.compile(
+    r"(?i)\b("
+    r"авто(?:мобил\w*)?|toyota|bmw|mercedes|hyundai|kia|suzuki|"
+    r"mitsubishi|honda\s+civic|toyota|avanza|innova|mobil|"
+    r"седан|внедорожник|кроссовер|минивэн|кабриолет|"
+    r"акпп|мкпп|автомат\w*\s+коробк|правый\s+руль|левый\s+руль"
+    r")\b"
+)
 
 BIKE_STRONG_KEYWORDS = {
     "yamaha",
@@ -891,6 +908,12 @@ class MessageMonitor:
             niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
             if niches != before:
                 logger.info("🔍 FX/crypto без жилья: убираем ниши недвижимости")
+
+        # Кофе/стиральная машина ≠ аренда авто
+        if "Аренда авто" in niches and _APPLIANCE_MACHINE_RE.search(text_lower):
+            if not _VEHICLE_STRONG_RE.search(text_lower):
+                niches.discard("Аренда авто")
+                logger.info("🔍 Бытовая техника (не авто): убираем 'Аренда авто'")
 
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
         if "Недвижимость (Предложение)" in niches and "Аренда байков" in niches:
