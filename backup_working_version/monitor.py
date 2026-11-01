@@ -62,6 +62,16 @@ REAL_ESTATE_NICHES = {
     "Продажа недвижимости",
     "Недвижимость (Спрос)",
     "Недвижимость (Предложение)",
+    # legacy name still present in some subscriptions
+    "Сдача недвижимости",
+}
+
+# Legacy lookup only: old subscription name «Сдача недвижимости» == rental OFFER.
+# Спрос и Предложение — разные ниши, их НЕ склеиваем.
+# Продажа ≠ арендное предложение.
+NICHE_ALIASES: Dict[str, Set[str]] = {
+    "Сдача недвижимости": {"Сдача недвижимости", "Недвижимость (Предложение)"},
+    "Недвижимость (Предложение)": {"Сдача недвижимости", "Недвижимость (Предложение)"},
 }
 
 REAL_ESTATE_NEGATIVE_KEYWORDS = {
@@ -817,6 +827,15 @@ class MessageMonitor:
 
         return niches
 
+    @staticmethod
+    def _expand_niche_aliases(niches: Set[str]) -> Set[str]:
+        """Расширяет ниши legacy-алиасами только для поиска подписчиков."""
+        expanded: Set[str] = set()
+        for niche in niches or set():
+            expanded.add(niche)
+            expanded.update(NICHE_ALIASES.get(niche, set()))
+        return expanded
+
     def _resolve_realty_demand_vs_sale(
         self, message_text: str, niches: Set[str]
     ) -> Set[str]:
@@ -1055,7 +1074,9 @@ class MessageMonitor:
             "вебкам", "webcam", "приват", "private", "сиськи", "попка",
             "оргазм", "мастурб", "минет", "куни", "bdsm", "бдсм", "голые",
             "dating", "знакомства для секса", "свидания", "любовницы",
-            "элитный отдых", "досуг", "выезд", "апартаменты", "содержанки",
+            "элитный отдых", "досуг", "содержанки",
+            # НЕ добавляем голое «апартаменты»/«выезд» — ломает нишу Недвижимость (Предложение)
+            "апартаменты для встреч", "выезд в отель", "выезд в апартаменты",
             "массаж с окончанием", "релакс", "tinder", "мамба", "pure",
             "xxx", "18+", "эротик", "нюдс", "папик", "спонсор"
         ]
@@ -1456,14 +1477,15 @@ class MessageMonitor:
             chat_country = "Бали"
             logger.info(f"🌍 Страна не определена по названию чата, используем 'Бали' по умолчанию")
         
-        # Получаем всех подписчиков для найденных ниш с учетом страны
+        # Подписчики по найденным нишам + legacy «Сдача»↔«Предложение» (Спрос отдельно)
         all_subscribers = set()
-        for niche in found_niches:
+        lookup_niches = self._expand_niche_aliases(found_niches)
+        for niche in lookup_niches:
             subscribers = await self.db.get_subscribers_for_niche(niche, country=chat_country)
             logger.info(
                 f"👥 Найдено {len(subscribers)} подписчиков для ниши '{niche}'"
                 + (f" и страны '{chat_country}'" if chat_country else "")
-                + f": {subscribers}"
+                + f" (lookup={sorted(lookup_niches)}): {subscribers}"
             )
             all_subscribers.update(subscribers)
         
@@ -1503,10 +1525,13 @@ class MessageMonitor:
                 user_niches = await self.db.get_user_niches(user_id)
                 logger.info(f"📋 Пользователь {user_id} подписан на ниши: {user_niches}")
 
-                # Проверяем, есть ли пересечение ниш
-                common_niches = set(n.lower() for n in user_niches) & set(
-                    n.lower() for n in found_niches
-                )
+                # Пересечение с учётом legacy «Сдача»↔«Предложение» (не путать со спросом)
+                expanded_found = {
+                    n.lower() for n in self._expand_niche_aliases(found_niches)
+                }
+                common_niches = [
+                    n for n in user_niches if n.lower() in expanded_found
+                ]
                 if not common_niches:
                     logger.info(f"⚠️ У пользователя {user_id} нет общих ниш с найденными")
                     continue
