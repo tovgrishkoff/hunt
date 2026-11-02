@@ -56,6 +56,18 @@ _HARD_BAN_REGEXES = [
     re.compile(
         r"(?:сдела|оформ|нарис|поддел|фальсифиц).{0,40}(?:документ|выписк|справк|договор)", re.IGNORECASE
     ),
+
+    # Эскорт/порно под видом «жилья»: «Приму у себя, без предоплат🔞»
+    re.compile(
+        r"приму\s+у\s+себя.{0,80}(?:предоплат|🔞|приятн\w*\s+цен)",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"(?:без\s+предоплат|приятн\w*\s+цен).{0,40}🔞|🔞.{0,40}(?:без\s+предоплат|приятн\w*\s+цен|приму\s+у\s+себя)",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    # Массовый пинг через невидимые tg://user?id= (типичный эскорт-спам)
+    re.compile(r"(?:tg://user\?id=\d+.?){3,}", re.IGNORECASE),
 ]
 
 REAL_ESTATE_NICHES = {
@@ -1271,7 +1283,9 @@ class MessageMonitor:
             # НЕ добавляем голое «апартаменты»/«выезд» — ломает нишу Недвижимость (Предложение)
             "апартаменты для встреч", "выезд в отель", "выезд в апартаменты",
             "массаж с окончанием", "релакс", "tinder", "мамба", "pure",
-            "xxx", "18+", "эротик", "нюдс", "папик", "спонсор"
+            "xxx", "18+", "эротик", "нюдс", "папик", "спонсор",
+            # «без предоплат» отдельно НЕ баним — бывает у аренды байков/авто
+            "приму у себя", "🔞",
         ]
 
         for keyword in spam_keywords:
@@ -1299,6 +1313,20 @@ class MessageMonitor:
             w in text_lower for w in ["видео", "video", "pack", "пак", "слив", "nude", "нюд"]
         ):
             logger.info("❌ Приватная ссылка t.me/+ с adult-контекстом")
+            return True
+
+        # Массовые невидимые упоминания tg://user?id= (эскорт-рассылки)
+        if len(re.findall(r"tg://user\?id=\d+", message_text or "")) >= 3:
+            logger.info("❌ Массовый пинг tg://user?id= — эскорт/спам")
+            return True
+
+        # Эскорт-формулировки без явного жилья
+        if re.search(r"приму\s+у\s+себя", text_lower) and (
+            "🔞" in (message_text or "")
+            or "предоплат" in text_lower
+            or "приятн" in text_lower
+        ):
+            logger.info("❌ Эскорт: «приму у себя» + adult-маркеры")
             return True
 
         # Проверка на повторяющиеся символы (после удаления VS16/ZWJ)
@@ -1681,6 +1709,17 @@ class MessageMonitor:
             logger.info(
                 f"🔍 Чат барахолка '{chat_title}' без жилья: "
                 f"убираем {found_niches & REAL_ESTATE_NICHES}"
+            )
+            found_niches = set(n for n in found_niches if n not in REAL_ESTATE_NICHES)
+
+        # Чаты знакомств / dating — не источник легитимной недвижимости
+        if (
+            chat_title
+            and re.search(r"знакомств|dating|meet\s+people|свидани", chat_title, re.I)
+            and (found_niches & REAL_ESTATE_NICHES)
+        ):
+            logger.info(
+                f"🔍 Чат знакомств '{chat_title}': убираем ниши недвижимости {found_niches & REAL_ESTATE_NICHES}"
             )
             found_niches = set(n for n in found_niches if n not in REAL_ESTATE_NICHES)
 
