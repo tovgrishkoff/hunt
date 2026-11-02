@@ -157,6 +157,12 @@ _APPLIANCE_MACHINE_RE = re.compile(
     r"рожков\w*"
     r")"
 )
+# Бытовая техника «для дома» ≠ покупка дома
+_HOUSEHOLD_FOR_HOME_RE = re.compile(
+    r"(?i)(?:куплю|купить|покупаю|где\s+купить|подскажите).{0,100}"
+    r"(?:обогрев|кондицион|холодильн|стиральн|пылесос|микроволн|телевизор|"
+    r"варочн|духовк|посудомо|утюг|фен|heater|air[\s-]?con)"
+)
 # Барахолка / мелочь в лирах — не недвижимость
 _FLEA_MARKET_RE = re.compile(
     r"(?i)("
@@ -925,6 +931,10 @@ class MessageMonitor:
         if _FLEA_MARKET_RE.search(text_lower) and not has_housing_context:
             return set(n for n in niches if n not in REAL_ESTATE_NICHES)
 
+        # «купить обогреватель для дома» — не продажа недвижимости
+        if _HOUSEHOLD_FOR_HOME_RE.search(text_lower):
+            return set(n for n in niches if n not in REAL_ESTATE_NICHES)
+
         # Убираем недвижимость при явном НЕ-недвижимость контексте, либо при транспорте БЕЗ признаков жилья.
         # Важно: сообщения про жильё могут упоминать "прокат байков" как удобство — это не повод убирать недвижимость.
         if has_negative or has_size_without_land or (has_transport_context and not has_housing_context):
@@ -991,6 +1001,10 @@ class MessageMonitor:
             if not _HOUSING_WORD_RE.search(text_lower):
                 niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
                 logger.info("🔍 Барахолка/лиры без жилья: убираем ниши недвижимости")
+
+        if (niches & REAL_ESTATE_NICHES) and _HOUSEHOLD_FOR_HOME_RE.search(text_lower):
+            niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
+            logger.info("🔍 Бытовая техника «для дома»: убираем ниши недвижимости")
 
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
         if "Недвижимость (Предложение)" in niches and "Аренда байков" in niches:
