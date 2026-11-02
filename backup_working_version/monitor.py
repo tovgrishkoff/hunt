@@ -1032,6 +1032,22 @@ class MessageMonitor:
             niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
             logger.info("🔍 Бытовая техника «для дома»: убираем ниши недвижимости")
 
+        # «Скамеры» ≠ камера; FX + ложный Фотограф
+        if "Фотограф" in niches and re.search(r"скамер|scammer", text_lower):
+            niches.discard("Фотограф")
+            logger.info("🔍 «скамер/scammer»: убираем Фотограф")
+        if (
+            "Фотограф" in niches
+            and "Обмен валют" in niches
+            and _FX_CRYPTO_RE.search(text_lower)
+            and not re.search(
+                r"фотограф|фотосесс|съ[её]мк|\bфото\b|\bкамер(?:а|ы|е|ой|у|ах)?\b",
+                text_lower,
+            )
+        ):
+            niches.discard("Фотограф")
+            logger.info("🔍 FX без фото-контекста: убираем Фотограф")
+
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
         if "Недвижимость (Предложение)" in niches and "Аренда байков" in niches:
             if has_housing_context and not has_strong_bike_context:
