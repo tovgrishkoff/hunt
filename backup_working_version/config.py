@@ -265,6 +265,7 @@ MONITORING_CONFIG = {
     "disallowed_display_names": {
         "сницаренко": "ID 8334072844",
         "шизуми": "ID 8890808886 эскорт-спам",
+        "варя parrish": "мульти-вакансии 80–100к/нед + эскорт-bait в Bali_investchat",
     },
 }
 
