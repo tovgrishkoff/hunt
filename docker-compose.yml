@@ -20,7 +20,7 @@ services:
   bot:
     build: .
     container_name: bali-bot
-    restart: "no"
+    restart: unless-stopped
     env_file: .env.docker
     command: python bot.py
     volumes:
@@ -44,7 +44,7 @@ services:
   user-monitor:
     build: .
     container_name: bali-user-monitor
-    restart: "no"
+    restart: unless-stopped
     env_file: .env.monitor.docker
     command: python user_monitor_bot.py
     volumes:
