@@ -230,6 +230,19 @@ _HARD_BAN_REGEXES = [
         r"(?:приятн\w*\s+компани|покажет\w*\s+(?:мне\s+)?остров)",
         re.IGNORECASE | re.DOTALL,
     ),
+
+    # Серый FX/crypto OTC: «Без AML», займы под залог, без верификации
+    re.compile(r"без\s*aml\b", re.IGNORECASE),
+    re.compile(r"no\s*aml\b", re.IGNORECASE),
+    re.compile(
+        r"займ\w*\s+под\s+залог|под\s+залог\s+актив",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"без\s+верификац\w*.{0,100}(?:aml|usdt|обмен|крипт|cash\s*/\s*transfer)|"
+        r"(?:aml|usdt|обмен\s+валют|крипт).{0,100}без\s+верификац",
+        re.IGNORECASE | re.DOTALL,
+    ),
 ]
 
 REAL_ESTATE_NICHES = {
@@ -1222,6 +1235,22 @@ class MessageMonitor:
             niches.discard("Фотограф")
             logger.info("🔍 FX без фото-контекста: убираем Фотограф")
 
+        # FX/crypto «CASH / TRANSFER» ≠ такси/трансфер
+        if "Транспорт" in niches and (
+            "Обмен валют" in niches or _FX_CRYPTO_RE.search(text_lower)
+        ):
+            has_real_transport = bool(
+                re.search(
+                    r"трансфер|такси|аэропорт|airport|водитель|развоз|перевозк|"
+                    r"(?:airport|hotel|taxi|private)\s+transfer|"
+                    r"transfer\s+(?:from|to|airport|hotel)",
+                    text_lower,
+                )
+            )
+            if not has_real_transport:
+                niches.discard("Транспорт")
+                logger.info("🔍 FX/crypto без такси/аэропорта: убираем Транспорт")
+
         # Если это явно жильё и одновременно зацепили "Аренда байков" только как услугу/удобство — убираем байки.
         if "Недвижимость (Предложение)" in niches and "Аренда байков" in niches:
             if has_housing_context and not has_strong_bike_context:
@@ -1512,7 +1541,7 @@ class MessageMonitor:
             "криптовалюта", "бинарные опционы", "быстрый заработок", "инвестиции",
             "казино", "ставки", "лотерея", "розыгрыш", "приз", "выигрыш",
             "бесплатно", "акция", "скидка", "распродажа", "купи", "продай",
-            "заработок", "деньги", "кредит", "займ",
+            "заработок", "деньги", "кредит", "займ", "займы", "займов",
             
             # Реплики и копии брендов
             "реплика", "копии ааа", "копии аа", "1:1 реплика", "lux бренд",
@@ -1529,6 +1558,8 @@ class MessageMonitor:
             # Серые финансовые услуги / "банковское сопровождение" (часто спам в Bali-чатах)
             "115фз", "115 фз", "ндс", "зск", "зеленый коридор", "транзит", "ломка",
             "банковское сопровождение", "обнал", "обналич",
+            "без aml", "безaml", "no aml", "под залог активов",
+            "без верификации",
             
             # Пробив и мошенничество
             "пробив по линии", "пробив по базе", "пробив по фнс", "пробив по мвд",
