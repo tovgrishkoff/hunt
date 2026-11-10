@@ -50,6 +50,10 @@ CLEANING_SPAM = (
 )
 
 CLEANING_SPAM_SHORT = "Нужны люди для уборки квартиры после вечеринки, 8к"
+MOVING_SPAM = (
+    "На вторник нужны люди, чтобы погрузить вещи с квартиры в грузовики. "
+    "Вещей очень много, 5-10к в конце смены, за 8ч нужно управится!"
+)
 
 LEGIT_DEMAND = "Нужна квартира в Чангу на месяц, бюджет 1500$"
 LEGIT_DEMAND_2 = "Ищу виллу снять на Бали, 2 спальни"
@@ -59,15 +63,18 @@ LEGIT_OFFER = (
 )
 LEGIT_PHOTO = "Ищу фотографа на свадьбу в Убуде, бюджет 700$"
 
+JOB_BAIT_SAMPLES = (CLEANING_SPAM, CLEANING_SPAM_SHORT, MOVING_SPAM)
 
-def test_patterns_do_not_match_cleaning_as_demand() -> None:
-    text = CLEANING_SPAM.lower()
-    hits = [
-        p
-        for p in patterns.NICHES_KEYWORDS["Недвижимость (Спрос)"]
-        if re.search(p, text, re.IGNORECASE | re.DOTALL)
-    ]
-    assert not hits, f"demand patterns still hit cleaning spam: {hits}"
+
+def test_patterns_do_not_match_job_bait_as_demand() -> None:
+    for sample in JOB_BAIT_SAMPLES:
+        text = sample.lower()
+        hits = [
+            p
+            for p in patterns.NICHES_KEYWORDS["Недвижимость (Спрос)"]
+            if re.search(p, text, re.IGNORECASE | re.DOTALL)
+        ]
+        assert not hits, f"demand patterns still hit: {hits} | {sample[:60]}"
 
 
 def test_legit_demand_still_matches() -> None:
@@ -79,10 +86,10 @@ def test_legit_demand_still_matches() -> None:
         ), sample
 
 
-def test_cleaning_banned() -> None:
-    for sample in (CLEANING_SPAM, CLEANING_SPAM_SHORT):
+def test_job_bait_banned() -> None:
+    for sample in JOB_BAIT_SAMPLES:
         hit = match_bait(sample)
-        assert hit, f"expected cleaning ban, got through: {sample}"
+        assert hit, f"expected job-bait ban, got through: {sample}"
 
 
 def test_legit_not_banned() -> None:
@@ -94,9 +101,9 @@ def test_legit_not_banned() -> None:
 if __name__ == "__main__":
     failed = 0
     for fn in (
-        test_patterns_do_not_match_cleaning_as_demand,
+        test_patterns_do_not_match_job_bait_as_demand,
         test_legit_demand_still_matches,
-        test_cleaning_banned,
+        test_job_bait_banned,
         test_legit_not_banned,
     ):
         try:
@@ -105,5 +112,6 @@ if __name__ == "__main__":
         except Exception as exc:  # noqa: BLE001
             failed += 1
             print(f"FAIL {fn.__name__}: {exc}")
-    print("HIT", match_bait(CLEANING_SPAM), "|", CLEANING_SPAM[:60])
+    for sample in JOB_BAIT_SAMPLES:
+        print("HIT", match_bait(sample), "|", sample[:60])
     raise SystemExit(failed)
