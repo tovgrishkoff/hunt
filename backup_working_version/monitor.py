@@ -3,6 +3,7 @@ from telethon.tl.types import PeerChannel, PeerChat, PeerUser
 import re
 import html
 from patterns import PATTERNS, NICHES_KEYWORDS
+import spam_blocklist
 from datetime import datetime
 import asyncio
 import logging
@@ -252,6 +253,26 @@ _HARD_BAN_REGEXES = [
         r"(?:такси\s+оплат|оплач\w*\s+такси|такси\s+оплачу|могу\s+и\s+такси)|"
         r"(?:такси\s+оплат|оплач\w*\s+такси|такси\s+оплачу|могу\s+и\s+такси).{0,120}"
         r"(?:обои|умельц|перекле|ремонт|комнат)",
+        re.IGNORECASE | re.DOTALL,
+    ),
+
+    # «Личный помощник / задачи по дому / жильё предоставляется» — вакансия, не спрос на жильё
+    re.compile(
+        r"(?:личн\w*\s+)?помощник\w*.{0,140}(?:жил|ж[ае]ль|дом|оплат|преми|удобств)|"
+        r"(?:жил|ж[ае]ль|оплат|преми|удобств|задач\w*\s+по\s+дому).{0,140}(?:личн\w*\s+)?помощник",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"задач\w*\s+по\s+дому|мелкие\s+задач\w*.{0,40}дом",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"(?:при)?доставля\w*.{0,20}ж[ае]ль[еёю]|ж[ае]ль[еёю].{0,40}(?:при)?доставля|"
+        r"жил[ьеёю]\s+предоставля|предоставля\w*\s+жил",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"обсудим\s+оплат\w*.{0,40}преми|оплат\w*\s+и\s+преми",
         re.IGNORECASE | re.DOTALL,
     ),
 
@@ -580,6 +601,15 @@ class MessageMonitor:
                     return f"name_token={banned_name}"
                 if banned_name and banned_name == full_name:
                     return f"name={banned_name}"
+        try:
+            blocked = spam_blocklist.is_sender_blocked(
+                sender_username=sender_username,
+                sender_name=full_name or None,
+            )
+            if blocked:
+                return blocked
+        except Exception as e:
+            logger.error(f"❌ spam_blocklist sender check failed: {e}")
         return None
 
     def _is_hard_banned(self, message_text: str) -> Optional[str]:
@@ -1543,6 +1573,11 @@ class MessageMonitor:
             r"\bумельц\w*",
             r"перевед\w*.{0,40}на\s+карт\w*.{0,80}(?:такси|обои|умельц|комнат|помо)|(?:такси|обои|умельц|комнат).{0,80}перевед\w*.{0,40}на\s+карт",
             r"(?:обои|умельц|перекле|ремонт|комнат).{0,120}(?:такси\s+оплат|оплач\w*\s+такси|такси\s+оплачу|могу\s+и\s+такси)|(?:такси\s+оплат|оплач\w*\s+такси|такси\s+оплачу|могу\s+и\s+такси).{0,120}(?:обои|умельц|перекле|ремонт|комнат)",
+            # Личный помощник / задачи по дому / жильё предоставляется — не спрос
+            r"(?:личн\w*\s+)?помощник\w*.{0,140}(?:жил|ж[ае]ль|дом|оплат|преми|удобств)|(?:жил|ж[ае]ль|оплат|преми|удобств|задач\w*\s+по\s+дому).{0,140}(?:личн\w*\s+)?помощник",
+            r"задач\w*\s+по\s+дому|мелкие\s+задач\w*.{0,40}дом",
+            r"(?:при)?доставля\w*.{0,20}ж[ае]ль[еёю]|ж[ае]ль[еёю].{0,40}(?:при)?доставля|жил[ьеёю]\s+предоставля|предоставля\w*\s+жил",
+            r"обсудим\s+оплат\w*.{0,40}преми|оплат\w*\s+и\s+преми",
             # Муж на час / мебель / полки — не спрос на дом
             r"муж\s+на\s+час",
             r"(?:нужен|ищу|ищем).{0,40}муж\w*.{0,40}(?:час|мебел|полок|полк)",
@@ -1610,6 +1645,14 @@ class MessageMonitor:
 
         # Нормализуем для устойчивых проверок (эмодзи-сетки/обфускация)
         text_lower = self._normalize_for_moderation(message_text)
+
+        # 0a) Пользовательский blocklist («Отметить как спам» в боте)
+        try:
+            if spam_blocklist.is_text_blocked(message_text):
+                logger.info("❌ User spam blocklist: text fingerprint match")
+                return True
+        except Exception as e:
+            logger.error(f"❌ spam_blocklist check failed: {e}")
 
         # 0) Жёсткий бан (запрещённый/опасный контент)
         hard_ban_reason = self._is_hard_banned(message_text)
@@ -2472,6 +2515,25 @@ class MessageMonitor:
                 if str(callback_query.from_user.id) == user_id:
                     # Сохраняем как спам (глобальная блокировка)
                     await self.save_relevance_feedback(message_id, user_id, False, is_spam=True)
+
+                    try:
+                        note = (
+                            getattr(callback_query.message, "html_text", None)
+                            or callback_query.message.text
+                            or ""
+                        )
+                        lead_text = spam_blocklist.extract_lead_text_from_notification(note)
+                        sender_meta = spam_blocklist.extract_sender_from_notification(note)
+                        if lead_text:
+                            spam_blocklist.add_spam_entry(
+                                message_text=lead_text,
+                                message_id=message_id,
+                                marked_by=user_id,
+                                sender_username=sender_meta.get("sender_username"),
+                                sender_name=sender_meta.get("sender_name"),
+                            )
+                    except Exception as e:
+                        logger.error(f"❌ Не удалось добавить в spam_blocklist: {e}")
                     
                     # Обновляем сообщение
                     await callback_query.message.edit_reply_markup(
@@ -2480,8 +2542,8 @@ class MessageMonitor:
                         ])
                     )
                     
-                    await callback_query.answer("🚫 Сообщение отмечено как спам и заблокировано глобально")
-                    logger.warning(f"🚫 Пользователь {user_id} отметил сообщение {message_id} как СПАМ (глобальная блокировка)")
+                    await callback_query.answer("🚫 Спам: заблокировано для поиска (текст+автор)")
+                    logger.warning(f"🚫 Пользователь {user_id} отметил сообщение {message_id} как СПАМ (blocklist+global)")
                 else:
                     await callback_query.answer("❌ Это не ваше сообщение")
                     

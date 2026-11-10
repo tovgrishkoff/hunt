@@ -20,6 +20,7 @@ from database import Database
 from datetime import datetime, timezone
 from content import get_topic_content, get_available_topics, get_topic_description, get_topic_keywords
 from monitor import MessageMonitor
+import spam_blocklist
 import logging
 from utils import is_message_allowed
 import json
@@ -2210,6 +2211,29 @@ async def handle_spam_button(callback_query: types.CallbackQuery):
             if str(callback_query.from_user.id) == user_id:
                 # Сохраняем как спам (глобальная блокировка)
                 await save_relevance_feedback(message_id, user_id, False, is_spam=True)
+
+                # Текст лида из уведомления → постоянный blocklist для поиска
+                try:
+                    note = (
+                        getattr(callback_query.message, "html_text", None)
+                        or callback_query.message.text
+                        or ""
+                    )
+                    lead_text = spam_blocklist.extract_lead_text_from_notification(note)
+                    sender_meta = spam_blocklist.extract_sender_from_notification(note)
+                    if lead_text:
+                        result = spam_blocklist.add_spam_entry(
+                            message_text=lead_text,
+                            message_id=message_id,
+                            marked_by=user_id,
+                            sender_username=sender_meta.get("sender_username"),
+                            sender_name=sender_meta.get("sender_name"),
+                        )
+                        logger.warning(f"🚫 spam_blocklist update: {result}")
+                    else:
+                        logger.warning("⚠️ spam_blocklist: не удалось извлечь текст лида из уведомления")
+                except Exception as e:
+                    logger.error(f"❌ Не удалось добавить в spam_blocklist: {e}")
                 
                 # Обновляем сообщение с retry логикой
                 max_retries = 3
@@ -2230,7 +2254,7 @@ async def handle_spam_button(callback_query: types.CallbackQuery):
                 
                 # Отправляем ответ с retry логикой
                 try:
-                    await callback_query.answer("🚫 Сообщение отмечено как спам и заблокировано глобально")
+                    await callback_query.answer("🚫 Спам: заблокировано для поиска (текст+автор)")
                 except Exception as e:
                     logger.warning(f"⚠️ Не удалось отправить ответ на callback: {e}")
                 

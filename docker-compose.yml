@@ -36,6 +36,7 @@ services:
       - ./backup_working_version/ai_sniper.py:/app/ai_sniper.py:ro
       - ./backup_working_version/utils.py:/app/utils.py:ro
       - ./backup_working_version/broadcast_niches.py:/app/broadcast_niches.py:ro
+      - ./backup_working_version/spam_blocklist.py:/app/spam_blocklist.py:ro
     depends_on:
       - postgres
     networks:
@@ -60,6 +61,7 @@ services:
       - ./backup_working_version/ai_classifier.py:/app/ai_classifier.py:ro
       - ./backup_working_version/ai_sniper.py:/app/ai_sniper.py:ro
       - ./backup_working_version/gpt_judge.py:/app/gpt_judge.py:ro
+      - ./backup_working_version/spam_blocklist.py:/app/spam_blocklist.py:ro
       - ./backup_working_version/known_chats.json:/app/known_chats.json
     depends_on:
       - postgres

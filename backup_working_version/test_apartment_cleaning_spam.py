@@ -58,6 +58,10 @@ WALLPAPER_SPAM = (
     "Всем привет, решила переклеить обои в одной комнате?  есть ли умельцы "
     "которые могут в этом помочь  переведу  4500р на карту, так же могу и такси оплатить."
 )
+ASSISTANT_SPAM = (
+    "Ищу личного помощника, мелкие задачи по дому, придоставляется жалье "
+    "со всеми удобствами, пишите, обсудим оплату и премии"
+)
 
 LEGIT_DEMAND = "Нужна квартира в Чангу на месяц, бюджет 1500$"
 LEGIT_DEMAND_2 = "Ищу виллу снять на Бали, 2 спальни"
@@ -68,7 +72,13 @@ LEGIT_OFFER = (
 LEGIT_PHOTO = "Ищу фотографа на свадьбу в Убуде, бюджет 700$"
 LEGIT_TRANSPORT = "Нужен трансфер из аэропорта в Чангу, такси на двоих"
 
-JOB_BAIT_SAMPLES = (CLEANING_SPAM, CLEANING_SPAM_SHORT, MOVING_SPAM, WALLPAPER_SPAM)
+JOB_BAIT_SAMPLES = (
+    CLEANING_SPAM,
+    CLEANING_SPAM_SHORT,
+    MOVING_SPAM,
+    WALLPAPER_SPAM,
+    ASSISTANT_SPAM,
+)
 FALSE_LEAD_NICHES = (
     "Недвижимость (Спрос)",
     "Недвижимость (Предложение)",
