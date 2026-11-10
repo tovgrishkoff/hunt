@@ -54,6 +54,10 @@ MOVING_SPAM = (
     "На вторник нужны люди, чтобы погрузить вещи с квартиры в грузовики. "
     "Вещей очень много, 5-10к в конце смены, за 8ч нужно управится!"
 )
+WALLPAPER_SPAM = (
+    "Всем привет, решила переклеить обои в одной комнате?  есть ли умельцы "
+    "которые могут в этом помочь  переведу  4500р на карту, так же могу и такси оплатить."
+)
 
 LEGIT_DEMAND = "Нужна квартира в Чангу на месяц, бюджет 1500$"
 LEGIT_DEMAND_2 = "Ищу виллу снять на Бали, 2 спальни"
@@ -62,19 +66,26 @@ LEGIT_OFFER = (
     "от 1200$ / месяц"
 )
 LEGIT_PHOTO = "Ищу фотографа на свадьбу в Убуде, бюджет 700$"
+LEGIT_TRANSPORT = "Нужен трансфер из аэропорта в Чангу, такси на двоих"
 
-JOB_BAIT_SAMPLES = (CLEANING_SPAM, CLEANING_SPAM_SHORT, MOVING_SPAM)
+JOB_BAIT_SAMPLES = (CLEANING_SPAM, CLEANING_SPAM_SHORT, MOVING_SPAM, WALLPAPER_SPAM)
+FALSE_LEAD_NICHES = (
+    "Недвижимость (Спрос)",
+    "Недвижимость (Предложение)",
+    "Транспорт",
+)
 
 
 def test_patterns_do_not_match_job_bait_as_demand() -> None:
     for sample in JOB_BAIT_SAMPLES:
         text = sample.lower()
-        hits = [
-            p
-            for p in patterns.NICHES_KEYWORDS["Недвижимость (Спрос)"]
-            if re.search(p, text, re.IGNORECASE | re.DOTALL)
-        ]
-        assert not hits, f"demand patterns still hit: {hits} | {sample[:60]}"
+        for niche in FALSE_LEAD_NICHES:
+            hits = [
+                p
+                for p in patterns.NICHES_KEYWORDS[niche]
+                if re.search(p, text, re.IGNORECASE | re.DOTALL)
+            ]
+            assert not hits, f"{niche} still hit: {hits} | {sample[:60]}"
 
 
 def test_legit_demand_still_matches() -> None:
@@ -93,9 +104,23 @@ def test_job_bait_banned() -> None:
 
 
 def test_legit_not_banned() -> None:
-    for sample in (LEGIT_DEMAND, LEGIT_DEMAND_2, LEGIT_OFFER, LEGIT_PHOTO):
+    for sample in (
+        LEGIT_DEMAND,
+        LEGIT_DEMAND_2,
+        LEGIT_OFFER,
+        LEGIT_PHOTO,
+        LEGIT_TRANSPORT,
+    ):
         hit = match_bait(sample)
         assert not hit, f"false positive ({hit}): {sample}"
+
+
+def test_legit_transport_still_matches() -> None:
+    text = LEGIT_TRANSPORT.lower()
+    assert any(
+        re.search(p, text, re.IGNORECASE | re.DOTALL)
+        for p in patterns.NICHES_KEYWORDS["Транспорт"]
+    ), LEGIT_TRANSPORT
 
 
 if __name__ == "__main__":
@@ -105,6 +130,7 @@ if __name__ == "__main__":
         test_legit_demand_still_matches,
         test_job_bait_banned,
         test_legit_not_banned,
+        test_legit_transport_still_matches,
     ):
         try:
             fn()
