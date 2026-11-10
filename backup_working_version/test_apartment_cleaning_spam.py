@@ -63,6 +63,7 @@ ASSISTANT_SPAM = (
     "со всеми удобствами, пишите, обсудим оплату и премии"
 )
 HOME_HELP_SPAM = "Мне срочно нужна помощь по дому 6000 за установку машинки"
+DOCS_COURIER_SPAM = "Нужно доставить документы по городу 8000₽"
 
 LEGIT_DEMAND = "Нужна квартира в Чангу на месяц, бюджет 1500$"
 LEGIT_DEMAND_2 = "Ищу виллу снять на Бали, 2 спальни"
@@ -80,6 +81,7 @@ JOB_BAIT_SAMPLES = (
     WALLPAPER_SPAM,
     ASSISTANT_SPAM,
     HOME_HELP_SPAM,
+    DOCS_COURIER_SPAM,
 )
 FALSE_LEAD_NICHES = (
     "Недвижимость (Спрос)",
@@ -127,6 +129,17 @@ def test_legit_not_banned() -> None:
         assert not hit, f"false positive ({hit}): {sample}"
 
 
+def test_docs_courier_not_transport() -> None:
+    text = DOCS_COURIER_SPAM.lower()
+    hits = [
+        p
+        for p in patterns.NICHES_KEYWORDS["Транспорт"]
+        if re.search(p, text, re.IGNORECASE | re.DOTALL)
+    ]
+    assert not hits, hits
+    assert match_bait(DOCS_COURIER_SPAM)
+
+
 def test_legit_transport_still_matches() -> None:
     text = LEGIT_TRANSPORT.lower()
     assert any(
@@ -142,6 +155,7 @@ if __name__ == "__main__":
         test_legit_demand_still_matches,
         test_job_bait_banned,
         test_legit_not_banned,
+        test_docs_courier_not_transport,
         test_legit_transport_still_matches,
     ):
         try:
