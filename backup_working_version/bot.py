@@ -2212,26 +2212,45 @@ async def handle_spam_button(callback_query: types.CallbackQuery):
                 # Сохраняем как спам (глобальная блокировка)
                 await save_relevance_feedback(message_id, user_id, False, is_spam=True)
 
-                # Текст лида из уведомления → постоянный blocklist для поиска
+                # Текст лида → постоянный blocklist для поиска
                 try:
+                    lead_text = None
+                    sender_username = None
+                    sender_name = None
+
+                    cached = spam_blocklist.get_lead_payload(message_id)
+                    if cached and cached.get("message_text"):
+                        lead_text = cached["message_text"]
+                        sender_username = cached.get("sender_username")
+                        sender_name = cached.get("sender_name")
+                        logger.info(f"📦 spam_blocklist: lead from payload cache {message_id}")
+
                     note = (
                         getattr(callback_query.message, "html_text", None)
-                        or callback_query.message.text
+                        or getattr(callback_query.message, "text", None)
+                        or getattr(callback_query.message, "caption", None)
                         or ""
                     )
-                    lead_text = spam_blocklist.extract_lead_text_from_notification(note)
-                    sender_meta = spam_blocklist.extract_sender_from_notification(note)
+                    if not lead_text:
+                        lead_text = spam_blocklist.extract_lead_text_from_notification(note)
+                        sender_meta = spam_blocklist.extract_sender_from_notification(note)
+                        sender_username = sender_meta.get("sender_username") or sender_username
+                        sender_name = sender_meta.get("sender_name") or sender_name
+
                     if lead_text:
                         result = spam_blocklist.add_spam_entry(
                             message_text=lead_text,
                             message_id=message_id,
                             marked_by=user_id,
-                            sender_username=sender_meta.get("sender_username"),
-                            sender_name=sender_meta.get("sender_name"),
+                            sender_username=sender_username,
+                            sender_name=sender_name,
                         )
                         logger.warning(f"🚫 spam_blocklist update: {result}")
                     else:
-                        logger.warning("⚠️ spam_blocklist: не удалось извлечь текст лида из уведомления")
+                        logger.warning(
+                            "⚠️ spam_blocklist: не удалось извлечь текст лида "
+                            f"(note_len={len(note)}; head={note[:180]!r})"
+                        )
                 except Exception as e:
                     logger.error(f"❌ Не удалось добавить в spam_blocklist: {e}")
                 

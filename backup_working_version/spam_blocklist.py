@@ -75,11 +75,94 @@ def extract_lead_text_from_notification(notification: str) -> Optional[str]:
     if not notification:
         return None
     text = html.unescape(notification)
+    # Strip Telegram HTML leftovers aggressively
+    text = re.sub(r"</?(?:b|i|u|a|code|pre)(?:\s[^>]*)?>", "", text, flags=re.I)
     match = _LEAD_TEXT_RE.search(text)
-    if not match:
+    if match:
+        body = match.group("body").strip()
+        if body:
+            return body
+    # Fallback: after any "Сообщение:" line until sender/chat markers
+    fallback = re.search(
+        r"Сообщение\s*:\s*(?:\n|\r\n)?(?P<body>.*?)(?:\n\s*👤|\n\s*💬|\n\s*🔗|\n\s*🔑|\Z)",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if fallback:
+        body = fallback.group("body").strip()
+        # Avoid capturing the header "Новое сообщение"
+        if body and not body.lower().startswith("🔍") and "категори" not in body.lower()[:40]:
+            return body
+    return None
+
+
+_PAYLOAD_PATHS = (
+    Path("data/lead_payloads.json"),
+    Path("/app/data/lead_payloads.json"),
+    Path("lead_payloads.json"),
+)
+
+
+def _payload_path(path: Optional[Path] = None) -> Path:
+    if path is not None:
+        return path
+    for candidate in _PAYLOAD_PATHS:
+        if candidate.parent.exists():
+            return candidate
+    return _PAYLOAD_PATHS[0]
+
+
+def remember_lead_payload(
+    message_id: str,
+    *,
+    message_text: str,
+    sender_username: Optional[str] = None,
+    sender_name: Optional[str] = None,
+    path: Optional[Path] = None,
+) -> None:
+    """Store lead text by button message_id so spam clicks do not rely on parsing."""
+    if not message_id or not message_text:
+        return
+    store_path = _payload_path(path)
+    with _LOCK:
+        try:
+            data = json.loads(store_path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                data = {"entries": {}}
+        except FileNotFoundError:
+            data = {"entries": {}}
+        except Exception:
+            data = {"entries": {}}
+        entries = data.setdefault("entries", {})
+        entries[str(message_id)] = {
+            "message_text": message_text,
+            "sender_username": (sender_username or "").strip().lstrip("@").lower() or None,
+            "sender_name": (sender_name or "").strip() or None,
+            "created_at": datetime.utcnow().isoformat() + "Z",
+        }
+        # keep last 3000
+        if len(entries) > 3000:
+            for key in list(entries.keys())[: len(entries) - 3000]:
+                entries.pop(key, None)
+        store_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = store_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(store_path)
+
+
+def get_lead_payload(message_id: str, path: Optional[Path] = None) -> Optional[Dict[str, Any]]:
+    if not message_id:
         return None
-    body = match.group("body").strip()
-    return body or None
+    store_path = _payload_path(path)
+    try:
+        data = json.loads(store_path.read_text(encoding="utf-8"))
+        entry = (data.get("entries") or {}).get(str(message_id))
+        return entry if isinstance(entry, dict) else None
+    except FileNotFoundError:
+        return None
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Failed to read lead payload cache: %s", exc)
+        return None
 
 
 def extract_sender_from_notification(notification: str) -> Dict[str, str]:
