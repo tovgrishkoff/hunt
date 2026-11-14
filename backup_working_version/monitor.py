@@ -8,7 +8,15 @@ from datetime import datetime
 import asyncio
 import logging
 import json
-from config import API_ID, API_HASH, PHONE_NUMBER, MONITORING_CONFIG, BOT_TOKEN, DB_DSN
+from config import (
+    API_ID,
+    API_HASH,
+    PHONE_NUMBER,
+    MONITORING_CONFIG,
+    BOT_TOKEN,
+    DB_DSN,
+    MANAGER_URL,
+)
 from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher.filters import Command
 from aiogram.types import Message
@@ -2450,6 +2458,11 @@ class MessageMonitor:
                     keyboard.add(
                         InlineKeyboardButton(
                             "💳 Оформить подписку", callback_data="pay_subscribe"
+                        )
+                    )
+                    keyboard.add(
+                        InlineKeyboardButton(
+                            "💬 Написать менеджеру", url=MANAGER_URL
                         )
                     )
 

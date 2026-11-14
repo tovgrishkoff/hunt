@@ -47,6 +47,8 @@ DB_NAME = os.getenv('DB_NAME', 'bali_bot')
 DB_USER = os.getenv('DB_USER', 'grishkoff')
 DB_PASSWORD = os.getenv('DB_PASSWORD', 'testpass')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+MANAGER_USERNAME = os.getenv("MANAGER_USERNAME", "huansya0").lstrip("@")
+MANAGER_URL = f"https://t.me/{MANAGER_USERNAME}"
 
 # Интервал между отправками напоминаний (в днях)
 REMINDER_INTERVAL_DAYS = 2  # Отправляем каждые 2 дня
@@ -197,7 +199,8 @@ async def send_reminder_to_user(
         keyboard = {
             "inline_keyboard": [
                 [{"text": "⭐ Оформить подписку", "callback_data": "pay_subscribe"}],
-                [{"text": "📋 Меню", "callback_data": "menu"}]
+                [{"text": "💬 Написать менеджеру", "url": MANAGER_URL}],
+                [{"text": "📋 Меню", "callback_data": "menu"}],
             ]
         }
         
@@ -223,7 +226,7 @@ async def send_reminder_to_user(
         logger.error(f"❌ Ошибка отправки пользователю {user_id}: {e}")
         return False
 
-ZERO_LEADS_MESSAGE = """
+ZERO_LEADS_MESSAGE = f"""
 📊 <b>7 дней в триале — 0 лидов</b>
 
 Вы уже настроили ниши, но за неделю не пришло ни одного уведомления. Частые причины:
@@ -232,7 +235,7 @@ ZERO_LEADS_MESSAGE = """
 • Слишком узкий фильтр по странам
 • Триал совпал с тихим периодом в чатах
 
-Напишите @huansya0 — поможем подобрать ниши. Или оформите подписку и расширьте охват:
+Напишите @{MANAGER_USERNAME} — поможем подобрать ниши. Или оформите подписку и расширьте охват:
 """
 
 

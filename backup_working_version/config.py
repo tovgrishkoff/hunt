@@ -284,3 +284,6 @@ TRIAL_MAX_NICHES = int(os.getenv("TRIAL_MAX_NICHES", "3"))
 SUBSCRIPTION_DAYS = int(os.getenv("SUBSCRIPTION_DAYS", "30"))
 # Telegram Stars (XTR). Пустой provider_token — оплата Stars.
 SUBSCRIPTION_STARS = int(os.getenv("SUBSCRIPTION_STARS", "500"))
+# Менеджер для оплаты/поддержки (кнопка «Написать менеджеру»).
+MANAGER_USERNAME = os.getenv("MANAGER_USERNAME", "huansya0").lstrip("@")
+MANAGER_URL = f"https://t.me/{MANAGER_USERNAME}"

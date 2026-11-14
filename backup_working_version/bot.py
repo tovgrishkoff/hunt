@@ -14,6 +14,8 @@ from config import (
     TRIAL_MAX_NICHES,
     SUBSCRIPTION_DAYS,
     SUBSCRIPTION_STARS,
+    MANAGER_USERNAME,
+    MANAGER_URL,
     NEWS_CHANNEL,
     NEWS_CHANNEL_URL,
     REQUIRE_CHANNEL_SUB,
@@ -754,7 +756,7 @@ async def show_help(message: Message):
     
     help_text += "💡 *Совет:* Вы можете выбрать несколько ниш одновременно!\n\n"
     help_text += "📞 *Контакты менеджера для связи:*\n\n"
-    help_text += "👤 Менеджер: @huansya0\n"
+    help_text += f"👤 Менеджер: @{MANAGER_USERNAME}\n"
     help_text += "💬 По всем вопросам обращайтесь к менеджеру в Telegram\n\n"
     help_text += "❓ Если у вас возникли вопросы или проблемы, напишите менеджеру - он поможет!"
     
@@ -841,11 +843,12 @@ async def cmd_subscribe(message: Message):
         )
     subscription_info += (
         f"⚡ Оплата в 1 клик — {SUBSCRIPTION_STARS} ⭐ на {SUBSCRIPTION_DAYS} дн.\n"
-        f"Или менеджер @huansya0 (укажите ID).\n"
+        f"Или менеджер @{MANAGER_USERNAME} (укажите ID).\n"
     )
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text=f"⭐ Оплатить {SUBSCRIPTION_STARS} Stars", callback_data="pay_subscribe")],
+            [InlineKeyboardButton(text="💬 Написать менеджеру", url=MANAGER_URL)],
             [InlineKeyboardButton(text="📋 Меню", callback_data="back_to_main")],
         ]
     )
@@ -864,7 +867,7 @@ async def callback_pay_subscribe(callback_query: types.CallbackQuery):
     except Exception as e:
         logger.error(f"Invoice error: {e}")
         await callback_query.message.answer(
-            "Не удалось выставить счёт. Напишите @huansya0 или /subscribe позже."
+            f"Не удалось выставить счёт. Напишите @{MANAGER_USERNAME} или /subscribe позже."
         )
 
 
@@ -921,14 +924,19 @@ async def cmd_info(message: Message):
 @dp.message_handler(commands=["contact"])
 async def cmd_contact(message: Message):
     """Контакты менеджера/поддержки."""
-    manager_username = "huansya0"
     logger.info(f"/contact from {message.from_user.id} in chat {message.chat.id}")
     contact_text = (
         "📞 Контакты:\n\n"
-        f"Менеджер: @{manager_username}\n"
+        f"Менеджер: @{MANAGER_USERNAME}\n"
         "Укажите ваш ID (видно в /subscribe) и желаемые ниши."
     )
-    await message.answer(contact_text, reply_markup=get_main_menu())
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="💬 Написать менеджеру", url=MANAGER_URL)],
+            [InlineKeyboardButton(text="📋 Меню", callback_data="back_to_main")],
+        ]
+    )
+    await message.answer(contact_text, reply_markup=kb)
 
 @dp.message_handler(Command("reset"))
 async def cmd_reset(message: Message):

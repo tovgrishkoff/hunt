@@ -25,6 +25,8 @@ DB_NAME = os.getenv("DB_NAME", "bali_bot")
 DB_USER = os.getenv("DB_USER", "grishkoff")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "testpass")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+MANAGER_USERNAME = os.getenv("MANAGER_USERNAME", "huansya0").lstrip("@")
+MANAGER_URL = f"https://t.me/{MANAGER_USERNAME}"
 
 REMINDER_COLUMNS = {
     2: "trial_reminder_d2_sent",
@@ -38,6 +40,7 @@ def _send(user_id: int, text: str, bot_token: str) -> bool:
     keyboard = {
         "inline_keyboard": [
             [{"text": "⭐ Оформить подписку", "callback_data": "pay_subscribe"}],
+            [{"text": "💬 Написать менеджеру", "url": MANAGER_URL}],
         ]
     }
     r = requests.post(
