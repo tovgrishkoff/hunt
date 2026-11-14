@@ -287,3 +287,16 @@ SUBSCRIPTION_STARS = int(os.getenv("SUBSCRIPTION_STARS", "500"))
 # Менеджер для оплаты/поддержки (кнопка «Написать менеджеру»).
 MANAGER_USERNAME = os.getenv("MANAGER_USERNAME", "huansya0").lstrip("@")
 MANAGER_URL = f"https://t.me/{MANAGER_USERNAME}"
+
+# Обязательная подписка на канал новостей перед стартом триала
+NEWS_CHANNEL = os.getenv("NEWS_CHANNEL", "@LeadHunterNews")
+NEWS_CHANNEL_URL = os.getenv(
+    "NEWS_CHANNEL_URL",
+    f"https://t.me/{NEWS_CHANNEL.lstrip('@')}",
+)
+REQUIRE_CHANNEL_SUB = os.getenv("REQUIRE_CHANNEL_SUB", "1").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
