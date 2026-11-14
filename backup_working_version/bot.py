@@ -14,6 +14,9 @@ from config import (
     TRIAL_MAX_NICHES,
     SUBSCRIPTION_DAYS,
     SUBSCRIPTION_STARS,
+    NEWS_CHANNEL,
+    NEWS_CHANNEL_URL,
+    REQUIRE_CHANNEL_SUB,
 )
 from aiogram.types import LabeledPrice, ContentTypes
 from database import Database
@@ -96,9 +99,83 @@ CATEGORIES = [
 # Список ниш
 NICHES = [
     "Фотограф", "Видеограф", "Недвижимость (Спрос)", "Недвижимость (Предложение)", "Маникюр", "Волосы", "Аренда авто",
-    "Реснички", "Брови", "Макияж", "Косметология", "Продажа недвижимости", "Аренда байков",
+    "Реснички", "Брови", "Макияж", "Космеология", "Продажа недвижимости", "Аренда байков",
     "Обмен валют", "Кальяны", "Аренда Playstation", "Медиа-студия", "Туризм", "Транспорт"
 ]
+
+
+def channel_subscribe_keyboard() -> InlineKeyboardMarkup:
+    """Кнопки: подписаться на канал + проверить подписку."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📢 Подписаться на канал", url=NEWS_CHANNEL_URL)],
+            [
+                InlineKeyboardButton(
+                    text="✅ Я подписался — проверить",
+                    callback_data="check_news_sub",
+                )
+            ],
+        ]
+    )
+
+
+async def is_news_channel_member(bot: Bot, user_id: int) -> bool:
+    """Проверка подписки на канал новостей (для гейта триала)."""
+    if not REQUIRE_CHANNEL_SUB:
+        return True
+    if str(user_id) == str(ADMIN_CHAT_ID):
+        return True
+    try:
+        member = await bot.get_chat_member(NEWS_CHANNEL, user_id)
+        status = getattr(member, "status", None)
+        if status in ("member", "administrator", "creator"):
+            return True
+        if status == "restricted":
+            return bool(getattr(member, "is_member", True))
+        return False
+    except Exception as e:
+        logger.warning(
+            "channel membership check failed user=%s channel=%s: %s",
+            user_id,
+            NEWS_CHANNEL,
+            e,
+        )
+        return False
+
+
+async def needs_channel_for_trial(db: Database, user_id: int) -> bool:
+    """Гейт только до старта триала (платные/уже на триале — пропускаем)."""
+    if not REQUIRE_CHANNEL_SUB:
+        return False
+    if str(user_id) == str(ADMIN_CHAT_ID):
+        return False
+    st = await db.get_subscription_status(user_id)
+    if st.get("subscription_active") or st.get("trial_active"):
+        return False
+    return bool(st.get("trial_not_started", True))
+
+
+async def ensure_news_channel_or_prompt(
+    *,
+    bot: Bot,
+    db: Database,
+    user_id: int,
+    send_fn,
+) -> bool:
+    """True = можно продолжать. False = отправили промпт подписки."""
+    if not await needs_channel_for_trial(db, user_id):
+        return True
+    if await is_news_channel_member(bot, user_id):
+        return True
+    text = (
+        "📢 Перед бесплатным триалом подпишитесь на канал новостей Lead Hunter.\n\n"
+        "Там — инструкции по настройке, обновления и полезные фичи.\n\n"
+        f"Канал: {NEWS_CHANNEL_URL}\n\n"
+        "После подписки нажмите «✅ Я подписался — проверить»."
+    )
+    await send_fn(text, reply_markup=channel_subscribe_keyboard())
+    return False
+
 
 async def create_user_chat(user_id: int, username: str, topic: str) -> int:
     """
@@ -403,6 +480,7 @@ def register_handlers(dp: Dispatcher, monitor: MessageMonitor, bot: Bot):
     dp.register_callback_query_handler(process_admin_write, lambda c: c.data.startswith('write_'))
     dp.register_callback_query_handler(process_niche_selection, lambda c: c.data.startswith('niche_'))
     dp.register_callback_query_handler(process_niches_done, lambda c: c.data == "niches_done")
+    dp.register_callback_query_handler(check_news_sub_callback, lambda c: c.data == "check_news_sub")
     dp.register_callback_query_handler(back_to_main, lambda c: c.data == "back_to_main")
     dp.register_callback_query_handler(back_to_settings, lambda c: c.data == "back_to_settings")
     
@@ -509,32 +587,38 @@ async def cmd_start(message: Message, state: FSMContext):
                 "👋 *Привет! Я Lead_Hunterbot*\n\n"
                 "Я помогу вам получать актуальные предложения и запросы из Telegram-чатов по интересующим вас нишам.\n\n"
                 "📋 *КАК НАЧАТЬ РАБОТУ:*\n\n"
-                "1️⃣ *ШАГ 1: Выберите ниши* 🗂\n"
-                "   👉 Нажмите кнопку *🗂 Выбрать нишу* в меню ниже\n"
-                "   👉 Выберите интересующие вас ниши (например: Фотограф, Видеограф, Недвижимость и т.д.)\n"
-                "   👉 Нажмите кнопку *✅ Готово* для сохранения\n\n"
-                "2️⃣ *ШАГ 2: (Опционально) Фильтрация по странам* 🌍\n"
-                "   👉 Если хотите получать уведомления только из определенных стран:\n"
-                "      • Нажмите кнопку *🌍 Выбрать страну*\n"
-                "      • Выберите нужные страны (Бали, Таиланд, Вьетнам, Дубай и др.)\n"
-                "      • Нажмите *✅ Готово*\n"
-                "   👉 Если не выберете страны - будете получать уведомления из *всех* стран\n\n"
-                "✅ *ГОТОВО!* После этого вы начнете получать уведомления о новых сообщениях в выбранных нишах.\n\n"
+                f"0️⃣ *Подпишитесь на канал* {NEWS_CHANNEL} — обязательно перед триалом\n"
+                "   (инструкции, обновления, фичи)\n\n"
+                "1️⃣ *Выберите ниши* 🗂\n"
+                "   👉 *🗂 Выбрать нишу* → отметьте ниши → *✅ Готово*\n\n"
+                "2️⃣ *(Опционально) Страны* 🌍\n"
+                "   👉 *🌍 Выбрать страну* → гео → *✅ Готово*\n"
+                "   👉 Без выбора стран — заявки из *всех* локаций\n\n"
                 "💡 *ВАЖНО:*\n"
-                "• Без выбора ниш вы *не будете* получать уведомления!\n"
-                f"• На триале можно выбрать до *{TRIAL_MAX_NICHES} ниш*\n"
-                f"• *{TRIAL_DAYS}-дневный триал* начнётся после выбора ниш и «✅ Готово»\n\n"
-                "❓ Если возникнут вопросы, нажмите кнопку *❓ Помощь* в меню.",
+                "• Без выбора ниш уведомлений не будет\n"
+                f"• На триале — до *{TRIAL_MAX_NICHES} ниш*\n"
+                f"• *{TRIAL_DAYS}-дневный триал* стартует после подписки на канал + «✅ Готово»\n\n"
+                "❓ Вопросы — кнопка *❓ Помощь*.",
                 reply_markup=get_main_menu(),
-                parse_mode="Markdown"
+                parse_mode="Markdown",
+            )
+            await ensure_news_channel_or_prompt(
+                bot=message.bot,
+                db=db,
+                user_id=message.from_user.id,
+                send_fn=message.answer,
             )
             return
-        
-        # Выбор страны теперь опциональный - убрали проверку
-        
+
         await message.answer(
             "Вы уже зарегистрированы! Используйте меню для навигации.",
-            reply_markup=get_main_menu()
+            reply_markup=get_main_menu(),
+        )
+        await ensure_news_channel_or_prompt(
+            bot=message.bot,
+            db=db,
+            user_id=message.from_user.id,
+            send_fn=message.answer,
         )
     except Exception as e:
         logger.error(f"❌ Критическая ошибка в /start для пользователя {message.from_user.id}: {e}", exc_info=True)
@@ -1208,10 +1292,25 @@ async def show_niches_menu_callback(callback_query: types.CallbackQuery):
     """Обработчик для кнопки выбора ниш из меню"""
     # КРИТИЧНО: Отвечаем на callback сразу, чтобы предотвратить зависание интерфейса
     await callback_query.answer(cache_time=0)
-    
+
     db = callback_query.bot.get("db")
     user_id = callback_query.from_user.id
-    
+
+    async def _send(text, reply_markup=None):
+        try:
+            await callback_query.message.edit_text(text, reply_markup=reply_markup)
+        except Exception:
+            await callback_query.message.answer(text, reply_markup=reply_markup)
+
+    ok = await ensure_news_channel_or_prompt(
+        bot=callback_query.bot,
+        db=db,
+        user_id=user_id,
+        send_fn=_send,
+    )
+    if not ok:
+        return
+
     # Проверяем, является ли пользователь администратором
     is_admin = str(user_id) == str(ADMIN_CHAT_ID) or callback_query.from_user.username == ADMIN_USERNAME
     
@@ -1258,9 +1357,16 @@ async def show_niches_menu_callback(callback_query: types.CallbackQuery):
 async def show_niches_menu_button(message: types.Message):
     db = message.bot.get("db")
     user_id = message.from_user.id
-    
-    # Выбор страны теперь опциональный - убрали проверку
-    
+
+    ok = await ensure_news_channel_or_prompt(
+        bot=message.bot,
+        db=db,
+        user_id=user_id,
+        send_fn=message.answer,
+    )
+    if not ok:
+        return
+
     # Проверяем, является ли пользователь администратором
     is_admin = str(user_id) == str(ADMIN_CHAT_ID) or message.from_user.username == ADMIN_USERNAME
     
@@ -1297,95 +1403,141 @@ async def show_niches_menu_button(message: types.Message):
 
 @dp.callback_query_handler(lambda c: c.data.startswith('niche_'))
 async def process_niche_selection(callback_query: types.CallbackQuery):
+    """Toggle niche selection. Answer callback ASAP so Telegram spinner does not stick."""
+    answered = False
     try:
         user_id = callback_query.from_user.id
         niche_index = int(callback_query.data.replace('niche_', '')) - 1
         niche = NICHES[niche_index]
-        
+
         db = callback_query.bot.get("db")
-        
+
         # Проверяем, является ли пользователь администратором
-        is_admin = str(user_id) == str(ADMIN_CHAT_ID) or callback_query.from_user.username == ADMIN_USERNAME
-        
+        is_admin = (
+            str(user_id) == str(ADMIN_CHAT_ID)
+            or callback_query.from_user.username == ADMIN_USERNAME
+        )
+
         paid = await db.has_active_subscription(user_id)
-        
+
         # Инициализируем временное хранение для пользователя, если его нет
         if user_id not in temp_niche_selections:
-            # Если временного хранения нет, копируем сохраненные ниши из базы
             saved_niches = await db.get_user_niches(user_id)
             temp_niche_selections[user_id] = saved_niches.copy()
-        
-        # Проверяем, есть ли ниша во временном хранении
+
         temp_niches = temp_niche_selections[user_id]
         temp_niches_normalized = [n.lower() for n in temp_niches]
-        
+
         if niche.lower() in temp_niches_normalized:
-            # Удаляем нишу из временного хранения
-            temp_niche_selections[user_id] = [n for n in temp_niches if n.lower() != niche.lower()]
+            temp_niche_selections[user_id] = [
+                n for n in temp_niches if n.lower() != niche.lower()
+            ]
             logger.info(f"🗑️ Временно удалена ниша '{niche}' у пользователя {user_id}")
         else:
             if not paid and len(temp_niches) >= TRIAL_MAX_NICHES and not is_admin:
                 await callback_query.answer(
-                    f"⏳ На триале — до {TRIAL_MAX_NICHES} ниш. Оформите подписку (/subscribe) для безлимита.",
+                    f"⏳ На триале — до {TRIAL_MAX_NICHES} ниш. "
+                    f"Оформите подписку (/subscribe) для безлимита.",
                     show_alert=True,
                 )
                 return
-            
-            # Добавляем нишу во временное хранение
+
             temp_niche_selections[user_id].append(niche)
-            logger.info(f"➕ Временно добавлена ниша '{niche}' пользователю {user_id} (paid={paid})")
-        
-        # Получаем обновленную клавиатуру
-        db = callback_query.bot.get("db")
+            logger.info(
+                f"➕ Временно добавлена ниша '{niche}' "
+                f"пользователю {user_id} (paid={paid})"
+            )
+
+        # Снимаем колесико Telegram до медленного edit_text
+        await callback_query.answer(cache_time=0)
+        answered = True
+
         new_keyboard = await get_niches_keyboard(user_id, db)
-        
-        # Обновляем сообщение с новой клавиатурой
         try:
             await callback_query.message.edit_text(
                 "Выберите ниши для мониторинга:\n"
                 "✅ - уже выбранные ниши\n"
                 "Нажмите на нишу, чтобы выбрать/отменить выбор\n"
                 "Нажмите 'Готово', чтобы сохранить изменения",
-                reply_markup=new_keyboard
+                reply_markup=new_keyboard,
             )
         except Exception as edit_error:
-            # Если сообщение не изменилось, просто отвечаем
             logger.warning(f"Message not modified: {edit_error}")
-            await callback_query.answer("✅ Настройки обновлены")
-            return
-            
-        await callback_query.answer()
     except Exception as e:
         logger.error(f"Error in process_niche_selection: {e}")
-        await callback_query.answer("Произошла ошибка при выборе ниши", show_alert=True)
+        if not answered:
+            try:
+                await callback_query.answer(
+                    "Произошла ошибка при выборе ниши", show_alert=True
+                )
+            except Exception:
+                pass
 
 @dp.callback_query_handler(lambda c: c.data == "niches_done")
 async def process_niches_done(callback_query: types.CallbackQuery):
+    """Save niches. Answer callback before heavy DB/Telegram work to clear spinner."""
+    answered = False
     try:
         db = callback_query.bot.get("db")
         user_id = callback_query.from_user.id
-        
-        # Получаем временно выбранные ниши
+
         temp_niches = temp_niche_selections.get(user_id, [])
         logger.info(f"🔍 Временные ниши для пользователя {user_id}: {temp_niches}")
-        
-        # Сохраняем временные ниши в базу данных
-        logger.info(f"💾 Сохраняем ниши в базу данных для пользователя {user_id}: {temp_niches}")
+
+        # Гейт: без подписки на канал триал не стартует (ниши не сохраняем)
+        if temp_niches and await needs_channel_for_trial(db, user_id):
+            if not await is_news_channel_member(callback_query.bot, user_id):
+                text = (
+                    "📢 Чтобы запустить триал, подпишитесь на канал новостей.\n\n"
+                    f"{NEWS_CHANNEL_URL}\n\n"
+                    "После подписки нажмите «✅ Я подписался — проверить» — "
+                    "сохраним ниши и стартуем триал."
+                )
+                await callback_query.answer(
+                    "Сначала подпишитесь на канал", show_alert=True
+                )
+                answered = True
+                try:
+                    await callback_query.message.edit_text(
+                        text, reply_markup=channel_subscribe_keyboard()
+                    )
+                except Exception:
+                    await callback_query.message.answer(
+                        text, reply_markup=channel_subscribe_keyboard()
+                    )
+                return
+
+        try:
+            await callback_query.answer("✅ Ниши сохранены!")
+        except Exception as ans_err:
+            # Уже ответили (например из check_news_sub) — не роняем сохранение
+            logger.debug("niches_done answer skipped: %s", ans_err)
+        answered = True
+
+        logger.info(
+            f"💾 Сохраняем ниши в базу данных для пользователя {user_id}: {temp_niches}"
+        )
         trial_started = False
         if temp_niches:
             before = await db.get_subscription_status(user_id)
             await db.update_user_niches(user_id, temp_niches)
             after = await db.get_subscription_status(user_id)
-            trial_started = before.get("trial_not_started") and after.get("trial_active")
+            trial_started = before.get("trial_not_started") and after.get(
+                "trial_active"
+            )
         else:
             await db.update_user_niches(user_id, temp_niches)
-        
+
         saved_niches = await db.get_user_niches(user_id)
-        logger.info(f"✅ Проверка сохраненных ниш для пользователя {user_id}: {saved_niches}")
-        
+        logger.info(
+            f"✅ Проверка сохраненных ниш для пользователя {user_id}: {saved_niches}"
+        )
+
         if temp_niches:
             logger.info(f"💾 Сохранены ниши для пользователя {user_id}: {temp_niches}")
-            text = "✅ Ваши ниши успешно сохранены:\n\n" + "\n".join(f"• {n}" for n in temp_niches)
+            text = "✅ Ваши ниши успешно сохранены:\n\n" + "\n".join(
+                f"• {n}" for n in temp_niches
+            )
             if trial_started:
                 text += (
                     f"\n\n🎁 Триал на {TRIAL_DAYS} дн. начался! "
@@ -1393,23 +1545,98 @@ async def process_niches_done(callback_query: types.CallbackQuery):
                 )
         else:
             logger.info(f"🗑️ Очищены ниши у пользователя {user_id}")
-            text = "❌ Вы не выбрали ни одной ниши. Используйте кнопку '🗂 Выбрать нишу' для выбора ниш."
-        
-        # Очищаем временное хранение
+            text = (
+                "❌ Вы не выбрали ни одной ниши. "
+                "Используйте кнопку '🗂 Выбрать нишу' для выбора ниш."
+            )
+
         if user_id in temp_niche_selections:
             del temp_niche_selections[user_id]
             logger.info(f"🧹 Очищено временное хранение для пользователя {user_id}")
-        
-        await callback_query.message.edit_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")]
-            ])
-        )
-        await callback_query.answer("✅ Ниши сохранены!")
+
+        try:
+            await callback_query.message.edit_text(
+                text,
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(
+                                text="🏠 В главное меню",
+                                callback_data="back_to_main",
+                            )
+                        ]
+                    ]
+                ),
+            )
+        except Exception as edit_err:
+            logger.warning("niches_done edit failed: %s", edit_err)
+            await callback_query.message.answer(text, reply_markup=get_main_menu())
     except Exception as e:
         logger.error(f"Error in process_niches_done: {e}")
-        await callback_query.answer("Произошла ошибка при сохранении ниш", show_alert=True)
+        if not answered:
+            try:
+                await callback_query.answer(
+                    "Произошла ошибка при сохранении ниш", show_alert=True
+                )
+            except Exception:
+                pass
+
+
+@dp.callback_query_handler(lambda c: c.data == "check_news_sub")
+async def check_news_sub_callback(callback_query: types.CallbackQuery):
+    """Проверка подписки на канал → продолжить выбор ниш / сохранить."""
+    db = callback_query.bot.get("db")
+    user_id = callback_query.from_user.id
+    try:
+        if not await is_news_channel_member(callback_query.bot, user_id):
+            await callback_query.answer(
+                "Подписка не найдена. Подпишитесь на канал и нажмите снова.",
+                show_alert=True,
+            )
+            return
+
+        await callback_query.answer("Подписка подтверждена ✅")
+        # Если ниши уже выбраны — сохраняем и стартуем триал
+        if temp_niche_selections.get(user_id):
+            await process_niches_done(callback_query)
+            return
+
+        text = (
+            "✅ Подписка на канал подтверждена.\n\n"
+            "Теперь выберите ниши: «🗂 Выбрать нишу» → «✅ Готово» — "
+            f"и триал на {TRIAL_DAYS} дн. стартует."
+        )
+        try:
+            await callback_query.message.edit_text(
+                text,
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(
+                                text="🗂 Выбрать ниши",
+                                callback_data="show_niches_menu",
+                            )
+                        ]
+                    ]
+                ),
+            )
+        except Exception:
+            await callback_query.message.answer(
+                text,
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(
+                                text="🗂 Выбрать ниши",
+                                callback_data="show_niches_menu",
+                            )
+                        ]
+                    ]
+                ),
+            )
+    except Exception as e:
+        logger.error(f"Error in check_news_sub_callback: {e}")
+        await callback_query.answer("Ошибка проверки подписки", show_alert=True)
 
 # ==================== ФУНКЦИИ ДЛЯ ВЫБОРА СТРАН ====================
 
