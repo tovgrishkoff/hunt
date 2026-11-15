@@ -36,6 +36,8 @@ NEGATIVES: List[str] = [
     "Продам свинину недорогой",
     "Сдам свинину недорогой",
     "Продам кроссовки",
+    # Админ-варн чата ≠ спрос на закуп рекламы TG/INST
+    "/dwarn Реклама в группе платная. Для заказа рекламы пишите в наш бот @zdravrigh2024bot",
 ]
 
 
@@ -121,6 +123,33 @@ async def main() -> int:
     print(
         f"[{status}] real house sale must stay Продажа недвижимости: "
         f"got={house_result.get('niches')} reason={house_result.get('reason')}"
+    )
+
+    ad_warn = (
+        "/dwarn Реклама в группе платная. Для заказа рекламы "
+        "пишите в наш бот @zdravrigh2024bot"
+    )
+    ad_warn_result = mon.semantic_sniper.classify_fallback(ad_warn)
+    status = "OK" if not ad_warn_result.get("niches") else "FAIL"
+    ok += status == "OK"
+    fail += status == "FAIL"
+    print(
+        f"[{status}] group ad policy must not be Реклама TG/INST: "
+        f"got={ad_warn_result.get('niches')} reason={ad_warn_result.get('reason')}"
+    )
+
+    ad_lead = "Нужна реклама в инстаграм, закуп посевов"
+    ad_lead_result = mon.semantic_sniper.classify_fallback(ad_lead)
+    status = (
+        "OK"
+        if "Реклама TG/INST" in (ad_lead_result.get("niches") or [])
+        else "FAIL"
+    )
+    ok += status == "OK"
+    fail += status == "FAIL"
+    print(
+        f"[{status}] real TG/INST ad demand must stay Реклама TG/INST: "
+        f"got={ad_lead_result.get('niches')} reason={ad_lead_result.get('reason')}"
     )
 
     print(f"\nTOTAL {ok}/{ok + fail} passed, {fail} failed")

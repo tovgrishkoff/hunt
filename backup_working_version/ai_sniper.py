@@ -116,6 +116,21 @@ class SemanticSniper:
                 r")"
             )
 
+            # Админ-варны / прайс на размещение в ЭТОМ чате — не лид «Реклама TG/INST»
+            self.group_ad_policy_re = re.compile(
+                r"(?i)("
+                r"/dwarn\b|"
+                r"реклам\w*\s+в\s+(?:этой\s+|данной\s+)?(?:групп\w*|чат\w*|канал\w*)\s+платн|"
+                r"реклам\w*\s+платн\w*.{0,80}(?:групп\w*|чат\w*|канал\w*)|"
+                r"(?:в\s+)?(?:групп\w*|чат\w*)\s+реклам\w*\s+платн|"
+                r"для\s+заказ\w*\s+реклам\w*.{0,60}(?:пишите|писать|обраща|"
+                r"бот|@\w+bot)|"
+                r"заказ\w*\s+реклам\w*.{0,40}(?:наш\s+)?бот|"
+                r"размещен\w*.{0,40}(?:объявлен|реклам).{0,40}платн|"
+                r"платн\w*\s+размещен\w*.{0,40}(?:объявлен|реклам|пост)"
+                r")"
+            )
+
             # Лексические якоря: без них borderline semantic score не принимаем
             self.niche_lexicon = {
                 "Макияж": r"(?i)макияж|визаж|визажист|makeup|мейкап",
@@ -132,7 +147,15 @@ class SemanticSniper:
                 "SEO": r"(?i)\bseo\b|\bсео\b|продвижен\w*\s+сайт",
                 "Продюсирование": r"(?i)продюсер|продюсирован",
                 "PR-менеджеры": r"(?i)\bpr\b|пиар|пресс[- ]?релиз",
-                "Реклама TG/INST": r"(?i)реклам|посев|таргет",
+                # Не голое «реклам» — иначе админ-варн «реклама в группе платная»
+                "Реклама TG/INST": (
+                    r"(?i)("
+                    r"закуп\w*\s+реклам|посев|таргет|"
+                    r"реклам\w*.{0,40}(?:телеграм|telegram|инстаграм|instagram|"
+                    r"\bтг\b|\binst\b|stories|сторис)|"
+                    r"(?:ищ\w*|нуж\w*|купл\w*).{0,40}реклам"
+                    r")"
+                ),
                 "Медиабайеры": r"(?i)медиабайер|mediabuyer|media[- ]?buyer|арбитраж",
                 "Тех. специалисты": r"(?i)разработчик|программист|техспец|бот|сайт|no[- ]?code",
                 "Заказы по AI": r"(?i)нейросет|chatgpt|midjourney|\bai\b",
@@ -162,6 +185,7 @@ class SemanticSniper:
                 "Недвижимость (Спрос)",
                 "Недвижимость (Предложение)",
                 "Продажа недвижимости",
+                "Реклама TG/INST",
             }
 
             self._load_anchors()
@@ -481,6 +505,10 @@ class SemanticSniper:
 
         if self.social_meetup_re.search(text_lower):
             empty["reason"] = "sniper: social_meetup"
+            return empty
+
+        if self.group_ad_policy_re.search(text_lower):
+            empty["reason"] = "sniper: group_ad_policy"
             return empty
 
         if not self.intent_re.search(text_lower):
