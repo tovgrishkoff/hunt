@@ -51,8 +51,9 @@ async def test_niches() -> None:
 
     fx = await mon._hybrid_classify_message(LEGIT_FX)
     assert not fx.get("is_spam"), fx
-    assert "Обмен валют" in (fx.get("niches") or []), fx
+    # Ниша «Обмен валют» удалена — FX больше не лид, но и не должен уходить в Транспорт
     assert "Транспорт" not in (fx.get("niches") or []), fx
+    assert "Продажа недвижимости" not in (fx.get("niches") or []), fx
 
     tr = await mon._hybrid_classify_message(LEGIT_TRANSPORT)
     assert "Транспорт" in (tr.get("niches") or []), tr

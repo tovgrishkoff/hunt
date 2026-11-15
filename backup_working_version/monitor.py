@@ -900,6 +900,11 @@ class MessageMonitor:
                 "seeking",
                 "want to rent",
                 "to rent",
+                "ваканси",
+                "требуется",
+                "remote",
+                "freelance",
+                "фриланс",
             ]
             offer_markers = offer_markers + [
                 "обменяю",
@@ -1363,7 +1368,6 @@ class MessageMonitor:
             logger.info("🔍 «скамер/scammer»: убираем Фотограф")
         if (
             "Фотограф" in niches
-            and "Обмен валют" in niches
             and _FX_CRYPTO_RE.search(text_lower)
             and not re.search(
                 r"фотограф|фотосесс|съ[её]мк|\bфото\b|\bкамер(?:а|ы|е|ой|у|ах)?\b",
@@ -1415,9 +1419,7 @@ class MessageMonitor:
                 logger.info("🔍 Курьер документов без трансфера: убираем Транспорт")
 
         # FX/crypto «CASH / TRANSFER» ≠ такси/трансфер
-        if "Транспорт" in niches and (
-            "Обмен валют" in niches or _FX_CRYPTO_RE.search(text_lower)
-        ):
+        if "Транспорт" in niches and _FX_CRYPTO_RE.search(text_lower):
             has_real_transport = bool(
                 re.search(
                     r"трансфер|такси|аэропорт|airport|водитель|развоз|перевозк|"
