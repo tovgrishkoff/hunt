@@ -24,6 +24,7 @@ from database import Database
 from content import MONITORING_TOPICS
 from typing import Dict, List, Optional, Set
 from ai_classifier import AIClassifier
+from ai_sniper import SemanticSniper
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.exceptions import TelegramAPIError
 
@@ -563,6 +564,15 @@ class MessageMonitor:
                 logger.warning(f"⚠️ Не удалось инициализировать AI классификатор: {e}")
                 self.ai_classifier = None
 
+        # Локальный семантический fallback (бесплатно, когда GPT недоступен)
+        self.semantic_sniper = None
+        try:
+            self.semantic_sniper = SemanticSniper()
+            logger.info("🎯 Semantic sniper инициализирован (GPT fallback)")
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось инициализировать semantic sniper: {e}")
+            self.semantic_sniper = None
+
     def _create_message_hash(self, message_text: str, sender_id: int) -> str:
         """
         Создает уникальный хеш сообщения на основе текста и отправителя
@@ -964,6 +974,7 @@ class MessageMonitor:
             r"подскажите",
             r"где\s+найти",
             r"кто\s+знает",
+            r"кто\s+(может|умеет|сделает|снимет|пофоткает|поможет)",
             r"есть\s+ли",
             r"контакт(ы)?",
             r"как\s+связаться",
@@ -1030,7 +1041,7 @@ class MessageMonitor:
                 "reason": "Pre-filter: FX/crypto без жилья, AI пропущен",
             }
 
-        # 4. AI FALLBACK (дорого)
+        # 4. AI FALLBACK (дорого) → при недоступности GPT — локальный sniper
         if self.ai_classifier:
             logger.info("🤔 Паттерны не справились, но есть intent. Вызываем AI...")
             try:
@@ -1051,9 +1062,23 @@ class MessageMonitor:
                 ai_result.setdefault("budget", "")
                 ai_result.setdefault("confidence", 0)
                 ai_result.setdefault("reason", "AI fallback")
+
+                # GPT ответил нишами — ок
+                if ai_result.get("niches"):
+                    return ai_result
+
+                # GPT недоступен (quota/pause/budget) — резерв: локальный sniper
+                if ai_result.get("ai_unavailable"):
+                    sniper_result = self._classify_with_sniper(message_text)
+                    if sniper_result is not None:
+                        return sniper_result
                 return ai_result
             except Exception as e:
                 logger.error(f"❌ Ошибка AI: {e}")
+
+        sniper_result = self._classify_with_sniper(message_text)
+        if sniper_result is not None:
+            return sniper_result
 
         return {
             "message_type": "ОБЩЕНИЕ",
@@ -1065,6 +1090,31 @@ class MessageMonitor:
             "confidence": 0,
             "reason": "Fallback (ничего не найдено)",
         }
+
+    def _classify_with_sniper(self, message_text: str) -> Optional[Dict]:
+        """Локальный semantic fallback. None = sniper выключен / нет матча."""
+        if not self.semantic_sniper:
+            return None
+        try:
+            result = self.semantic_sniper.classify_fallback(message_text)
+            niches = set(result.get("niches") or [])
+            if niches:
+                niches = self._filter_real_estate_niches_by_negative_keywords(
+                    message_text, niches
+                )
+                niches = self._postprocess_niches(message_text, niches)
+                result["niches"] = list(niches)
+            if result.get("niches"):
+                logger.info(
+                    f"🎯 Sniper поймал ниши без GPT: {result.get('niches')} "
+                    f"(score={result.get('confidence')})"
+                )
+                return result
+            logger.info(f"🎯 Sniper: нет матча ({result.get('reason')})")
+            return None
+        except Exception as e:
+            logger.error(f"❌ Ошибка semantic sniper: {e}")
+            return None
 
     def _is_freelancer_context(self, text_lower: str) -> bool:
         """

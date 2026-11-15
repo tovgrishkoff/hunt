@@ -1,275 +1,435 @@
-import numpy as np
-import re
-from sentence_transformers import SentenceTransformer, util
+"""Локальный семантический классификатор ниш (ruBERT-tiny2).
+
+Используется как бесплатный fallback, когда OpenAI GPT недоступен
+(нет кредитов / circuit breaker / budget cap).
+"""
+
+from __future__ import annotations
+
 import logging
+import os
+import re
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+from sentence_transformers import SentenceTransformer, util
 
 logger = logging.getLogger(__name__)
 
+
 class SemanticSniper:
-    def __init__(self, model_name='cointegrated/rubert-tiny2', threshold=0.55):
+    """Семантический поиск ниши по эталонным фразам клиента."""
+
+    def __init__(
+        self,
+        model_name: str = "cointegrated/rubert-tiny2",
+        threshold: float = 0.55,
+        fallback_threshold: Optional[float] = None,
+    ):
         """
-        AI Снайпер: Семантический поиск + Фильтр намерений.
-        
         Args:
-            model_name: Название модели sentence-transformers
-            threshold (0.0 - 1.0): Порог схожести. 
-                0.5 = мягкий поиск, 0.7 = очень точный поиск.
-                0.55 = оптимально для rubert-tiny2
+            model_name: sentence-transformers модель.
+            threshold: мягкий порог (legacy analyze).
+            fallback_threshold: порог для автономного fallback без GPT.
         """
         logger.info("🎯 Инициализация AI Снайпера...")
         try:
             self.model = SentenceTransformer(model_name)
             self.threshold = threshold
-            self.anchors = {}
-            self.anchor_embeddings = {}
-            
-            # Регулярки для выявления продавцов (Supply)
+            self.fallback_threshold = float(
+                fallback_threshold
+                if fallback_threshold is not None
+                else os.getenv("SNIPER_FALLBACK_THRESHOLD", "0.64")
+            )
+            self.anchors: Dict[str, List[str]] = {}
+            self.anchor_embeddings: Dict[str, np.ndarray] = {}
+
+            # Регулярки для выявления продавцов (Supply) — legacy
             self.seller_patterns = [
-                r'предлагаю', r'предоставляю', r'оказываю', r'услуги',
-                r'пишите\s+в\s+лс', r'за\s+подробностями', r'портфолио',
-                r'наш\s+канал', r'подписывайтесь', r'стаж\s+работы',
-                r'опыт\s+работы', r'кейсы', r'свободные\s+окошки',
-                r'делаю\s+качественно', r'обучаю', r'курсы',
-                r'запись\s+на', r'приглашаю', r'могу\s+сделать'
+                r"предлагаю",
+                r"предоставляю",
+                r"оказываю",
+                r"услуги",
+                r"пишите\s+в\s+лс",
+                r"за\s+подробностями",
+                r"портфолио",
+                r"наш\s+канал",
+                r"подписывайтесь",
+                r"стаж\s+работы",
+                r"опыт\s+работы",
+                r"кейсы",
+                r"свободные\s+окошки",
+                r"делаю\s+качественно",
+                r"обучаю",
+                r"курсы",
+                r"запись\s+на",
+                r"приглашаю",
+                r"могу\s+сделать",
             ]
-            
+
+            # Узкий hard-spam: не трогаем «вакансия/менеджер/bot» — это ломает digital-лиды
+            self.hard_spam_re = re.compile(
+                r"(?i)("
+                r"\busdt\b|\busdc\b|тезер|обмен\s+валют|"
+                r"легк\w*\s+заработок|без\s+опыта\s+от\s+\d|"
+                r"крипт\w*\s+сигнал|сигналы?\s+в\s+тг|"
+                r"казино|ставки\s+на\s+спорт|1xbet"
+                r")"
+            )
+
+            self.intent_re = re.compile(
+                r"(?i)("
+                r"ищ[уеюём]|нуж(ен|на|ны|но)|требуется|ваканси|"
+                r"подскажите|посоветуйте|хочу|хотим|заказ|"
+                r"кто\s+(может|умеет|сделает|снимет|пофоткает|поможет)|"
+                r"куплю|продам|сдам|сниму|аренду|looking\s+for|"
+                r"\bneed\b|\brent\b|\bbuy\b|\bsell\b|remote|freelance|фриланс"
+                r")"
+            )
+
             self._load_anchors()
-            logger.info(f"✅ AI Снайпер заряжен. Ниш: {len(self.anchors)}")
+            logger.info(
+                f"✅ AI Снайпер заряжен. Ниш: {len(self.anchor_embeddings)}, "
+                f"fallback_threshold={self.fallback_threshold}"
+            )
         except Exception as e:
             logger.error(f"❌ Ошибка загрузки AI Снайпера: {e}")
             raise
 
-    def _load_anchors(self):
-        """
-        Загрузка эталонных фраз (Боли клиентов).
-        Важно: пишем фразы так, как их пишет КЛИЕНТ, а не продавец!
-        """
+    def _load_anchors(self) -> None:
+        """Эталонные фразы — как пишет клиент/заказчик."""
         self.anchors = {
             "Фотограф": [
-                "нужен фотограф", "ищу фотографа", "кто может пофоткать", 
-                "нужна фотосессия", "ищу человека для фото", "свадебный фотограф нужен"
+                "нужен фотограф",
+                "ищу фотографа",
+                "кто может пофоткать",
+                "нужна фотосессия",
+                "ищу человека для фото",
+                "свадебный фотограф нужен",
+                "красиво пофоткать на свадьбу",
+                "кто пофоткает на свадьбу",
             ],
             "Видеограф": [
-                "нужен видеограф", "кто снимает рилс", "ищу оператора", 
-                "монтаж видео нужен", "нужно снять ролик"
+                "нужен видеограф",
+                "кто снимает рилс",
+                "ищу оператора на съёмку",
+                "монтаж видео нужен",
+                "нужно снять ролик",
             ],
-            # --- НИША 1: АРЕНДАТОРЫ (Те, кто ищет жилье) ---
             "Недвижимость (Спрос)": [
-                "сниму квартиру", 
+                "сниму квартиру",
                 "сниму виллу",
                 "сниму комнату",
-                "ищу жилье в аренду", 
-                "арендую комнату", 
-                "нужна квартира на месяц", 
+                "ищу жилье в аренду",
+                "арендую комнату",
+                "нужна квартира на месяц",
                 "снять виллу",
                 "снять квартиру",
                 "ищу дом на длительный срок",
-                "куплю квартиру",
                 "ищу квартиру для аренды",
                 "нужна вилла в аренду",
-                "ищу квартиру в аренду",
                 "нужно снять жилье",
                 "ищу жилье",
-                "нужна квартира"
             ],
-            # --- НИША 2: СОБСТВЕННИКИ (Те, кто сдает свое) ---
             "Недвижимость (Предложение)": [
-                "сдам квартиру", 
+                "сдам квартиру",
                 "сдаю квартиру",
-                "сдаю виллу", 
-                "сдается комната", 
+                "сдаю виллу",
+                "сдается комната",
                 "сдается квартира",
                 "сдается вилла",
-                "освободилась вилла", 
+                "освободилась вилла",
                 "предлагаю жилье",
                 "сдача апартаментов",
-                "сдадим дом",
-                "продам квартиру",
                 "available for rent",
-                "сдаю апартаменты",
                 "сдаю в аренду",
-                "сдается в аренду",
-                "сдаю жилье"
+                "сдаю жилье",
+            ],
+            "Продажа недвижимости": [
+                "куплю виллу",
+                "куплю квартиру",
+                "продам дом",
+                "продам виллу",
+                "продажа недвижимости",
+                "ищу объект на покупку",
             ],
             "Маникюр": [
-                "нужен мастер маникюра", "ищу где сделать ногти", "нужен маникюр"
+                "нужен мастер маникюра",
+                "ищу где сделать ногти",
+                "нужен маникюр",
             ],
             "Волосы": [
-                "нужен парикмахер", "ищу мастера по волосам", "нужна стрижка", "покрасить волосы"
+                "нужен парикмахер",
+                "ищу мастера по волосам",
+                "нужна стрижка",
+                "покрасить волосы",
             ],
             "Аренда авто": [
-                # СПРОС (клиенты ищут машину в аренду)
-                "нужна машина в аренду", "арендую авто", "ищу тачку на прокат",
-                "нужна машина на прокат", "снять машину", "арендую автомобиль",
-                # ПРЕДЛОЖЕНИЕ (владельцы сдают машину в аренду)
-                "сдаю машину в аренду", "сдается авто", "прокат машины",
-                "сдаю автомобиль", "аренда автомобиля", "rent car",
-                "сдаю машину", "прокат авто"
+                "нужна машина в аренду",
+                "арендую авто",
+                "ищу тачку на прокат",
+                "снять машину",
+                "сдаю машину в аренду",
+                "прокат авто",
+                "rent car",
             ],
             "Реснички": [
-                "нужен мастер по ресницам", "наращивание ресниц ищу"
+                "нужен мастер по ресницам",
+                "наращивание ресниц ищу",
             ],
             "Брови": [
-                "нужен бровист", "коррекция бровей ищу"
+                "нужен бровист",
+                "коррекция бровей ищу",
             ],
             "Макияж": [
-                "нужен визажист", "макияж на свадьбу ищу"
+                "нужен визажист",
+                "макияж на свадьбу ищу",
             ],
             "Косметология": [
-                "нужен косметолог", "чистка лица ищу"
+                "нужен косметолог",
+                "чистка лица ищу",
             ],
             "Аренда байков": [
-                "снять байк", "аренда скутера", "нужен nmax в аренду", "ищу байк"
+                "снять байк",
+                "аренда скутера",
+                "нужен nmax в аренду",
+                "ищу байк",
+                "кто сдаёт байк",
             ],
             "Мобилографы": [
-                "ищу мобилографа", "нужен мобилограф", "съёмка на телефон"
+                "ищу мобилографа",
+                "нужен мобилограф",
+                "съёмка на телефон",
+                "мобилография для бренда",
             ],
             "SMM": [
-                "ищу smm", "нужен смм менеджер", "ведение инстаграма"
+                "ищу smm",
+                "нужен смм менеджер",
+                "ведение инстаграма",
+                "ведение соцсетей",
+                "нужен сммщик",
+                "вести инсту и сторис",
+                "ведение сторис на постоянке",
+                "человек который ведёт инсту",
             ],
             "UGC": [
-                "ищу ugc креатора", "нужен ugc", "ugc контент на заказ"
+                "ищу ugc креатора",
+                "нужен ugc",
+                "ugc контент на заказ",
             ],
             "SEO": [
-                "ищу seo специалиста", "нужен сео", "продвижение сайта"
+                "ищу seo специалиста",
+                "нужен сео",
+                "продвижение сайта",
+                "seo аудит",
             ],
             "Продюсирование": [
-                "ищу продюсера", "нужен продюсер курса", "продюсирование проекта"
+                "ищу продюсера",
+                "нужен продюсер курса",
+                "продюсирование проекта",
             ],
             "PR-менеджеры": [
-                "ищу pr менеджера", "нужен пиарщик", "пресс релиз"
+                "ищу pr менеджера",
+                "нужен пиарщик",
+                "пресс релиз",
             ],
             "Реклама TG/INST": [
-                "закуп рекламы в телеграм", "нужна реклама в инстаграм", "посевы у блогеров"
+                "закуп рекламы в телеграм",
+                "нужна реклама в инстаграм",
+                "посевы у блогеров",
+                "таргет в инстаграм",
             ],
             "Медиабайеры": [
-                "ищу медиабайера", "нужен media buyer", "арбитраж трафика"
+                "ищу медиабайера",
+                "нужен media buyer",
+                "арбитраж трафика",
             ],
             "Тех. специалисты": [
-                "ищу разработчика", "нужен программист", "сделать бота"
+                "ищу разработчика",
+                "нужен программист",
+                "сделать бота",
+                "нужен техспециалист",
+                "доработать сайт",
+                "сделать телеграм-бота под заявки",
+                "человек сделать телеграм бота",
             ],
             "Заказы по AI": [
-                "заказ по нейросетям", "нужен chatgpt специалист", "сделать на midjourney"
+                "заказ по нейросетям",
+                "нужен chatgpt специалист",
+                "сделать на midjourney",
+                "нужна генерация нейросетями",
             ],
             "Удаленная работа": [
-                "удалённая работа", "remote job", "вакансия удалённо"
+                "ищу удалённую работу",
+                "remote job",
+                "вакансия удалённо",
+                "удалённая занятость",
             ],
             "Медиа-студия": [
-                "аренда фотостудии", "студия для подкаста", "снять студию"
+                "аренда фотостудии",
+                "студия для подкаста",
+                "снять студию",
             ],
             "Туризм": [
-                "нужен гид", "ищу экскурсию", "организатор туров нужен"
+                "нужен гид",
+                "ищу экскурсию",
+                "организатор туров нужен",
             ],
             "Транспорт": [
-                "нужно такси", "трансфер в аэропорт", "ищу водителя"
-            ]
+                "нужно такси",
+                "трансфер в аэропорт",
+                "ищу водителя на трансфер",
+                "airport transfer",
+            ],
         }
-        
-        # Предварительная векторизация (один раз при инициализации)
+
         logger.info(f"📝 Векторизация эталонов для {len(self.anchors)} ниш...")
         for niche, phrases in self.anchors.items():
-            if phrases:
-                try:
-                    self.anchor_embeddings[niche] = self.model.encode(phrases, convert_to_numpy=True)
-                    logger.debug(f"✅ Эталоны для '{niche}': {len(phrases)} фраз")
-                except Exception as e:
-                    logger.error(f"❌ Ошибка векторизации для '{niche}': {e}")
-                    # Если не удалось загрузить эталоны для ниши, пропускаем её
-                    continue
-        
-        total_phrases = sum(len(phrases) for phrases in self.anchors.values())
-        logger.info(f"✅ Загружено {total_phrases} эталонных фраз для {len(self.anchor_embeddings)} ниш")
+            if not phrases:
+                continue
+            try:
+                self.anchor_embeddings[niche] = self.model.encode(
+                    phrases, convert_to_numpy=True
+                )
+            except Exception as e:
+                logger.error(f"❌ Ошибка векторизации для '{niche}': {e}")
+
+        total_phrases = sum(len(p) for p in self.anchors.values())
+        logger.info(
+            f"✅ Загружено {total_phrases} эталонных фраз "
+            f"для {len(self.anchor_embeddings)} ниш"
+        )
 
     def is_seller(self, text: str) -> bool:
-        """
-        Проверка: похож ли текст на предложение услуг (продавец).
-        
-        Args:
-            text: Текст сообщения
-            
-        Returns:
-            bool: True, если это похоже на предложение услуг (продавец)
-        """
+        """Legacy: похоже ли на предложение услуг продавца."""
         if not text:
             return False
-            
         text_lower = text.lower()
-        
-        # Если есть явные признаки продавца
         for pattern in self.seller_patterns:
             if re.search(pattern, text_lower):
-                # НО: Если есть явное "ИЩУ" рядом, возможно это сложный запрос
-                # Пока для безопасности считаем продавцом, чтобы не спамить
                 return True
-                
         return False
 
-    def analyze(self, text: str):
+    def _best_niche(self, text: str) -> Tuple[Optional[str], float]:
+        """Возвращает (niche, cosine score 0..1)."""
+        msg_embedding = self.model.encode(text, convert_to_numpy=True)
+        best_niche = None
+        max_score = 0.0
+        for niche, anchor_embs in self.anchor_embeddings.items():
+            scores = util.cos_sim(msg_embedding, anchor_embs)[0]
+            if hasattr(scores, "cpu"):
+                scores_np = scores.cpu().numpy()
+            else:
+                scores_np = scores
+            current_max = float(np.max(scores_np))
+            if current_max > max_score:
+                max_score = current_max
+                best_niche = niche
+        return best_niche, max_score
+
+    def analyze(self, text: str) -> Dict:
         """
-        Базовый анализ сообщения: поиск ниши через векторный поиск.
-        Это черновой фильтр - финальная проверка будет в GPT Judge.
-        
-        Args:
-            text: Текст сообщения для анализа
-            
-        Returns: 
-            dict: {
-                'is_lead': bool,       # True, если это КАНДИДАТ для проверки в GPT
-                'niche': str or None,  # Название ниши (если найдена)
-                'score': float,        # Уверенность (0-100)
-                'reason': str          # Причина решения (для логов)
-            }
+        Legacy API: кандидат для GPT (мягкий порог).
         """
         if not text:
-            return {'is_lead': False, 'niche': None, 'score': 0, 'reason': 'empty_text'}
-        
+            return {"is_lead": False, "niche": None, "score": 0, "reason": "empty_text"}
+
         text_lower = text.lower()
-        
-        # 1. ЭКОНОМИЯ ДЕНЕГ:
-        # Не шлем в GPT явный мусор, который и так понятен.
-        # Это сэкономит вам 50% бюджета API.
-        hard_spam = ['usdt', 'вакансия', 'менеджер', 'набор', 'заработок', 'bot', 'подпишись']
-        if any(w in text_lower for w in hard_spam):
-            return {'is_lead': False, 'niche': None, 'score': 0, 'reason': 'hard_spam'}
+        if self.hard_spam_re.search(text_lower):
+            return {"is_lead": False, "niche": None, "score": 0, "reason": "hard_spam"}
 
         try:
-            # 2. ВЕКТОРНЫЙ ПОИСК (Как было)
-            msg_embedding = self.model.encode(text, convert_to_numpy=True)
-            best_niche = None
-            max_score = 0
-            
-            for niche, anchor_embs in self.anchor_embeddings.items():
-                scores = util.cos_sim(msg_embedding, anchor_embs)[0]
-                # util.cos_sim возвращает torch.Tensor, преобразуем в numpy для np.max
-                if hasattr(scores, 'cpu'):  # Это torch.Tensor
-                    scores_np = scores.cpu().numpy()
-                else:  # Это уже numpy array
-                    scores_np = scores
-                current_max = float(np.max(scores_np))
-                
-                if current_max > max_score:
-                    max_score = current_max
-                    best_niche = niche
-
-            # 3. ПОРОГ
-            # Ставим 0.60 (60%).
-            # Всё что ниже - точно мусор. Всё что выше - проверит GPT.
-            if max_score < 0.60:
+            best_niche, max_score = self._best_niche(text)
+            if max_score < self.threshold:
                 return {
-                    'is_lead': False,
-                    'niche': None,
-                    'score': round(max_score * 100, 1),
-                    'reason': 'low_score'
+                    "is_lead": False,
+                    "niche": None,
+                    "score": round(max_score * 100, 1),
+                    "reason": "low_score",
                 }
-
-            # Возвращаем "Кандидата" для проверки в GPT
             return {
-                'is_lead': True,  # Это пока предварительно "Да"
-                'niche': best_niche,
-                'score': round(max_score * 100, 1),
-                'reason': 'candidate_for_gpt'
+                "is_lead": True,
+                "niche": best_niche,
+                "score": round(max_score * 100, 1),
+                "reason": "candidate_for_gpt",
             }
-            
         except Exception as e:
             logger.error(f"❌ Ошибка в analyze: {e}")
-            return {'is_lead': False, 'niche': None, 'score': 0, 'reason': f'error: {str(e)}'}
+            return {
+                "is_lead": False,
+                "niche": None,
+                "score": 0,
+                "reason": f"error: {str(e)}",
+            }
+
+    def classify_fallback(self, text: str) -> Dict:
+        """
+        Автономная классификация без GPT (резерв при outage/quota).
+
+        Returns:
+            dict совместимый с AIClassifier / monitor hybrid result:
+            message_type, is_spam, niches, confidence, reason, ...
+        """
+        empty = {
+            "message_type": "ОБЩЕНИЕ",
+            "is_spam": False,
+            "niches": [],
+            "context": "Local sniper fallback",
+            "urgency": "не срочно",
+            "budget": "",
+            "confidence": 0,
+            "reason": "sniper: no match",
+        }
+        if not text or not text.strip():
+            empty["reason"] = "sniper: empty"
+            return empty
+
+        text_lower = text.lower()
+        if self.hard_spam_re.search(text_lower):
+            empty["reason"] = "sniper: hard_spam"
+            return empty
+
+        if not self.intent_re.search(text_lower):
+            empty["reason"] = "sniper: no intent"
+            return empty
+
+        try:
+            best_niche, max_score = self._best_niche(text)
+            score100 = round(max_score * 100, 1)
+            if not best_niche or max_score < self.fallback_threshold:
+                empty["confidence"] = score100
+                empty["reason"] = f"sniper: low_score ({score100})"
+                return empty
+
+            # Грубая эвристика типа сообщения
+            offer_re = re.compile(
+                r"(?i)\b(сдам|сдаю|сдается|продам|продаю|предлагаю|услуги|прайс)\b"
+            )
+            search_re = re.compile(
+                r"(?i)\b(ищ[уеюём]|нуж(ен|на|ны|но)|сниму|куплю|требуется|ваканси|"
+                r"looking\s+for|need)\b"
+            )
+            if offer_re.search(text_lower) and not search_re.search(text_lower):
+                msg_type = "ПРЕДЛОЖЕНИЕ"
+            elif search_re.search(text_lower):
+                msg_type = "ПОИСК"
+            else:
+                msg_type = "ПОИСК"
+
+            logger.info(
+                f"🎯 Sniper fallback: niche={best_niche} score={score100} type={msg_type}"
+            )
+            return {
+                "message_type": msg_type,
+                "is_spam": False,
+                "niches": [best_niche],
+                "context": f"Local sniper: {best_niche}",
+                "urgency": "не срочно",
+                "budget": "",
+                "confidence": score100,
+                "reason": f"sniper fallback ({score100})",
+            }
+        except Exception as e:
+            logger.error(f"❌ Ошибка sniper fallback: {e}")
+            empty["reason"] = f"sniper error: {str(e)[:80]}"
+            return empty
