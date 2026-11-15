@@ -32,6 +32,10 @@ NEGATIVES: List[str] = [
     "Сегодня хорошая погода",
     "Куплю USDT за наличные",
     "Просто болтаем про жизнь",
+    # Барахолка / еда ≠ Продажа недвижимости (local sniper false positive)
+    "Продам свинину недорогой",
+    "Сдам свинину недорогой",
+    "Продам кроссовки",
 ]
 
 
@@ -93,6 +97,30 @@ async def main() -> int:
     print(
         f"[{status}] Nuanu meetup must not be Макияж: "
         f"got={sniper_result.get('niches')} reason={sniper_result.get('reason')}"
+    )
+
+    pork = "Продам свинину недорогой"
+    pork_result = mon.semantic_sniper.classify_fallback(pork)
+    status = "OK" if not pork_result.get("niches") else "FAIL"
+    ok += status == "OK"
+    fail += status == "FAIL"
+    print(
+        f"[{status}] pork offer must not be Продажа недвижимости: "
+        f"got={pork_result.get('niches')} reason={pork_result.get('reason')}"
+    )
+
+    house = "Продам дом в Убуде"
+    house_result = mon.semantic_sniper.classify_fallback(house)
+    status = (
+        "OK"
+        if "Продажа недвижимости" in (house_result.get("niches") or [])
+        else "FAIL"
+    )
+    ok += status == "OK"
+    fail += status == "FAIL"
+    print(
+        f"[{status}] real house sale must stay Продажа недвижимости: "
+        f"got={house_result.get('niches')} reason={house_result.get('reason')}"
     )
 
     print(f"\nTOTAL {ok}/{ok + fail} passed, {fail} failed")
