@@ -80,6 +80,21 @@ async def main() -> int:
         fail += status == "FAIL"
         print(f"[{status}] paused GPT → got={sorted(niches)} reason={full.get('reason')}")
 
+    # False positive: прогулка/компания ≠ Макияж
+    print("\n=== FALSE POSITIVE GUARDS ===")
+    nuanu = (
+        "Хочу Нуану сегодня посетить, погулять по красивой территории, "
+        "встретить закат.\n\nЕсли найду компанию себе, буду рада"
+    )
+    sniper_result = mon.semantic_sniper.classify_fallback(nuanu)
+    status = "OK" if not sniper_result.get("niches") else "FAIL"
+    ok += status == "OK"
+    fail += status == "FAIL"
+    print(
+        f"[{status}] Nuanu meetup must not be Макияж: "
+        f"got={sniper_result.get('niches')} reason={sniper_result.get('reason')}"
+    )
+
     print(f"\nTOTAL {ok}/{ok + fail} passed, {fail} failed")
     return fail
 

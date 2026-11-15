@@ -39,7 +39,11 @@ class SemanticSniper:
             self.fallback_threshold = float(
                 fallback_threshold
                 if fallback_threshold is not None
-                else os.getenv("SNIPER_FALLBACK_THRESHOLD", "0.64")
+                else os.getenv("SNIPER_FALLBACK_THRESHOLD", "0.72")
+            )
+            # Ниже этого score без явного niche-keyword — не лид
+            self.lexical_gate_below = float(
+                os.getenv("SNIPER_LEXICAL_GATE_BELOW", "0.80")
             )
             self.anchors: Dict[str, List[str]] = {}
             self.anchor_embeddings: Dict[str, np.ndarray] = {}
@@ -80,12 +84,63 @@ class SemanticSniper:
             self.intent_re = re.compile(
                 r"(?i)("
                 r"ищ[уеюём]|нуж(ен|на|ны|но)|требуется|ваканси|"
-                r"подскажите|посоветуйте|хочу|хотим|заказ|"
+                r"подскажите|посоветуйте|заказ|"
                 r"кто\s+(может|умеет|сделает|снимет|пофоткает|поможет)|"
                 r"куплю|продам|сдам|сниму|аренду|looking\s+for|"
-                r"\bneed\b|\brent\b|\bbuy\b|\bsell\b|remote|freelance|фриланс"
+                r"\bneed\b|\brent\b|\bbuy\b|\bsell\b|remote|freelance|фриланс|"
+                # «хочу» только рядом с услугой/исполнителем, не «хочу погулять»
+                r"хоч[уем]+\s+(?:найти|снять|заказать|сделать|чтобы\s+сделали)|"
+                r"хоч[уем]+.{0,40}(?:мастер|фотограф|видеограф|риелтор|разработчик|"
+                r"программист|смм|smm|seo|визажист|маникюр|косметолог)"
                 r")"
             )
+
+            # Прогулки / компания / тусовки — не услуга ниши
+            self.social_meetup_re = re.compile(
+                r"(?i)("
+                r"найд\w*\s+компани|"
+                r"ищ\w*\s+компани|"
+                r"компани\w*\s+себе|"
+                r"погулять|"
+                r"встретить\s+закат|"
+                r"встречу\s+закат|"
+                r"потусить|"
+                r"кто\s+составит\s+компани|"
+                r"приятн\w*\s+компани|"
+                r"покажет\w*\s+(?:мне\s+)?остров"
+                r")"
+            )
+
+            # Лексические якоря: без них borderline semantic score не принимаем
+            self.niche_lexicon = {
+                "Макияж": r"(?i)макияж|визаж|визажист|makeup|мейкап",
+                "Маникюр": r"(?i)маникюр|педикюр|ногт|гель[- ]?лак|шеллак",
+                "Реснички": r"(?i)ресниц|lash",
+                "Брови": r"(?i)бров",
+                "Космеология": r"(?i)косметолог|чистка\s+лица|пилинг|ботокс|филлер",
+                "Волосы": r"(?i)парикмахер|стрижк|окрашиван|волос",
+                "Фотограф": r"(?i)фотограф|фотосесс|пофотк|съ[её]мк\w*\s+фото|\bфото\b",
+                "Видеограф": r"(?i)видеограф|видеосъ[её]м|рилл?с|монтаж\s+видео|оператор",
+                "Мобилографы": r"(?i)мобилограф|съ[её]мк\w*\s+на\s+(?:телефон|айфон)",
+                "SMM": r"(?i)\bsmm\b|\bсмм\b|соцсет|инстаграм|ведение\s+инст",
+                "UGC": r"(?i)\bugc\b",
+                "SEO": r"(?i)\bseo\b|\bсео\b|продвижен\w*\s+сайт",
+                "Продюсирование": r"(?i)продюсер|продюсирован",
+                "PR-менеджеры": r"(?i)\bpr\b|пиар|пресс[- ]?релиз",
+                "Реклама TG/INST": r"(?i)реклам|посев|таргет",
+                "Медиабайеры": r"(?i)медиабайер|mediabuyer|media[- ]?buyer|арбитраж",
+                "Тех. специалисты": r"(?i)разработчик|программист|техспец|бот|сайт|no[- ]?code",
+                "Заказы по AI": r"(?i)нейросет|chatgpt|midjourney|\bai\b",
+                "Удаленная работа": r"(?i)удал[её]нн|remote|freelance|фриланс|ваканси",
+                "Туризм": r"(?i)гид|экскурси|\bтур\b|visa\s*run",
+                "Транспорт": r"(?i)трансфер|такси|аэропорт|водитель",
+                "Аренда авто": r"(?i)аренда\s+авто|прокат\s+авто|машин\w*\s+в\s+аренду|\brent\s+car\b",
+                "Аренда байков": r"(?i)байк|скутер|nmax|pcx|мото",
+                "Медиа-студия": r"(?i)фотостуд|видеостуд|медиастуд|аренда\s+студи",
+                "Недвижимость (Спрос)": r"(?i)сниму|снять|арендую|квартир|вилл|жиль[её]|апартамент",
+                "Недвижимость (Предложение)": r"(?i)сдам|сдаю|сдается|квартир|вилл|жиль[её]|апартамент",
+                "Продажа недвижимости": r"(?i)куплю|продам|продаю|продается|риелтор|недвижимост",
+            }
 
             self._load_anchors()
             logger.info(
@@ -310,22 +365,34 @@ class SemanticSniper:
                 return True
         return False
 
-    def _best_niche(self, text: str) -> Tuple[Optional[str], float]:
-        """Возвращает (niche, cosine score 0..1)."""
+    def _best_niche(
+        self, text: str
+    ) -> Tuple[Optional[str], float, Optional[str], float]:
+        """Возвращает (best, best_score, second, second_score)."""
         msg_embedding = self.model.encode(text, convert_to_numpy=True)
-        best_niche = None
-        max_score = 0.0
+        ranked: List[Tuple[float, str]] = []
         for niche, anchor_embs in self.anchor_embeddings.items():
             scores = util.cos_sim(msg_embedding, anchor_embs)[0]
             if hasattr(scores, "cpu"):
                 scores_np = scores.cpu().numpy()
             else:
                 scores_np = scores
-            current_max = float(np.max(scores_np))
-            if current_max > max_score:
-                max_score = current_max
-                best_niche = niche
-        return best_niche, max_score
+            ranked.append((float(np.max(scores_np)), niche))
+        ranked.sort(reverse=True)
+        if not ranked:
+            return None, 0.0, None, 0.0
+        best_score, best_niche = ranked[0]
+        if len(ranked) > 1:
+            second_score, second_niche = ranked[1]
+        else:
+            second_score, second_niche = 0.0, None
+        return best_niche, best_score, second_niche, second_score
+
+    def _has_niche_lexicon(self, niche: str, text_lower: str) -> bool:
+        pattern = self.niche_lexicon.get(niche)
+        if not pattern:
+            return True
+        return bool(re.search(pattern, text_lower))
 
     def analyze(self, text: str) -> Dict:
         """
@@ -339,7 +406,7 @@ class SemanticSniper:
             return {"is_lead": False, "niche": None, "score": 0, "reason": "hard_spam"}
 
         try:
-            best_niche, max_score = self._best_niche(text)
+            best_niche, max_score, _, _ = self._best_niche(text)
             if max_score < self.threshold:
                 return {
                     "is_lead": False,
@@ -389,16 +456,37 @@ class SemanticSniper:
             empty["reason"] = "sniper: hard_spam"
             return empty
 
+        if self.social_meetup_re.search(text_lower):
+            empty["reason"] = "sniper: social_meetup"
+            return empty
+
         if not self.intent_re.search(text_lower):
             empty["reason"] = "sniper: no intent"
             return empty
 
         try:
-            best_niche, max_score = self._best_niche(text)
+            best_niche, max_score, second_niche, second_score = self._best_niche(text)
             score100 = round(max_score * 100, 1)
             if not best_niche or max_score < self.fallback_threshold:
                 empty["confidence"] = score100
                 empty["reason"] = f"sniper: low_score ({score100})"
+                return empty
+
+            # Почти ничья между нишами → слишком шумно для автономного режима
+            if second_niche and (max_score - second_score) < 0.03 and max_score < 0.80:
+                empty["confidence"] = score100
+                empty["reason"] = (
+                    f"sniper: ambiguous ({best_niche}/{second_niche} "
+                    f"{score100}/{round(second_score * 100, 1)})"
+                )
+                return empty
+
+            # Borderline score без слов ниши (как «Нуану/закат» → Макияж)
+            if max_score < self.lexical_gate_below and not self._has_niche_lexicon(
+                best_niche, text_lower
+            ):
+                empty["confidence"] = score100
+                empty["reason"] = f"sniper: no lexicon for {best_niche} ({score100})"
                 return empty
 
             # Грубая эвристика типа сообщения
