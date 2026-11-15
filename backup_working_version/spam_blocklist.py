@@ -19,6 +19,54 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+# Кириллические омоглифы в FX-спаме: USDТ (Т=U+0422), USDс и т.п.
+_CRYPTO_HOMOGLYPHS = str.maketrans(
+    {
+        "А": "A",
+        "а": "a",
+        "В": "B",
+        "Е": "E",
+        "е": "e",
+        "К": "K",
+        "М": "M",
+        "Н": "H",
+        "О": "O",
+        "о": "o",
+        "Р": "P",
+        "С": "C",
+        "с": "c",
+        "Т": "T",
+        "т": "t",
+        "Х": "X",
+        "х": "x",
+        "У": "Y",
+        "у": "y",
+    }
+)
+
+
+# Без (?i): иначе [A-Za-z]* + кириллица матчит чисто русские слова.
+_MIXED_SCRIPT_TOKEN_RE = re.compile(
+    r"(?:"
+    # USDТ / USDс — в токене есть и латиница, и кириллица
+    r"(?=[\w]*[A-Za-z])(?=[\w]*[А-Яа-яЁё])[A-Za-zА-Яа-яЁё]+|"
+    # usdt / usdт / USDC / usdс
+    r"[Uu][Ss][Dd][TtТтCcСс]?"
+    r")"
+)
+
+
+def normalize_crypto_homoglyphs(text: str) -> str:
+    """Fold Cyrillic lookalikes in FX tickers (USDТ→USDT), keep Russian intact."""
+    if not text:
+        return ""
+
+    def _fold(match: re.Match) -> str:
+        return match.group(0).translate(_CRYPTO_HOMOGLYPHS)
+
+    return _MIXED_SCRIPT_TOKEN_RE.sub(_fold, text)
+
+
 _LOCK = threading.Lock()
 _DEFAULT_PATHS = (
     Path("data/user_spam_blocklist.json"),

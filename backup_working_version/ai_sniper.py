@@ -14,6 +14,8 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 
+import spam_blocklist
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,12 +73,15 @@ class SemanticSniper:
                 r"могу\s+сделать",
             ]
 
-            # Узкий hard-spam: не трогаем «вакансия/менеджер/bot» — это ломает digital-лиды
+            # Узкий hard-spam / FX: не трогаем «вакансия/менеджер/bot»
+            # (омоглифы вроде USDТ нормализуются перед матчем)
             self.hard_spam_re = re.compile(
                 r"(?i)("
-                r"\busdt\b|\busdc\b|тезер|обмен\s+валют|"
+                r"\busdt\b|\busdc\b|usd[tт]|usd[cс]|тезер|обмен\s+валют|"
+                r"наличк\w*\s+на\s+руках|купл\w*.{0,40}(?:usd|usdt|usdc|тезер)|"
+                r"прод\w*.{0,40}(?:usd|usdt|usdc|тезер)|"
                 r"легк\w*\s+заработок|без\s+опыта\s+от\s+\d|"
-                r"крипт\w*\s+сигнал|сигналы?\s+в\s+тг|"
+                r"крипт\w*|сигналы?\s+в\s+тг|"
                 r"казино|ставки\s+на\s+спорт|1xbet"
                 r")"
             )
@@ -401,8 +406,8 @@ class SemanticSniper:
         if not text:
             return {"is_lead": False, "niche": None, "score": 0, "reason": "empty_text"}
 
-        text_lower = text.lower()
-        if self.hard_spam_re.search(text_lower):
+        text_norm = spam_blocklist.normalize_crypto_homoglyphs(text).lower()
+        if self.hard_spam_re.search(text_norm):
             return {"is_lead": False, "niche": None, "score": 0, "reason": "hard_spam"}
 
         try:
@@ -452,7 +457,8 @@ class SemanticSniper:
             return empty
 
         text_lower = text.lower()
-        if self.hard_spam_re.search(text_lower):
+        text_norm = spam_blocklist.normalize_crypto_homoglyphs(text).lower()
+        if self.hard_spam_re.search(text_norm):
             empty["reason"] = "sniper: hard_spam"
             return empty
 

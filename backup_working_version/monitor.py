@@ -451,6 +451,8 @@ _HOUSING_WORD_RE = re.compile(
 )
 _FX_CRYPTO_RE = re.compile(
     r"(?i)\b(usdt|usdc|btc|bitcoin|ethereum|\beth\b|тезер\w*|крипт\w*|trc20|erc20|bep20)\b|"
+    r"usd[tт]|usd[cс]|"
+    r"наличк\w*\s+на\s+руках|"
     r"обмен\s+валют|курс\s+валют"
 )
 # Бытовая «машина» ≠ авто
@@ -1023,8 +1025,10 @@ class MessageMonitor:
                 "reason": "Pre-filter: нет intent-маркеров, AI пропущен",
             }
 
-        # 3.1 FX/crypto без жилья — не гоняем в AI (ниша «Обмен валют» снята, иначе деньги в никуда)
-        if _FX_CRYPTO_RE.search(text) and not re.search(
+        # 3.1 FX/crypto без жилья — не гоняем в AI/sniper
+        # (ниша «Обмен валют» снята; ловим и омоглифы USDТ)
+        text_fx = spam_blocklist.normalize_crypto_homoglyphs(text)
+        if _FX_CRYPTO_RE.search(text_fx) and not re.search(
             r"квартир|вилл|апартамент|жиль[её]|(?<!для\s)\bдом\w*\b|участ|недвижимост",
             text,
             re.IGNORECASE,
