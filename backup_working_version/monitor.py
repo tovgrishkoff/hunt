@@ -995,14 +995,8 @@ class MessageMonitor:
             r"\bprice\b",
             r"\bcost\b",
             r"\bbudget\b",
-            # Срочность/контакты/деньги
+            # Срочность (без «сегодня/сейчас/$» — слишком широко, жрали AI-бюджет)
             r"срочно",
-            r"сегодня",
-            r"сейчас",
-            r"\$",
-            r"\busd\b",
-            r"\bidr\b",
-            r"₽",
         ]
 
         has_intent = any(re.search(kw, text, re.IGNORECASE) for kw in intent_keywords)
@@ -1016,6 +1010,24 @@ class MessageMonitor:
                 "budget": "",
                 "confidence": 0,
                 "reason": "Pre-filter: нет intent-маркеров, AI пропущен",
+            }
+
+        # 3.1 FX/crypto без жилья — не гоняем в AI (ниша «Обмен валют» снята, иначе деньги в никуда)
+        if _FX_CRYPTO_RE.search(text) and not re.search(
+            r"квартир|вилл|апартамент|жиль[её]|(?<!для\s)\bдом\w*\b|участ|недвижимост",
+            text,
+            re.IGNORECASE,
+        ):
+            logger.info("💸 FX/crypto без жилья — AI пропущен")
+            return {
+                "message_type": "ОБЩЕНИЕ",
+                "is_spam": False,
+                "niches": [],
+                "context": "FX/crypto без недвижимости",
+                "urgency": "не срочно",
+                "budget": "",
+                "confidence": 90,
+                "reason": "Pre-filter: FX/crypto без жилья, AI пропущен",
             }
 
         # 4. AI FALLBACK (дорого)

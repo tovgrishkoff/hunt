@@ -21,6 +21,17 @@ class AIClassifier:
         self.api_key = api_key
         self.cache_duration = cache_duration
         self.cache: Dict[str, Tuple[Dict, datetime]] = {}
+
+        # Лимиты стоимости: ~gpt-4o-mini ≈ $0.0002/вызов → 1500/день ≈ $0.30
+        self.max_calls_per_day = int(os.getenv("AI_MAX_CALLS_PER_DAY", "1500"))
+        self.max_calls_per_hour = int(os.getenv("AI_MAX_CALLS_PER_HOUR", "80"))
+        self._calls_day_key: Optional[str] = None
+        self._calls_day_count = 0
+        self._calls_hour_key: Optional[str] = None
+        self._calls_hour_count = 0
+        # Circuit breaker при quota/billing (не долбим API часами)
+        self._paused_until: Optional[datetime] = None
+        self._pause_seconds = int(os.getenv("AI_QUOTA_PAUSE_SECONDS", "21600"))  # 6ч
         
         # Настройка OpenAI
         openai.api_key = api_key
@@ -173,6 +184,63 @@ class AIClassifier:
 
 Сообщение для анализа: "{message_text}"
 """
+    def _budget_blocked_result(self, reason: str) -> Dict:
+        return {
+            "message_type": "ОБЩЕНИЕ",
+            "is_spam": False,
+            "niches": [],
+            "context": "",
+            "urgency": "не срочно",
+            "budget": "",
+            "confidence": 0,
+            "reason": reason,
+            "ai_unavailable": True,
+        }
+
+    def _register_api_call(self) -> Optional[str]:
+        """Учитывает вызов и возвращает причину блокировки, если лимит исчерпан."""
+        now = datetime.now()
+        day_key = now.strftime("%Y-%m-%d")
+        hour_key = now.strftime("%Y-%m-%d-%H")
+        if self._calls_day_key != day_key:
+            self._calls_day_key = day_key
+            self._calls_day_count = 0
+        if self._calls_hour_key != hour_key:
+            self._calls_hour_key = hour_key
+            self._calls_hour_count = 0
+        if self._calls_day_count >= self.max_calls_per_day:
+            return (
+                f"AI daily budget exhausted "
+                f"({self._calls_day_count}/{self.max_calls_per_day})"
+            )
+        if self._calls_hour_count >= self.max_calls_per_hour:
+            return (
+                f"AI hourly budget exhausted "
+                f"({self._calls_hour_count}/{self.max_calls_per_hour})"
+            )
+        self._calls_day_count += 1
+        self._calls_hour_count += 1
+        return None
+
+    def _trip_circuit_breaker(self, error: Exception) -> None:
+        err = str(error).lower()
+        if any(
+            k in err
+            for k in (
+                "insufficient_quota",
+                "credit_balance_exhausted",
+                "billing",
+                "quota",
+                "rate limit",
+                "429",
+            )
+        ):
+            self._paused_until = datetime.now() + timedelta(seconds=self._pause_seconds)
+            logger.warning(
+                f"🛑 AI circuit breaker ON до {self._paused_until} "
+                f"(pause={self._pause_seconds}s) из-за: {str(error)[:120]}"
+            )
+
     async def classify_message(self, message_text: str) -> Dict:
         """
         Классифицирует сообщение с помощью ChatGPT с улучшенным промптом
@@ -200,6 +268,19 @@ class AIClassifier:
         if cached_result:
             return cached_result
 
+        if self._paused_until and datetime.now() < self._paused_until:
+            return self._budget_blocked_result(
+                f"AI paused until {self._paused_until.isoformat(timespec='minutes')}"
+            )
+        if self._paused_until and datetime.now() >= self._paused_until:
+            self._paused_until = None
+            logger.info("✅ AI circuit breaker снят — пробуем снова")
+
+        budget_block = self._register_api_call()
+        if budget_block:
+            logger.warning(f"💸 {budget_block} — AI пропущен")
+            return self._budget_blocked_result(budget_block)
+
         try:
             # Используем улучшенный промпт с обрезанным текстом
             prompt = self._create_enhanced_prompt(truncated_text)
@@ -215,8 +296,11 @@ class AIClassifier:
             
             # Логирование перед отправкой запроса для отладки
             model_name = "gpt-4o-mini"
-            logger.info(f"🚀 ОТПРАВЛЯЮ ЗАПРОС. МОДЕЛЬ: {model_name}")
-            print(f"🚀 ОТПРАВЛЯЮ ЗАПРОС. МОДЕЛЬ: {model_name}")
+            logger.info(
+                f"🚀 ОТПРАВЛЯЮ ЗАПРОС. МОДЕЛЬ: {model_name} "
+                f"(day={self._calls_day_count}/{self.max_calls_per_day}, "
+                f"hour={self._calls_hour_count}/{self.max_calls_per_hour})"
+            )
             
             response = client.chat.completions.create(
                 model=model_name,  # Заменено с gpt-3.5-turbo-0125 для экономии 3-4x
@@ -261,6 +345,7 @@ class AIClassifier:
             
             if is_critical_api_error:
                 logger.warning(f"⚠️ КРИТИЧЕСКАЯ ошибка API OpenAI: {e}. AI классификатор недоступен.")
+                self._trip_circuit_breaker(e)
                 # Возвращаем специальный результат, который указывает на недоступность AI
                 default_result = {
                     "message_type": "ОБЩЕНИЕ",
@@ -287,7 +372,8 @@ class AIClassifier:
                     "ai_unavailable": False
                 }
             
-            # НЕ кэшируем результат при ошибке, чтобы при следующем запросе попробовать снова
+            # При quota/billing circuit breaker уже стоит — повторные вызовы отсекаются.
+            # Обычные ошибки не кэшируем, чтобы не «залипать» на ложном отказе.
             return default_result
 
     def _validate_and_normalize_result(self, result: Dict) -> Dict:
