@@ -894,7 +894,9 @@ class MessageMonitor:
             ]
             search_markers = search_markers + [
                 "заказать",
-                "заказ",
+                "заказ по",
+                "заказ на",
+                "есть заказ",
                 "хочу",
                 "арендую",
                 "арендовать",
@@ -927,8 +929,15 @@ class MessageMonitor:
                 "available for rent",
                 "renting out",
                 "for sale",
+                "генерирую",
+                "генерируем",
+                "портфолио",
+                "пишу в лс",
+                "пишите",
             ]
-            if any(w in text for w in search_markers):
+            # «на заказ» у исполнителя ≠ спрос клиента
+            text_for_intent = re.sub(r"\bна\s+заказ\b", " ", text)
+            if any(w in text_for_intent for w in search_markers):
                 msg_type = "ПОИСК"
             elif any(w in text for w in offer_markers):
                 msg_type = "ПРЕДЛОЖЕНИЕ"
@@ -1569,6 +1578,36 @@ class MessageMonitor:
         ):
             niches = set(n for n in niches if n != "Недвижимость (Спрос)")
             logger.info("🔍 EN rental offer: убираем ложный 'Недвижимость (Спрос)'")
+
+        # RU: «ищу/сниму квартиру в аренду» ≠ предложение аренды
+        ru_rental_demand = bool(
+            re.search(
+                r"\b(ищу|ищем|нужен|нужна|нужно|нужны|сниму|снимаю|снимаем|снять|"
+                r"арендую|арендуем|арендовать)\b",
+                text_lower,
+            )
+        )
+        ru_rental_offer = bool(
+            re.search(
+                r"\b(сдам|сдаю|сдаём|сдаем|сдаётся|сдается|сдаются|сдается|"
+                r"свободн\w*|доступн\w*)\b",
+                text_lower,
+            )
+        )
+        if (
+            "Недвижимость (Спрос)" in niches
+            and "Недвижимость (Предложение)" in niches
+        ):
+            if ru_rental_demand and not ru_rental_offer:
+                niches = set(n for n in niches if n != "Недвижимость (Предложение)")
+                logger.info(
+                    "🔍 Арендный спрос: убираем ложный 'Недвижимость (Предложение)'"
+                )
+            elif ru_rental_offer and not ru_rental_demand:
+                niches = set(n for n in niches if n != "Недвижимость (Спрос)")
+                logger.info(
+                    "🔍 Арендное предложение: убираем ложный 'Недвижимость (Спрос)'"
+                )
         return niches
 
     def _match_job_bait_spam(self, text: str) -> Optional[str]:
