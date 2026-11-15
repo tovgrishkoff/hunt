@@ -383,6 +383,42 @@ REAL_ESTATE_NICHES = {
     "Сдача недвижимости",
 }
 
+# Ниши, где нужен только спрос (ищу специалиста), не самореклама продавцов.
+# Офферы оставляем лишь для rental/sale inventory.
+OFFER_ALLOWED_NICHES = {
+    "Недвижимость (Предложение)",
+    "Сдача недвижимости",
+    "Продажа недвижимости",
+    "Аренда байков",
+    "Аренда авто",
+}
+
+DEMAND_ONLY_NICHES = {
+    "Фотограф",
+    "Видеограф",
+    "Маникюр",
+    "Волосы",
+    "Реснички",
+    "Брови",
+    "Макияж",
+    "Косметология",
+    "Медиа-студия",
+    "Туризм",
+    "Транспорт",
+    "Мобилографы",
+    "SMM",
+    "UGC",
+    "SEO",
+    "Продюсирование",
+    "PR-менеджеры",
+    "Реклама TG/INST",
+    "Медиабайеры",
+    "Тех. специалисты",
+    "Заказы по AI",
+    "Удаленная работа",
+    "Недвижимость (Спрос)",
+}
+
 # Legacy lookup only: old subscription name «Сдача недвижимости» == rental OFFER.
 # Спрос и Предложение — разные ниши, их НЕ склеиваем.
 # Продажа ≠ арендное предложение.
@@ -967,7 +1003,7 @@ class MessageMonitor:
                     "reason": "ОБЩЕНИЕ без лид-интента — не рассылаем",
                 }
 
-            return {
+            result = {
                 "message_type": msg_type,
                 "is_spam": False,
                 "niches": list(found_niches),
@@ -977,6 +1013,7 @@ class MessageMonitor:
                 "confidence": 100,
                 "reason": "Pre-filter: ниши найдены паттернами, AI не нужен",
             }
+            return self._apply_demand_only_filter(result, message_text)
 
         # 3. INTENT FILTER (бесплатно)
         intent_keywords = [
@@ -1030,7 +1067,15 @@ class MessageMonitor:
             r"срочно",
         ]
 
-        has_intent = any(re.search(kw, text, re.IGNORECASE) for kw in intent_keywords)
+        # «Если вам нужен сайт — пишите» у продавца ≠ клиентский спрос
+        text_for_intent = re.sub(
+            r"(?i)если\s+(?:вам|тебе|кому)\s+нуж\w*",
+            " ",
+            text,
+        )
+        has_intent = any(
+            re.search(kw, text_for_intent, re.IGNORECASE) for kw in intent_keywords
+        )
         if not has_intent:
             return {
                 "message_type": "ОБЩЕНИЕ",
@@ -1085,22 +1130,24 @@ class MessageMonitor:
                 ai_result.setdefault("confidence", 0)
                 ai_result.setdefault("reason", "AI fallback")
 
-                # GPT ответил нишами — ок
+                # GPT ответил нишами — ок (но режем seller-офферы в service-нишах)
                 if ai_result.get("niches"):
-                    return ai_result
+                    return self._apply_demand_only_filter(ai_result, message_text)
 
                 # GPT недоступен (quota/pause/budget) — резерв: локальный sniper
                 if ai_result.get("ai_unavailable"):
                     sniper_result = self._classify_with_sniper(message_text)
                     if sniper_result is not None:
-                        return sniper_result
-                return ai_result
+                        return self._apply_demand_only_filter(
+                            sniper_result, message_text
+                        )
+                return self._apply_demand_only_filter(ai_result, message_text)
             except Exception as e:
                 logger.error(f"❌ Ошибка AI: {e}")
 
         sniper_result = self._classify_with_sniper(message_text)
         if sniper_result is not None:
-            return sniper_result
+            return self._apply_demand_only_filter(sniper_result, message_text)
 
         return {
             "message_type": "ОБЩЕНИЕ",
@@ -1372,6 +1419,55 @@ class MessageMonitor:
             return set(n for n in niches if n not in REAL_ESTATE_NICHES)
 
         return niches
+
+    def _apply_demand_only_filter(
+        self, result: Dict, message_text: str = ""
+    ) -> Dict:
+        """Service niches: keep only client demand (ПОИСК), drop seller offers."""
+        if not result or result.get("is_spam"):
+            return result
+        niches = set(result.get("niches") or [])
+        if not niches:
+            return result
+
+        msg_type = (result.get("message_type") or "").upper()
+        text_l = (message_text or "").lower()
+
+        # Explicit seller self-promo even if model says ПОИСК
+        seller_voice = bool(
+            re.search(
+                r"(?i)\b(занимаюсь|предлагаю|оказываю|делаю\s+сайты|создаю\s+(?:сайты|ботов)|"
+                r"пишите\s+в\s+(?:лс|личк)|прайс\s+в\s+лс|свободные\s+окна|"
+                r"наш[аеи]\s+услуг|работаю\s+с\s+разными)\b",
+                text_l,
+            )
+        ) and not bool(
+            re.search(
+                r"(?i)(?<![А-Яа-яЁёA-Za-z])(ищу|ищем|нужен|нужна|нужны|требуется|"
+                r"подскажите|посоветуйте)(?![А-Яа-яЁёA-Za-z])",
+                text_l,
+            )
+        )
+
+        if msg_type == "ПРЕДЛОЖЕНИЕ" or seller_voice:
+            kept = niches & OFFER_ALLOWED_NICHES
+            dropped = niches - kept
+            if dropped:
+                logger.info(
+                    f"🔍 Demand-only: убираем seller-оффер ниши {sorted(dropped)} "
+                    f"(type={msg_type or 'seller_voice'})"
+                )
+            niches = kept
+            result["niches"] = list(niches)
+            if not niches:
+                result["message_type"] = "ОБЩЕНИЕ"
+                result["confidence"] = 0
+                result["reason"] = "Seller offer in demand-only niche — не рассылаем"
+                result["context"] = result.get("context") or "Оффер исполнителя, не спрос"
+            return result
+
+        # ПОИСК with only demand niches — ok; strip accidental offer-only if any
+        return result
 
     @staticmethod
     def _text_has_phrase_markers(text: str, markers: List[str]) -> bool:
@@ -2434,6 +2530,21 @@ class MessageMonitor:
                 f"🔍 Чат знакомств '{chat_title}': убираем ниши недвижимости {found_niches & REAL_ESTATE_NICHES}"
             )
             found_niches = set(n for n in found_niches if n not in REAL_ESTATE_NICHES)
+
+        # Safety net: service niches = demand only (no seller broadcasts)
+        classification_result = self._apply_demand_only_filter(
+            {
+                **classification_result,
+                "niches": list(found_niches),
+                "message_type": message_type,
+            },
+            message_text,
+        )
+        found_niches = set(classification_result.get("niches") or [])
+        message_type = classification_result.get("message_type", message_type)
+        reason = classification_result.get("reason", reason)
+        context = classification_result.get("context", context)
+        confidence = classification_result.get("confidence", confidence)
 
         if not found_niches:
             logger.info("❌ Категории не найдены, сообщение не будет разослано")

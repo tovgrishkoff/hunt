@@ -78,7 +78,7 @@ DEMAND: List[Tuple[str, str, Set[str], Optional[str]]] = [
     ("Нужен удалённый сотрудник в команду", "Удаленная работа", set(), "ПОИСК"),
 ]
 
-# Offer / noise: must NOT become demand lead for digital niches
+# Offer / noise: must NOT become a lead in demand-only niches (niches empty or not ПОИСК)
 SUPPLY_OR_NOISE: List[Tuple[str, Set[str]]] = [
     ("Я SMM-менеджер, веду инстаграм, прайс в лс", {"SMM"}),
     ("Предлагаю услуги SEO продвижения сайта", {"SEO"}),
@@ -90,6 +90,11 @@ SUPPLY_OR_NOISE: List[Tuple[str, Set[str]]] = [
     ("Я программист, делаю ботов и сайты", {"Тех. специалисты"}),
     ("Генерирую картинки в midjourney на заказ, пишите", {"Заказы по AI"}),
     ("Мобилограф, снимаю на айфон, свободные окна", {"Мобилографы"}),
+    (
+        "#визитка #сайт\nЗанимаюсь разработкой сайтов и Telegram-ботов для бизнеса. "
+        "Если вам нужен сайт — пишите в личные сообщения",
+        {"SEO", "SMM", "Тех. специалисты", "Заказы по AI"},
+    ),
     ("Просто болтаем про chatgpt и нейросети", {"Заказы по AI"}),
     ("Куплю USDT дорого. Наличка на руках.", {"Аренда авто", "SMM", "SEO", "Тех. специалисты", "Удаленная работа"}),
 ]
@@ -136,12 +141,9 @@ async def run() -> int:
         result = await mon._hybrid_classify_message(text)
         got = niches_of(result)
         msg_type = result.get("message_type")
-        # Either no niche hit, or if niche hits it must NOT be typed as ПОИСК
+        # Demand-only niches must not be broadcast for seller offers
         bad = got & forbid
-        if not bad:
-            ok = True
-        else:
-            ok = msg_type != "ПОИСК"
+        ok = not bad
         status = "OK" if ok else "FAIL"
         if not ok:
             failed += 1
