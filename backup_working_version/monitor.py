@@ -937,9 +937,18 @@ class MessageMonitor:
             ]
             # «на заказ» у исполнителя ≠ спрос клиента
             text_for_intent = re.sub(r"\bна\s+заказ\b", " ", text)
-            if any(w in text_for_intent for w in search_markers):
+            # Word-boundary markers: иначе «ищу» матчит «жарищу», «ем» внутри слов и т.п.
+            has_search = self._text_has_phrase_markers(text_for_intent, search_markers)
+            has_offer = self._text_has_phrase_markers(text, offer_markers)
+            if has_search and has_offer and re.search(
+                r"(?i)\b(продам|продаю|продаем|продается|продаётся|продаются|сдам|сдаю|сдаём|сдаем)\b",
+                text,
+            ):
+                # «продаются … напишите хочу фото» — оффер, не поиск фотографа
+                msg_type = "ПРЕДЛОЖЕНИЕ"
+            elif has_search:
                 msg_type = "ПОИСК"
-            elif any(w in text for w in offer_markers):
+            elif has_offer:
                 msg_type = "ПРЕДЛОЖЕНИЕ"
             else:
                 # Голое упоминание ниши без спроса/оффера — не лид
@@ -1364,6 +1373,28 @@ class MessageMonitor:
 
         return niches
 
+    @staticmethod
+    def _text_has_phrase_markers(text: str, markers: List[str]) -> bool:
+        """True if any marker appears as a phrase/word, not as a random substring."""
+        if not text:
+            return False
+        for raw in markers:
+            w = (raw or "").strip().lower()
+            if not w:
+                continue
+            if " " in w:
+                if w in text:
+                    return True
+                continue
+            # Cyrillic/Latin letters as word chars; digits stay inside token
+            if re.search(
+                rf"(?<![0-9A-Za-zА-Яа-яЁё]){re.escape(w)}(?![0-9A-Za-zА-Яа-яЁё])",
+                text,
+                flags=re.IGNORECASE,
+            ):
+                return True
+        return False
+
     def _postprocess_niches(self, message_text: str, niches: Set[str]) -> Set[str]:
         """
         Финальная доводка ниш после regex-попаданий.
@@ -1375,6 +1406,31 @@ class MessageMonitor:
             return niches
 
         text_lower = (message_text or "").lower()
+
+        # Барахолка/одежда: «хочу фото» = CTA продавца, не заказ фотографа
+        if "Фотограф" in niches or "Видеограф" in niches:
+            clothing_sale = bool(
+                re.search(
+                    r"(?i)(прода[её]тся|продаются|продам|продаю).{0,120}"
+                    r"(вещ\w*|гардероб|плать\w*|одежд\w*|размер\w*|дизайнерск)|"
+                    r"(гардероб|размер\w*\s*[:\-–]?\s*[smlxs]|"
+                    r"уникальн\w*\s+вещ|обновить\s+гардероб)",
+                    text_lower,
+                )
+            )
+            seeking_shooter = bool(
+                re.search(
+                    r"(?i)(ищ(у|ем)|нуж(ен|на)|требуется|заказ).{0,60}"
+                    r"(фотограф|видеограф|фотосесс|съ[её]мк)",
+                    text_lower,
+                )
+            )
+            if clothing_sale and not seeking_shooter:
+                niches.discard("Фотограф")
+                niches.discard("Видеограф")
+                logger.info("🔍 Барахолка/одежда с CTA «фото»: убираем Фото/Видео")
+                if not niches:
+                    return set()
         
         # --- НОВОЕ: Блокировка криминального контекста для фотографов ---
         if "Фотограф" in niches or "Видеограф" in niches:
