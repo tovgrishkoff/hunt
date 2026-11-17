@@ -998,6 +998,7 @@ class MessageMonitor:
             ]
             offer_markers = [
                 "предлагаю",
+                "предлагаем",
                 "сдам",
                 "сдаю",
                 "сдаем",
@@ -1018,6 +1019,11 @@ class MessageMonitor:
                 "прайс",
                 "в аренду",
                 "прокат",
+                "продакшн",
+                "production",
+                "бронирован",
+                "в личные сообщения",
+                "партфолио",
             ]
             search_markers = search_markers + [
                 "заказать",
@@ -1063,7 +1069,13 @@ class MessageMonitor:
                 "пишите",
             ]
             # «на заказ» у исполнителя ≠ спрос клиента
+            # «вам не нужно» / «не нужно заниматься» — риторика продавца, не ПОИСК
             text_for_intent = re.sub(r"\bна\s+заказ\b", " ", text)
+            text_for_intent = re.sub(
+                r"(?i)\b(?:вам\s+)?не\s+нуж(?:но|ен|на|ны)\b",
+                " ",
+                text_for_intent,
+            )
             # Word-boundary markers: иначе «ищу» матчит «жарищу», «ем» внутри слов и т.п.
             has_search = self._text_has_phrase_markers(text_for_intent, search_markers)
             has_offer = self._text_has_phrase_markers(text, offer_markers)
@@ -1072,6 +1084,9 @@ class MessageMonitor:
                 text,
             ):
                 # «продаются … напишите хочу фото» — оффер, не поиск фотографа
+                msg_type = "ПРЕДЛОЖЕНИЕ"
+            elif has_search and has_offer and (found_niches & DEMAND_ONLY_NICHES):
+                # Сервисные ниши: оффер+ложный «нужно» → ПРЕДЛОЖЕНИЕ (demand-only отрежет)
                 msg_type = "ПРЕДЛОЖЕНИЕ"
             elif has_search:
                 msg_type = "ПОИСК"
@@ -1527,9 +1542,18 @@ class MessageMonitor:
         # Explicit seller self-promo even if model says ПОИСК
         seller_voice = bool(
             re.search(
-                r"(?i)\b(занимаюсь|предлагаю|оказываю|делаю\s+сайты|создаю\s+(?:сайты|ботов)|"
+                r"(?i)\b("
+                r"занимаюсь|предлагаю|предлагаем|оказываю|"
+                r"делаю\s+сайты|создаю\s+(?:сайты|ботов)|"
                 r"пишите\s+в\s+(?:лс|личк)|прайс\s+в\s+лс|свободные\s+окна|"
-                r"наш[аеи]\s+услуг|работаю\s+с\s+разными)\b",
+                r"наш[аеи]\s+услуг|работаю\s+с\s+разными|"
+                r"полный\s+продакшн|продакшн|"
+                r"портфолио|партфолио|"
+                r"в\s+личные\s+сообщения|"
+                r"бер[её]м\s+вс[её]\s+на\s+себя|"
+                r"photo\s*&\s*film\s+production|"
+                r"по\s+деталям\s+и\s+бронирован"
+                r")\b",
                 text_l,
             )
         ) and not bool(
