@@ -529,14 +529,27 @@ _HOUSEHOLD_FOR_HOME_RE = re.compile(
     r"(?:обогрев|кондицион|холодильн|стиральн|пылесос|микроволн|телевизор|"
     r"варочн|духовк|посудомо|утюг|фен|heater|air[\s-]?con)"
 )
-# Наречие «(не) дома» / «он дома» ≠ объект «дом» в спросе на жильё
+# Наречие «(не) дома» / «он дома» / «чтобы дома стояли» ≠ объект «дом»
 _AT_HOME_ADVERB_RE = re.compile(
     r"(?i)(?:"
     r"\bне\s+дома\b|"
+    r"\bчтобы\s+дома\b|"
+    r"\bдома\s+стоял\w*|"
+    r"\bдома\s+стоят\b|"
+    r"\bстоят\s+дома\b|"
+    r"\bдержать\s+дома\b|"
     r"\b(?:я|ты|он|она|мы|вы|они|муж|жена|бывш\w*|кто|все|никто)\s+"
     r"(?:сейчас\s+)?(?:не\s+)?дома\b|"
     r"\b(?:буду|будет|будем|будете|будут|был|была|было|были)\s+(?:не\s+)?дома\b|"
     r"\bпока\s+(?:\w+\s+){0,4}(?:не\s+)?дома\b"
+    r")"
+)
+# Цветы/растения «дома стояли» — не покупка жилья
+_FLOWERS_AT_HOME_RE = re.compile(
+    r"(?i)(?:"
+    r"(?:цвет\w*|букет\w*|растен\w*|ваз\w*).{0,100}(?:дома|домой)|"
+    r"(?:дома|домой).{0,60}(?:цвет\w*|букет\w*|растен\w*|ваз\w*)|"
+    r"покупаю.{0,80}чтобы\s+дома\s+стоя"
     r")"
 )
 # Сильный жилищный контекст без голого «дом/дома» (наречие не считается)
@@ -549,7 +562,9 @@ _STRONG_HOUSING_RE = re.compile(
     r"сдам|сдаю|сдаём|сдаем|сдаётся|сдается|посуточно|"
     r"for\s+rent|to\s+rent|rental"
     r")\b|"
-    r"\b(?:продам|продаю|продается|продаётся|куплю|купить|покупаю)\b.{0,40}\bдом"
+    # объект покупки/продажи «дом», не наречие «дома стояли»
+    r"\b(?:продам|продаю|продается|продаётся|куплю|купить|покупаю)\b"
+    r".{0,40}\bдом(?:а|у|ом|е|ов)?\b(?!\s+стоя)"
     r")"
 )
 # Барахолка / мелочь в лирах — не недвижимость
@@ -1513,8 +1528,14 @@ class MessageMonitor:
         if _HOUSEHOLD_FOR_HOME_RE.search(text_lower):
             return set(n for n in niches if n not in REAL_ESTATE_NICHES)
 
-        # «пока он не дома» — наречие, не объект недвижимости
+        # «пока он не дома» / «чтобы дома стояли» — наречие, не объект недвижимости
         if _AT_HOME_ADVERB_RE.search(text_lower) and not _STRONG_HOUSING_RE.search(
+            text_lower
+        ):
+            return set(n for n in niches if n not in REAL_ESTATE_NICHES)
+
+        # «покупаю цветы чтобы дома стояли» — не продажа недвижимости
+        if _FLOWERS_AT_HOME_RE.search(text_lower) and not _STRONG_HOUSING_RE.search(
             text_lower
         ):
             return set(n for n in niches if n not in REAL_ESTATE_NICHES)
@@ -1695,7 +1716,7 @@ class MessageMonitor:
             niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
             logger.info("🔍 Бытовая техника «для дома»: убираем ниши недвижимости")
 
-        # «пока он не дома» / «я дома» — наречие, не спрос/продажа жилья
+        # «пока он не дома» / «я дома» / «чтобы дома стояли» — наречие, не жильё
         if (
             (niches & REAL_ESTATE_NICHES)
             and _AT_HOME_ADVERB_RE.search(text_lower)
@@ -1703,6 +1724,14 @@ class MessageMonitor:
         ):
             niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
             logger.info("🔍 Наречие «(не) дома» без жилья: убираем ниши недвижимости")
+
+        if (
+            (niches & REAL_ESTATE_NICHES)
+            and _FLOWERS_AT_HOME_RE.search(text_lower)
+            and not _STRONG_HOUSING_RE.search(text_lower)
+        ):
+            niches = set(n for n in niches if n not in REAL_ESTATE_NICHES)
+            logger.info("🔍 Цветы «дома стояли»: убираем ниши недвижимости")
 
         # «Скамеры» ≠ камера; FX + ложный Фотограф
         if "Фотограф" in niches and re.search(r"скамер|scammer", text_lower):

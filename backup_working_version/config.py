@@ -300,3 +300,11 @@ REQUIRE_CHANNEL_SUB = os.getenv("REQUIRE_CHANNEL_SUB", "1").lower() in (
     "yes",
     "on",
 )
+# На триале: без подписки на канал лиды не шлём (повторная проверка).
+REQUIRE_CHANNEL_DURING_TRIAL = os.getenv(
+    "REQUIRE_CHANNEL_DURING_TRIAL", "1"
+).lower() in ("1", "true", "yes", "on")
+# Кэш getChatMember, сек (чтобы не бить API на каждый лид).
+CHANNEL_MEMBER_CACHE_SEC = int(os.getenv("CHANNEL_MEMBER_CACHE_SEC", "300"))
+# Как часто напоминать отписавшемуся вернуться в канал.
+CHANNEL_NUDGE_COOLDOWN_SEC = int(os.getenv("CHANNEL_NUDGE_COOLDOWN_SEC", "21600"))
