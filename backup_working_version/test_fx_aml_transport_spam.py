@@ -31,6 +31,10 @@ Bank of Georgia
 LEGIT_FX = "Куплю USDT за наличные, личная встреча в Чангу"
 LEGIT_TRANSPORT = "Нужен трансфер из аэропорта в Чангу, такси на двоих"
 LEGIT_AIRPORT_TRANSFER = "Looking for airport transfer from DPS to Canggu"
+# Обфускация: тезееr + трцц20 — не «долгосрочная аренда»
+OBFUSCATED_TETHER = (
+    "Хочу брать тезееr трцц20 в долгосрок. Открыт к постоянному сотрудничеству."
+)
 
 
 class _Dummy:
@@ -60,6 +64,18 @@ async def test_niches() -> None:
 
     en = await mon._hybrid_classify_message(LEGIT_AIRPORT_TRANSFER)
     assert "Транспорт" in (en.get("niches") or []), en
+
+    tether = await mon._hybrid_classify_message(OBFUSCATED_TETHER)
+    niches = set(tether.get("niches") or [])
+    assert not niches.intersection(
+        {
+            "Недвижимость (Предложение)",
+            "Недвижимость (Спрос)",
+            "Продажа недвижимости",
+        }
+    ), tether
+    # Должен отсечься pre-filter FX, не уйти в GPT→realty
+    assert "FX/crypto" in (tether.get("reason") or ""), tether
 
 
 if __name__ == "__main__":

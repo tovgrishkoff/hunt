@@ -77,9 +77,11 @@ class SemanticSniper:
             # (омоглифы вроде USDТ нормализуются перед матчем)
             self.hard_spam_re = re.compile(
                 r"(?i)("
-                r"\busdt\b|\busdc\b|usd[tт]|usd[cс]|тезер|обмен\s+валют|"
-                r"наличк\w*\s+на\s+руках|купл\w*.{0,40}(?:usd|usdt|usdc|тезер)|"
-                r"прод\w*.{0,40}(?:usd|usdt|usdc|тезер)|"
+                r"\busdt\b|\busdc\b|usd[tт]|usd[cс]|tether|"
+                r"тезер|тез[еёe]{1,4}[рr]|обмен\s+валют|"
+                r"\b(?:trc|erc|bep)[\s\-]?20\b|\bтр[cсцkк]{1,3}[\s\-]?20\b|"
+                r"наличк\w*\s+на\s+руках|купл\w*.{0,40}(?:usd|usdt|usdc|тезер|tether)|"
+                r"прод\w*.{0,40}(?:usd|usdt|usdc|тезер|tether)|"
                 r"легк\w*\s+заработок|без\s+опыта\s+от\s+\d|"
                 r"крипт\w*|сигналы?\s+в\s+тг|"
                 r"казино|ставки\s+на\s+спорт|1xbet"

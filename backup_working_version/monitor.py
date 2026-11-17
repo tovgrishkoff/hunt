@@ -4,10 +4,11 @@ import re
 import html
 from patterns import PATTERNS, NICHES_KEYWORDS
 import spam_blocklist
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 import logging
 import json
+import time
 from config import (
     API_ID,
     API_HASH,
@@ -16,6 +17,13 @@ from config import (
     BOT_TOKEN,
     DB_DSN,
     MANAGER_URL,
+    ADMIN_CHAT_ID,
+    NEWS_CHANNEL,
+    NEWS_CHANNEL_URL,
+    REQUIRE_CHANNEL_SUB,
+    REQUIRE_CHANNEL_DURING_TRIAL,
+    CHANNEL_MEMBER_CACHE_SEC,
+    CHANNEL_NUDGE_COOLDOWN_SEC,
 )
 from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher.filters import Command
@@ -24,9 +32,16 @@ from database import Database
 from content import MONITORING_TOPICS
 from typing import Dict, List, Optional, Set
 from ai_classifier import AIClassifier
-from ai_sniper import SemanticSniper
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.exceptions import TelegramAPIError
+
+try:
+    from ai_sniper import SemanticSniper
+except Exception as _sniper_import_err:  # numpy/sentence-transformers могут отсутствовать
+    SemanticSniper = None  # type: ignore
+    logging.getLogger(__name__).warning(
+        "SemanticSniper unavailable: %s", _sniper_import_err
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -486,10 +501,18 @@ _HOUSING_WORD_RE = re.compile(
     r")\b"
 )
 _FX_CRYPTO_RE = re.compile(
-    r"(?i)\b(usdt|usdc|btc|bitcoin|ethereum|\beth\b|тезер\w*|крипт\w*|trc20|erc20|bep20)\b|"
+    r"(?i)(?:"
+    r"\b(?:usdt|usdc|btc|bitcoin|ethereum|\beth\b|tether\w*|крипт\w*)\b|"
+    # тезер / тезеер / тезееr (лат. r) / опечатки
+    r"\bтезер\w*\b|"
+    r"\bтез[еёe]{1,4}[рr]\w*\b|"
+    # trc20 / trc-20 / трцц20 / трс20 (обфускация сети)
+    r"\b(?:trc|erc|bep)[\s\-]?20\b|"
+    r"\bтр[cсцkк]{1,3}[\s\-]?20\b|"
     r"usd[tт]|usd[cс]|"
     r"наличк\w*\s+на\s+руках|"
     r"обмен\s+валют|курс\s+валют"
+    r")"
 )
 # Бытовая «машина» ≠ авто
 _APPLIANCE_MACHINE_RE = re.compile(
@@ -591,7 +614,11 @@ class MessageMonitor:
         # Улучшенная дедупликация сообщений
         self.message_hashes: Dict[str, datetime] = {}  # message_hash -> timestamp
         self.duplicate_window = 3600  # 1 час - окно для дедупликации
-        
+        # Кэш подписки на канал новостей: user_id -> (ok: bool, checked_at: float)
+        self._channel_member_cache: Dict[int, tuple] = {}
+        # Когда слали nudge «вернись в канал»: user_id -> unix ts
+        self._channel_nudge_at: Dict[int, float] = {}
+
         # AI классификатор (опционально)
         self.ai_classifier = None
         if openai_api_key:
@@ -604,12 +631,76 @@ class MessageMonitor:
 
         # Локальный семантический fallback (бесплатно, когда GPT недоступен)
         self.semantic_sniper = None
+        if SemanticSniper is not None:
+            try:
+                self.semantic_sniper = SemanticSniper()
+                logger.info("🎯 Semantic sniper инициализирован (GPT fallback)")
+            except Exception as e:
+                logger.warning(f"⚠️ Не удалось инициализировать semantic sniper: {e}")
+                self.semantic_sniper = None
+        else:
+            logger.warning("⚠️ Semantic sniper недоступен (нет зависимостей)")
+
+    async def _is_news_channel_member(self, user_id: int) -> bool:
+        """Подписка на канал новостей с коротким кэшем."""
+        now = time.time()
+        cached = self._channel_member_cache.get(user_id)
+        if cached and (now - cached[1]) < CHANNEL_MEMBER_CACHE_SEC:
+            return bool(cached[0])
         try:
-            self.semantic_sniper = SemanticSniper()
-            logger.info("🎯 Semantic sniper инициализирован (GPT fallback)")
+            member = await self.bot.get_chat_member(NEWS_CHANNEL, user_id)
+            status = getattr(member, "status", None)
+            ok = status in ("member", "administrator", "creator")
+            if status == "restricted":
+                ok = bool(getattr(member, "is_member", True))
         except Exception as e:
-            logger.warning(f"⚠️ Не удалось инициализировать semantic sniper: {e}")
-            self.semantic_sniper = None
+            logger.warning(
+                "channel membership check failed user=%s: %s", user_id, e
+            )
+            # fail-open на сбое API, чтобы не резать всех лидов из-за сети
+            ok = True
+        self._channel_member_cache[user_id] = (ok, now)
+        return ok
+
+    async def _nudge_resubscribe_channel(self, user_id: int) -> None:
+        """Один раз в N часов: вернись в канал, иначе лиды на паузе."""
+        now = time.time()
+        last = self._channel_nudge_at.get(user_id, 0.0)
+        if now - last < CHANNEL_NUDGE_COOLDOWN_SEC:
+            return
+        self._channel_nudge_at[user_id] = now
+        text = (
+            "📢 Лиды на паузе: нужна подписка на канал новостей Lead Hunter.\n\n"
+            f"Подпишитесь: {NEWS_CHANNEL_URL}\n\n"
+            "Как вернётесь в канал — заявки снова начнут приходить."
+        )
+        kb = InlineKeyboardMarkup(row_width=1)
+        kb.add(
+            InlineKeyboardButton("📢 Открыть канал", url=NEWS_CHANNEL_URL),
+            InlineKeyboardButton(
+                "✅ Я подписался — проверить", callback_data="check_news_sub"
+            ),
+        )
+        try:
+            await self.bot.send_message(user_id, text, reply_markup=kb)
+        except Exception as e:
+            logger.warning("channel nudge failed user=%s: %s", user_id, e)
+
+    async def _allow_lead_for_user(self, user_id: int, sub_status: dict) -> bool:
+        """На триале без канала — лиды не шлём. Платных не трогаем."""
+        if not REQUIRE_CHANNEL_SUB or not REQUIRE_CHANNEL_DURING_TRIAL:
+            return True
+        if str(user_id) == str(ADMIN_CHAT_ID):
+            return True
+        if not sub_status.get("trial_active"):
+            return True
+        if await self._is_news_channel_member(user_id):
+            return True
+        logger.info(
+            "🚫 Skip lead for trial user %s — not in %s", user_id, NEWS_CHANNEL
+        )
+        await self._nudge_resubscribe_channel(user_id)
+        return False
 
     def _create_message_hash(self, message_text: str, sender_id: int) -> str:
         """
@@ -2295,6 +2386,9 @@ class MessageMonitor:
                     break
                     
                 try:
+                    sub_status = await self.db.get_subscription_status(subscriber_id)
+                    if not await self._allow_lead_for_user(subscriber_id, sub_status):
+                        continue
                     await self.bot.send_message(
                         subscriber_id,
                         notification,
@@ -2724,6 +2818,8 @@ class MessageMonitor:
                 )
 
                 sub_status = await self.db.get_subscription_status(user_id)
+                if not await self._allow_lead_for_user(user_id, sub_status):
+                    continue
                 if sub_status.get("trial_active") and sub_status.get("trial_days_left") is not None:
                     days_left = sub_status["trial_days_left"]
                     notification += (
