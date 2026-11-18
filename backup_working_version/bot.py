@@ -34,6 +34,7 @@ import json
 from patterns import NICHES_KEYWORDS
 import os
 from pathlib import Path
+from typing import Optional
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -489,6 +490,7 @@ def register_handlers(dp: Dispatcher, monitor: MessageMonitor, bot: Bot):
         callback_pay_subscribe, lambda c: c.data in ("pay_subscribe", "subscribe")
     )
     dp.register_message_handler(cmd_help, Command("help"))
+    dp.register_message_handler(cmd_set_help_video, Command("set_help_video"))
     dp.register_message_handler(cmd_info, Command("info"))
     dp.register_message_handler(cmd_contact, Command("contact"))
     dp.register_message_handler(cmd_reset, Command("reset"))
@@ -617,23 +619,17 @@ async def cmd_start(message: Message, state: FSMContext):
             
             await message.answer(
                 "👋 *Привет! Я Lead_Hunterbot*\n\n"
-                "Я помогу вам получать актуальные предложения и запросы из Telegram-чатов по интересующим вас нишам.\n\n"
-                "📋 *КАК НАЧАТЬ РАБОТУ:*\n\n"
-                f"0️⃣ *Подпишитесь на канал* {NEWS_CHANNEL} — обязательно перед триалом\n"
-                "   (инструкции, обновления, фичи)\n\n"
-                "1️⃣ *Выберите ниши* 🗂\n"
-                "   👉 *🗂 Выбрать нишу* → отметьте ниши → *✅ Готово*\n\n"
-                "2️⃣ *(Опционально) Страны* 🌍\n"
-                "   👉 *🌍 Выбрать страну* → гео → *✅ Готово*\n"
-                "   👉 Без выбора стран — заявки из *всех* локаций\n\n"
-                "💡 *ВАЖНО:*\n"
-                "• Без выбора ниш уведомлений не будет\n"
-                f"• На триале — до *{TRIAL_MAX_NICHES} ниш*\n"
-                f"• *{TRIAL_DAYS}-дневный триал* стартует после подписки на канал + «✅ Готово»\n\n"
-                "❓ Вопросы — кнопка *❓ Помощь*.",
+                "Я присылаю живые заявки из Telegram-чатов по вашим нишам.\n\n"
+                f"0️⃣ Подпишитесь на {NEWS_CHANNEL}\n"
+                "1️⃣ *🗂 Выбрать нишу* → отметьте → *✅ Готово*\n"
+                "2️⃣ (по желанию) *🌍 Выбрать страну*\n\n"
+                f"На триале — до *{TRIAL_MAX_NICHES} ниш*, срок *{TRIAL_DAYS} дн.*\n"
+                f"Вопросы — @{MANAGER_USERNAME} или *❓ Помощь*.",
                 reply_markup=get_main_menu(),
                 parse_mode="Markdown",
             )
+            # Ролик «как нажимать» — сразу при старте
+            await _send_help_howto_video(message, with_menu=False)
             await ensure_news_channel_or_prompt(
                 bot=message.bot,
                 db=db,
@@ -646,6 +642,8 @@ async def cmd_start(message: Message, state: FSMContext):
             "Вы уже зарегистрированы! Используйте меню для навигации.",
             reply_markup=get_main_menu(),
         )
+        # На повторный /start тоже показываем ролик-инструкцию
+        await _send_help_howto_video(message, with_menu=False)
         await ensure_news_channel_or_prompt(
             bot=message.bot,
             db=db,
@@ -768,34 +766,133 @@ async def show_status(message: types.Message):
         status_text += "\n❌ Нет активных подписок. Используйте '🗂 Выбрать нишу'."
     await message.answer(status_text, reply_markup=get_main_menu())
 
-async def _send_help_howto_video(message: Message) -> bool:
-    """Отправляет ролик «как нажимать», если задан file_id или локальный файл."""
-    caption = "▶️ Короткий ролик: как выбрать ниши и пользоваться ботом"
+_HELP_VIDEO_CACHE_CANDIDATES = (
+    Path("data/help_video_file_id.txt"),
+    Path("/app/data/help_video_file_id.txt"),
+)
+
+
+def _help_video_cache_path() -> Path:
+    for candidate in _HELP_VIDEO_CACHE_CANDIDATES:
+        if candidate.parent.exists():
+            return candidate
+    return _HELP_VIDEO_CACHE_CANDIDATES[0]
+
+
+def _load_cached_help_video_file_id() -> Optional[str]:
+    if HELP_VIDEO_FILE_ID:
+        return HELP_VIDEO_FILE_ID
+    for candidate in _HELP_VIDEO_CACHE_CANDIDATES:
+        try:
+            value = candidate.read_text(encoding="utf-8").strip()
+            if value:
+                return value
+        except FileNotFoundError:
+            continue
+        except Exception as e:
+            logger.error(f"❌ Не удалось прочитать cache help-video: {e}")
+    return None
+
+
+def _save_cached_help_video_file_id(file_id: str) -> None:
+    if not file_id:
+        return
+    path = _help_video_cache_path()
     try:
-        if HELP_VIDEO_FILE_ID:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(file_id.strip() + "\n", encoding="utf-8")
+        logger.info(f"💾 Сохранён HELP video file_id → {path}")
+    except Exception as e:
+        logger.error(f"❌ Не удалось сохранить HELP video file_id: {e}")
+
+
+def _resolve_help_video_path() -> Optional[Path]:
+    candidates = [
+        Path(HELP_VIDEO_PATH),
+        Path("/app") / HELP_VIDEO_PATH,
+        Path("data/help_howto.mp4"),
+        Path("/app/data/help_howto.mp4"),
+        Path("media/help_howto.mp4"),
+        Path("/app/media/help_howto.mp4"),
+    ]
+    for candidate in candidates:
+        try:
+            if candidate.is_file() and candidate.stat().st_size > 0:
+                return candidate
+        except OSError:
+            continue
+    return None
+
+
+async def _send_help_howto_video(
+    message: Message,
+    *,
+    with_menu: bool = True,
+) -> bool:
+    """Отправляет ролик «как нажимать» (file_id / cache / локальный файл)."""
+    caption = "▶️ Короткий ролик: как выбрать ниши и пользоваться ботом"
+    markup = get_main_menu() if with_menu else None
+    try:
+        file_id = _load_cached_help_video_file_id()
+        if file_id:
             await message.answer_video(
-                HELP_VIDEO_FILE_ID,
+                file_id,
                 caption=caption,
-                reply_markup=get_main_menu(),
+                reply_markup=markup,
             )
             return True
 
-        video_path = Path(HELP_VIDEO_PATH)
-        if not video_path.is_file():
-            # Частый mount в Docker: /app/data/...
-            alt = Path("/app") / HELP_VIDEO_PATH
-            video_path = alt if alt.is_file() else video_path
-
-        if video_path.is_file():
-            await message.answer_video(
+        video_path = _resolve_help_video_path()
+        if video_path is not None:
+            sent = await message.answer_video(
                 InputFile(str(video_path)),
                 caption=caption,
-                reply_markup=get_main_menu(),
+                reply_markup=markup,
             )
+            try:
+                new_id = sent.video.file_id if sent and sent.video else None
+                if new_id:
+                    _save_cached_help_video_file_id(new_id)
+            except Exception as e:
+                logger.warning(f"⚠️ Не удалось закешировать file_id help-видео: {e}")
             return True
     except Exception as e:
         logger.error(f"❌ Не удалось отправить help-видео: {e}")
     return False
+
+
+@dp.message_handler(commands=["set_help_video"])
+async def cmd_set_help_video(message: Message):
+    """Админ: сохранить ролик помощи (ответом на видео или вместе с командой)."""
+    if str(message.from_user.id) != str(ADMIN_CHAT_ID) and message.from_user.username != ADMIN_USERNAME:
+        await message.answer("Эта команда доступна только администратору.")
+        return
+
+    src = message
+    if message.reply_to_message and (
+        message.reply_to_message.video or message.reply_to_message.video_note
+        or message.reply_to_message.document
+    ):
+        src = message.reply_to_message
+
+    file_id = None
+    if src.video:
+        file_id = src.video.file_id
+    elif src.video_note:
+        file_id = src.video_note.file_id
+    elif src.document and (src.document.mime_type or "").startswith("video/"):
+        file_id = src.document.file_id
+
+    if not file_id:
+        await message.answer(
+            "Пришлите видео вместе с /set_help_video или ответом на ролик.\n"
+            "После этого бот будет скидывать его на /start и в ❓ Помощь."
+        )
+        return
+
+    _save_cached_help_video_file_id(file_id)
+    await message.answer("✅ Ролик помощи сохранён. Проверка — отправляю его сейчас:")
+    await message.answer_video(file_id, caption="▶️ Короткий ролик: как пользоваться ботом")
 
 
 @dp.message_handler(lambda message: message.text == "❓ Помощь")
@@ -819,7 +916,6 @@ async def show_help(message: Message):
 
     sent_video = await _send_help_howto_video(message)
     if not sent_video:
-        # Меню внизу всё равно возвращаем, даже без ролика.
         await message.answer(
             "Если нужно — менеджер пришлёт короткий ролик, как нажимать в боте.",
             reply_markup=get_main_menu(),
