@@ -516,10 +516,26 @@ def _is_offer(lead: Dict[str, Any]) -> bool:
     return False
 
 
+def _strip_lead_greetings(text: str) -> str:
+    """Drop Hello/Привет lines so topic is the real ask, not the greeting."""
+    t = (text or "").strip()
+    # Remove leading greeting lines (RU/EN), keep the rest.
+    t = re.sub(
+        r"^(?:(?:"
+        r"hi|hey|hello(?:\s+everyone)?|good\s+(?:morning|afternoon|evening)|"
+        r"привет(?:ик)?|всем\s+привет|здравствуйте|добрый\s+(?:день|вечер|утро)"
+        r")[^\n]*)(?:\n+|[,!.\s]+)+",
+        "",
+        t,
+        flags=re.I,
+    )
+    return t.strip(" \n\t,-")
+
+
 def _topic_from_lead(lead: Dict[str, Any]) -> str:
     """Short human topic, not a pasted ad block."""
-    raw = (lead.get("message_text") or "").strip()
-    text = re.sub(r"[🏡🌴📍💵💰🔥✅•|]+", " ", raw)
+    raw = _strip_lead_greetings((lead.get("message_text") or "").strip())
+    text = re.sub(r"[🏡🌴📍💵💰🔥✅•|🙏❤️]+", " ", raw)
     text = re.sub(r"\s+", " ", text).strip(" .,-")
     low = text.lower()
 
@@ -545,26 +561,36 @@ def _topic_from_lead(lead: Dict[str, Any]) -> str:
         return f"{kind}{place} в аренду"
     if re.search(r"банковск\w*\s+счет|открыть\s+счет", low):
         return "как открыть банковский счёт по турвизе"
-    if re.search(r"байк|scooter|nmax|xmax", low):
+    if re.search(r"\b(car|auto|автомобил|машин[аыуе]?|xenia|avanza|innova|xpander)\b", low) and re.search(
+        r"need|ищу|нужн|арен|rent|for\s+\d", low
+    ):
+        return "аренду машины"
+    if re.search(r"байк|scooter|nmax|xmax|scoopy|vario|filano|fazio", low):
         return "аренду байка"
     if re.search(r"экскур|тур(а|ы|истов)?", low) and "виз" not in low:
         return "экскурсии / локальные туры"
 
     niches = [str(n).strip() for n in (lead.get("niches") or []) if str(n).strip()]
-    # Take a short verb phrase if present.
+    # Take a short verb phrase if present (RU/EN).
     m = re.search(
-        r"((?:ищу|ищем|нужен|нужна|нужно|подскажите|looking for)[^.!?]{0,60})",
+        r"((?:ищу|ищем|нужен|нужна|нужно|подскажите|looking for|i need|need)[^.!?]{0,60})",
         text,
         flags=re.I,
     )
     if m:
-        return _snip(m.group(1).strip(" ,;-"), 70)
+        phrase = m.group(1).strip(" ,;-")
+        # Soft-normalize noisy EN into short RU-ish topic when possible.
+        pl = phrase.lower()
+        if re.search(r"\bcar\b|машин", pl):
+            return "аренду машины"
+        if re.search(r"bike|scooter|байк", pl):
+            return "аренду байка"
+        return _snip(phrase, 70)
     first = re.split(r"[.!?\n]", text)[0].strip()
     first = _snip(first, 60)
     if niches and first:
         return _snip(f"{niches[0].lower()}: {first}", 70)
     return _snip(first or (niches[0] if niches else "ваш запрос"), 70)
-
 
 def _questions_for_lead(lead: Dict[str, Any]) -> Tuple[str, str]:
     niches = " ".join(str(n).lower() for n in (lead.get("niches") or []))
