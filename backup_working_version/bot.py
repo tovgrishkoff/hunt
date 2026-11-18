@@ -628,8 +628,6 @@ async def cmd_start(message: Message, state: FSMContext):
                 reply_markup=get_main_menu(),
                 parse_mode="Markdown",
             )
-            # Ролик «как нажимать» — сразу при старте
-            await _send_help_howto_video(message, with_menu=False)
             await ensure_news_channel_or_prompt(
                 bot=message.bot,
                 db=db,
@@ -642,8 +640,6 @@ async def cmd_start(message: Message, state: FSMContext):
             "Вы уже зарегистрированы! Используйте меню для навигации.",
             reply_markup=get_main_menu(),
         )
-        # На повторный /start тоже показываем ролик-инструкцию
-        await _send_help_howto_video(message, with_menu=False)
         await ensure_news_channel_or_prompt(
             bot=message.bot,
             db=db,
@@ -897,7 +893,7 @@ async def cmd_set_help_video(message: Message):
 
 @dp.message_handler(lambda message: message.text == "❓ Помощь")
 async def show_help(message: Message):
-    """Короткий help: контакт менеджера + ролик (если есть)."""
+    """Короткий help: контакт менеджера."""
     help_text = (
         "❓ *Помощь*\n\n"
         f"По всем вопросам пишите менеджеру: @{MANAGER_USERNAME}\n\n"
@@ -913,13 +909,6 @@ async def show_help(message: Message):
         parse_mode="Markdown",
         reply_markup=kb,
     )
-
-    sent_video = await _send_help_howto_video(message)
-    if not sent_video:
-        await message.answer(
-            "Если нужно — менеджер пришлёт короткий ролик, как нажимать в боте.",
-            reply_markup=get_main_menu(),
-        )
 
 @dp.message_handler(Command("status"))
 async def cmd_status(message: Message):
