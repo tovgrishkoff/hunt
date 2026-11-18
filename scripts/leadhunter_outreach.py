@@ -546,7 +546,17 @@ def _topic_from_lead(lead: Dict[str, Any]) -> str:
         if m:
             place = f" в {_place_locative(m.group(1))}"
         return f"соседку на виллу{place}"
-    if re.search(r"(сдам|сдаётся|сдается|таунхаус|вилл[аыу]|квартир)", low) and _is_offer(lead):
+    if re.search(r"\b(car|auto|автомобил|машин[аыуе]?|xenia|avanza|innova|xpander)\b", low) and re.search(
+        r"need|ищу|нужн|арен|rent|сдам|for\s+\d", low
+    ):
+        return "аренду машины"
+    if re.search(r"байк|scooter|nmax|xmax|scoopy|vario|filano|fazio|pcx", low):
+        return "аренду байка"
+    if (
+        re.search(r"(сдам|сдаётся|сдается|таунхаус|вилл[аыу]|квартир)", low)
+        and _is_offer(lead)
+        and not re.search(r"байк|scooter|nmax|xmax|scoopy|vario|машин|\bcar\b", low)
+    ):
         place = ""
         m = re.search(r"(сесех|ченгу|чангу|кута|убуд|будук|переренан|сеими|бо\s*пхут)", low)
         if m:
@@ -561,12 +571,6 @@ def _topic_from_lead(lead: Dict[str, Any]) -> str:
         return f"{kind}{place} в аренду"
     if re.search(r"банковск\w*\s+счет|открыть\s+счет", low):
         return "как открыть банковский счёт по турвизе"
-    if re.search(r"\b(car|auto|автомобил|машин[аыуе]?|xenia|avanza|innova|xpander)\b", low) and re.search(
-        r"need|ищу|нужн|арен|rent|for\s+\d", low
-    ):
-        return "аренду машины"
-    if re.search(r"байк|scooter|nmax|xmax|scoopy|vario|filano|fazio", low):
-        return "аренду байка"
     if re.search(r"экскур|тур(а|ы|истов)?", low) and "виз" not in low:
         return "экскурсии / локальные туры"
 

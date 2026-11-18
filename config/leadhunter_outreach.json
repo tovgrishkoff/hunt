@@ -173,7 +173,7 @@
       },
       {
         "id": "search_one_q",
-        "text": "Привет{name_part}! По {topic} ещё в поиске? Если да - {q1}?"
+        "text": "Привет{name_part}! Ещё ищете {topic}? Если да - {q1}?"
       }
     ],
     "first_touch_offer": [
