@@ -1,0 +1,91 @@
+{
+  "description": "US soft warmup: validated American groups only (resolve+search). Prefer new finds first.",
+  "day": 2,
+  "source": "config/us_groups_validated.json + DB seed cleaned",
+  "go_live_after": "2026-11-19",
+  "dm_pilot": {
+    "enabled": true,
+    "started_at": "2026-11-18",
+    "per_account_max_dm": 1,
+    "accounts": [
+      "promotion_tony_mack",
+      "promotion_sabrina_morgan",
+      "promotion_jessica_oconnor",
+      "promotion_kevin_lopez",
+      "promotion_suzzane_pearson"
+    ],
+    "note": "Soft DM pilot: 5 US accounts at 1 DM/day via leadhunter writers; rest stay warmup-only."
+  },
+  "accounts": [
+    "promotion_tony_mack",
+    "promotion_sabrina_morgan",
+    "promotion_jessica_oconnor",
+    "promotion_james_benjamin",
+    "promotion_hannah_mann",
+    "promotion_kevin_lopez",
+    "promotion_suzzane_pearson",
+    "promotion_kevin_jimenez",
+    "promotion_lauren_green",
+    "promotion_amy_acosta",
+    "promotion_deborah_clark",
+    "promotion_anna_wiggins",
+    "promotion_rhona_cole",
+    "promotion_troy_jones",
+    "promotion_jason_osborne"
+  ],
+  "priority_for_go_live": [
+    "promotion_tony_mack",
+    "promotion_sabrina_morgan"
+  ],
+  "limits": {
+    "max_joins_per_account": 1,
+    "max_story_views_per_account": 8,
+    "messages_to_scan_for_story_peers": 40,
+    "delay_within_account_min_sec": 15.5,
+    "delay_within_account_max_sec": 40.5,
+    "delay_between_accounts_min_sec": 120.5,
+    "delay_between_accounts_max_sec": 240.5,
+    "delay_between_story_views_min_sec": 10.5,
+    "delay_between_story_views_max_sec": 28.5,
+    "stop_on_floodwait": true
+  },
+  "groups": [
+    "miami2020russian",
+    "usapa",
+    "onegood_usa",
+    "ChatNewYork1",
+    "USAworks",
+    "USA_Drivers_Chat",
+    "russiansinmiami",
+    "russians_miami_chat",
+    "russiausachat",
+    "usa_people_ru",
+    "russianUSA_choogl",
+    "gofortravel_chat",
+    "docprep",
+    "russians_in_usa",
+    "new_york_city_russian",
+    "russian_in_usa",
+    "OURinUSA",
+    "RussiansDoFlorida",
+    "Russianslosangeles",
+    "USACHATRU",
+    "chicago_chat_ru",
+    "group_newyork",
+    "miamichatru",
+    "newyorkchatru",
+    "newyorkforeveryone",
+    "nomadsfamilyusa",
+    "ponayekhaliamerica",
+    "ru_inmiami",
+    "russains_in_la",
+    "usa_chat_ru",
+    "usa_relocation"
+  ],
+  "notes": [
+    "Groups chosen ONLY after live Telethon validation / search.",
+    "Not from stale targets_usa.txt dead usernames.",
+    "American accounts -> American RU chats.",
+    "2026-11-18: dm_pilot on 5 accounts @ 1 DM/day; others continue join+stories only."
+  ]
+}

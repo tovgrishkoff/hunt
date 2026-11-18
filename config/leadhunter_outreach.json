@@ -1,0 +1,213 @@
+{
+  "id": "leadhunter_dm_outreach",
+  "description": "Базовые правила рассылки ЛС + прогрев 1/день. Первый контакт человеческий, Lead Hunter только после ответа.",
+  "send_enabled": true,
+  "dry_run_default": true,
+  "timezone": "Asia/Makassar",
+  "lead_payloads_path": "/home/tovgrishkoff/mvp2105/data/lead_payloads.json",
+  "state_path": "/home/tovgrishkoff/PIAR/telegram_promotion_system_bali/data/leadhunter_outreach_state.json",
+  "accounts_config_path": "/home/tovgrishkoff/PIAR/telegram_promotion_system_bali/accounts_config.json",
+  "manual_recipients_path": "/home/tovgrishkoff/PIAR/telegram_promotion_system_bali/data/leadhunter_manual_recipients.txt",
+  "bot_username": "Lead_Hunbot",
+  "bot_url": "https://t.me/Lead_Hunbot",
+  "offers": {
+    "jayshambo": {
+      "site_url": "https://jayshambo.com",
+      "default_url": "https://jayshambo.com",
+      "tours": {
+        "put_k_sebe": "https://jayshambo.com/tours/put-k-sebe-retreat-puteshestvie-po-sakralnomu-bali",
+        "weekend": "https://jayshambo.appspot.com/tours/retrit-vyhodnogo-dnya-bali",
+        "india": "https://jayshambo.appspot.com/tours/dusha-indii-tam-gde-ostanavlivaetsya-vremya",
+        "kailas": "https://jayshambo.com/tours/kai-las-svyaschennaya-kora-iz-lhasy"
+      }
+    }
+  },
+  "dialog": {
+    "enabled": true,
+    "provider": "claude",
+    "model": "claude-sonnet-4-5-20250929",
+    "openai_model": "gpt-4o-mini",
+    "temperature": 0.75,
+    "max_tokens": 220,
+    "max_length": 420,
+    "voice": "threads_narrative",
+    "history_limit": 16,
+    "max_ai_replies_per_dialog": 8,
+    "min_inbound_before_bot_link": 2,
+    "force_bot_link_after_inbound": 4,
+    "max_dialogs_per_run": 6,
+    "jayshambo_for_tourism_search": true,
+    "tourism_niche_keywords": [
+      "туризм",
+      "ретрит",
+      "йога",
+      "travel",
+      "путеше",
+      "экскур",
+      "палом",
+      "кайлас",
+      "kailas"
+    ],
+    "tourism_text_keywords": [
+      "экскурси",
+      "ретрит",
+      "йог",
+      "путешеств",
+      "тур в",
+      "туры",
+      "туроператор",
+      "паломнич",
+      "кайлас",
+      "kailas",
+      "тибет",
+      "лхаса",
+      "манасаровар",
+      "холи",
+      "варанаси",
+      "гимала",
+      "медитац",
+      "сакральн",
+      "путь к себе"
+    ],
+    "exclude_from_tourism_niches": [
+      "недвижимост",
+      "байк",
+      "авто",
+      "транспорт",
+      "маникюр",
+      "брови",
+      "ресниц",
+      "волос",
+      "косметолог",
+      "макияж",
+      "фотограф",
+      "видеограф",
+      "playstation",
+      "кальян",
+      "обмен валют"
+    ]
+  },
+  "recipients": {
+    "sources": ["monitoring", "manual"],
+    "manual_usernames": []
+  },
+  "rules": {
+    "do_not_rewrite_months": 6,
+    "skip_inactive_days": 30,
+    "min_delay_floor_sec": 15,
+    "default_delay_min_sec": 60,
+    "default_delay_max_sec": 120,
+    "work_hours": {
+      "enabled": true,
+      "start_hour": 9,
+      "end_hour": 21
+    },
+    "stop_after_consecutive_complaints": 2
+  },
+  "recovery": {
+    "auto_resume_hours": 6,
+    "demote_to_join_on_complaint": true,
+    "restart_account_manager_on_demote": true,
+    "bali_accounts_config_path": "/home/tovgrishkoff/PIAR/telegram_promotion_system_bali/bali_accounts_config.json"
+  },
+  "writers": [
+    "promotion_artem_knyazev",
+    "promotion_daniil_birg",
+    "promotion_shanon_armstrong",
+    "promotion_tony_mack",
+    "promotion_sabrina_morgan",
+    "promotion_jessica_oconnor",
+    "promotion_kevin_lopez",
+    "promotion_suzzane_pearson"
+  ],
+  "limits": {
+    "max_dm_per_day_per_account": 2,
+    "per_account_max_dm": {
+      "promotion_artem_knyazev": 3,
+      "promotion_shanon_armstrong": 3,
+      "promotion_daniil_birg": 1,
+      "promotion_tony_mack": 1,
+      "promotion_sabrina_morgan": 1,
+      "promotion_jessica_oconnor": 1,
+      "promotion_kevin_lopez": 1,
+      "promotion_suzzane_pearson": 1
+    },
+    "max_dm_per_run": 1,
+    "min_delay_between_dm_sec": 90,
+    "max_delay_between_dm_sec": 180,
+    "min_lead_age_minutes": 10,
+    "max_lead_age_hours": 72,
+    "pause_hours_on_peer_flood": 6,
+    "pause_hours_on_privacy": 24,
+    "stop_on_floodwait": true
+  },
+  "filters": {
+    "require_username_or_id": true,
+    "allowed_message_types": [
+      "ПОИСК",
+      "ПРЕДЛОЖЕНИЕ"
+    ],
+    "deny_username_substrings": [
+      "bot",
+      "admin",
+      "moderator",
+      "informant",
+      "keeper",
+      "hunter"
+    ],
+    "min_text_chars": 25,
+    "max_text_chars": 500,
+    "skip_if_no_niches_when_present": false,
+    "require_enriched": true
+  },
+  "copy": {
+    "first_touch_search": [
+      {
+        "id": "search_next_step",
+        "text": "Привет{name_part}! Увидел, что вы ищете {topic}. Скажите, {q1}? И ещё {q2}. Могу порекомендовать сервис, где как раз бывают такие кандидаты."
+      },
+      {
+        "id": "search_orient",
+        "text": "Привет{name_part}! Зацепило ваш запрос про {topic}. Ещё актуально? Если да, напишите {q1} и {q2}. Могу скинуть, где обычно смотрят такие варианты."
+      },
+      {
+        "id": "search_short",
+        "text": "Привет{name_part}! По «{topic}» вопрос ещё открыт? Если да, скажите {q1}. Могу порекомендовать сервис, где есть такие кандидаты."
+      },
+      {
+        "id": "search_human_soft",
+        "text": "Привет{name_part}! По вашему «{topic}» ещё ищете? Если да, напишите {q1}. Знаю место, где такие люди сами откликаются."
+      }
+    ],
+    "first_touch_offer": [
+      {
+        "id": "offer_who_needed",
+        "text": "Привет{name_part}! Увидел ваше предложение про {topic}. Кому сейчас нужнее отклик и на какой срок? Могу порекомендовать сервис, где как раз ищут такое."
+      },
+      {
+        "id": "offer_priority",
+        "text": "Привет{name_part}! По вашему объявлению про {topic} что важнее сейчас, скорость или более точный отклик? Если скажете 1–2 детали про идеального клиента, могу подсказать, где таких обычно ловят."
+      },
+      {
+        "id": "offer_short",
+        "text": "Привет{name_part}! Зацепило предложение про {topic}. Ещё актуально? Кому ищете в первую очередь? Могу порекомендовать сервис с живыми заявками по теме."
+      }
+    ],
+    "first_touch": [
+      {
+        "id": "fallback_human",
+        "text": "Привет{name_part}! По теме «{topic}» ещё актуально? Если да, напишите одну деталь, что важнее всего сейчас. Могу порекомендовать сервис, где такие варианты встречаются."
+      }
+    ],
+    "followup_after_reply": [
+      {
+        "id": "soft_lh_after_dialog",
+        "text": "Кстати, если такие запросы нужны регулярно, можно не сидеть вручную во всех чатах. Lead Hunter сам ловит живые заявки по нишам и странам и кидает в бот {bot_url}. Если зайдёт, коротко покажу, как настроить под вашу тему."
+      },
+      {
+        "id": "soft_lh_offer",
+        "text": "И ещё момент. Если вы на стороне спроса или предложения и такие сообщения важны постоянно, вот сервис, который это автоматизирует, Lead Hunter {bot_url}. Могу подсказать с чего начать, без навязывания."
+      }
+    ]
+  }
+}
