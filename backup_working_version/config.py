@@ -288,6 +288,12 @@ SUBSCRIPTION_STARS = int(os.getenv("SUBSCRIPTION_STARS", "3900"))
 MANAGER_USERNAME = os.getenv("MANAGER_USERNAME", "huansya0").lstrip("@")
 MANAGER_URL = f"https://t.me/{MANAGER_USERNAME}"
 
+# Ролик «как пользоваться» для кнопки/команды помощи.
+# 1) HELP_VIDEO_FILE_ID — Telegram file_id (предпочтительно, без повторной загрузки)
+# 2) HELP_VIDEO_PATH — локальный mp4/mov (по умолчанию data/help_howto.mp4)
+HELP_VIDEO_FILE_ID = (os.getenv("HELP_VIDEO_FILE_ID") or "").strip() or None
+HELP_VIDEO_PATH = os.getenv("HELP_VIDEO_PATH", "data/help_howto.mp4").strip()
+
 # Обязательная подписка на канал новостей перед стартом триала
 NEWS_CHANNEL = os.getenv("NEWS_CHANNEL", "@LeadHunterNews")
 NEWS_CHANNEL_URL = os.getenv(

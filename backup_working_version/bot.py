@@ -16,11 +16,13 @@ from config import (
     SUBSCRIPTION_STARS,
     MANAGER_USERNAME,
     MANAGER_URL,
+    HELP_VIDEO_FILE_ID,
+    HELP_VIDEO_PATH,
     NEWS_CHANNEL,
     NEWS_CHANNEL_URL,
     REQUIRE_CHANNEL_SUB,
 )
-from aiogram.types import LabeledPrice, ContentTypes
+from aiogram.types import LabeledPrice, ContentTypes, InputFile
 from database import Database
 from datetime import datetime, timezone
 from content import get_topic_content, get_available_topics, get_topic_description, get_topic_keywords
@@ -31,6 +33,7 @@ from utils import is_message_allowed
 import json
 from patterns import NICHES_KEYWORDS
 import os
+from pathlib import Path
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -765,29 +768,62 @@ async def show_status(message: types.Message):
         status_text += "\n❌ Нет активных подписок. Используйте '🗂 Выбрать нишу'."
     await message.answer(status_text, reply_markup=get_main_menu())
 
+async def _send_help_howto_video(message: Message) -> bool:
+    """Отправляет ролик «как нажимать», если задан file_id или локальный файл."""
+    caption = "▶️ Короткий ролик: как выбрать ниши и пользоваться ботом"
+    try:
+        if HELP_VIDEO_FILE_ID:
+            await message.answer_video(
+                HELP_VIDEO_FILE_ID,
+                caption=caption,
+                reply_markup=get_main_menu(),
+            )
+            return True
+
+        video_path = Path(HELP_VIDEO_PATH)
+        if not video_path.is_file():
+            # Частый mount в Docker: /app/data/...
+            alt = Path("/app") / HELP_VIDEO_PATH
+            video_path = alt if alt.is_file() else video_path
+
+        if video_path.is_file():
+            await message.answer_video(
+                InputFile(str(video_path)),
+                caption=caption,
+                reply_markup=get_main_menu(),
+            )
+            return True
+    except Exception as e:
+        logger.error(f"❌ Не удалось отправить help-видео: {e}")
+    return False
+
+
 @dp.message_handler(lambda message: message.text == "❓ Помощь")
 async def show_help(message: Message):
-    help_text = "🤖 *Как пользоваться ботом:*\n\n"
-    help_text += "1. 🗂 Выберите ниши для мониторинга\n"
-    help_text += "2. ⏳ Получите 7-дневный триал\n"
-    help_text += "3. 📨 Получайте актуальную информацию\n"
-    help_text += "4. 📊 Следите за статусом подписки\n\n"
-    
-    help_text += "📋 *Доступные ниши для мониторинга:*\n\n"
-    
-    # Добавляем описания всех ниш
-    for niche in NICHES:
-        if niche in NICHE_DESCRIPTIONS:
-            description = NICHE_DESCRIPTIONS[niche]
-            help_text += f"• *{niche}*: {description}\n\n"
-    
-    help_text += "💡 *Совет:* Вы можете выбрать несколько ниш одновременно!\n\n"
-    help_text += "📞 *Контакты менеджера для связи:*\n\n"
-    help_text += f"👤 Менеджер: @{MANAGER_USERNAME}\n"
-    help_text += "💬 По всем вопросам обращайтесь к менеджеру в Telegram\n\n"
-    help_text += "❓ Если у вас возникли вопросы или проблемы, напишите менеджеру - он поможет!"
-    
-    await message.answer(help_text, parse_mode="Markdown", reply_markup=get_main_menu())
+    """Короткий help: контакт менеджера + ролик (если есть)."""
+    help_text = (
+        "❓ *Помощь*\n\n"
+        f"По всем вопросам пишите менеджеру: @{MANAGER_USERNAME}\n\n"
+        "Он подскажет по нишам, триалу и подписке."
+    )
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="💬 Написать менеджеру", url=MANAGER_URL)],
+        ]
+    )
+    await message.answer(
+        help_text,
+        parse_mode="Markdown",
+        reply_markup=kb,
+    )
+
+    sent_video = await _send_help_howto_video(message)
+    if not sent_video:
+        # Меню внизу всё равно возвращаем, даже без ролика.
+        await message.answer(
+            "Если нужно — менеджер пришлёт короткий ролик, как нажимать в боте.",
+            reply_markup=get_main_menu(),
+        )
 
 @dp.message_handler(Command("status"))
 async def cmd_status(message: Message):
