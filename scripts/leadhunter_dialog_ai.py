@@ -110,14 +110,18 @@ PROMPT_LEADHUNTER = """Ты пишешь в Telegram личку. Не бот и 
 2. Не здоровайся повторно, если уже писал в этом диалоге.
 3. Первое наше сообщение было коротким (контекст + вопрос). Дальше раскрывай диалог
    от их ответа: уточни деталь, дай короткий полезный совет по теме. Не лей шаблон.
-4. Прогрев поэтапно:
+4. Если они думают, что ты сдаёшь/продаёшь то из их поста (цена, фото, «что есть»):
+   честно скажи, что сам это не сдаёшь/не продаёшь; увидел запрос в чате.
+   Не извиняйся длинно и НЕ меняй тему на другой пункт их поста вдруг.
+   Один короткий вопрос по их реальному запросу. Lead Hunter пока НЕ питчи.
+5. Прогрев поэтапно:
    - 1-й ответ после их реплики: только по их ответу, оффер НЕ питчи;
    - середина: мягко про мониторинг чатов / откуда клиенты;
    - когда уместно: предложи Lead Hunter и дай ссылку {offer_url}.
-5. Ссылку — не чаще одного раза, пока сам не попросит.
-6. Не выдумывай тарифы и гарантии.
-7. Отказ/стоп — коротко извинись и стоп.
-8. Ответ = только текст одного сообщения.
+6. Ссылку — не чаще одного раза, пока сам не попросит.
+7. Не выдумывай тарифы, наличие авто/жилья и гарантии.
+8. Отказ/стоп — коротко извинись и стоп.
+9. Ответ = только текст одного сообщения.
 """
 
 PROMPT_JAYSHAMBO = """Ты пишешь в Telegram личку. Не бот и не менеджер.
@@ -156,6 +160,19 @@ def is_opt_out(text: str) -> bool:
 
 def looks_interested(text: str) -> bool:
     return bool(INTEREST_RE.search(text or ""))
+
+
+def expects_product_fulfillment(text: str) -> bool:
+    """They think we rent/sell the thing from their post (price, photos, stock)."""
+    t = (text or "").lower()
+    return bool(
+        re.search(
+            r"(цена|цену|прайс|фото|фотк|что\s+есть|чо\s+у\s+вас|какие\s+есть|"
+            r"наличие|можно\s+взять|сколько\s+стоит|price|photos?|what\s+do\s+you\s+have)",
+            t,
+        )
+    )
+
 
 
 def _norm_list(values: Any) -> List[str]:
@@ -424,7 +441,9 @@ def build_messages(
         if msg.get("role") == "user":
             latest = str(msg.get("content") or "")
             break
-    allow_link = (not offer_link_sent) and (
+    # First reply / «цена/фото» — не форсить ссылку, даже при force_after.
+    wants_product = expects_product_fulfillment(latest) or our_replies <= 0
+    allow_link = (not offer_link_sent) and (not wants_product) and (
         inbound_count >= force_after
         or (inbound_count >= min_before and looks_interested(latest))
     )
@@ -654,12 +673,15 @@ async def generate_reply(
         if msg.get("role") == "user":
             latest_user = str(msg.get("content") or "")
             break
-    should_link = (not link_sent) and (
+    wants_product = expects_product_fulfillment(latest_user) or our_replies <= 0
+    should_link = (not link_sent) and (not wants_product) and (
         inbound_count >= force_after
         or (inbound_count >= min_before and looks_interested(latest_user))
     )
 
-    if contains_link and not link_sent and inbound_count < min_before:
+    if contains_link and not link_sent and (
+        inbound_count < min_before or wants_product
+    ):
         text = strip_offer_links(text, offer, cfg)
         if not text:
             text = (

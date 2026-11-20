@@ -131,7 +131,15 @@
     "promotion_daniil_birg",
     "promotion_shanon_armstrong",
     "promotion_tony_mack",
-    "promotion_sabrina_morgan"
+    "promotion_sabrina_morgan",
+    "promotion_jessica_oconnor",
+    "promotion_kevin_lopez",
+    "promotion_suzzane_pearson",
+    "promotion_james_benjamin",
+    "promotion_hannah_mann",
+    "promotion_anna_wiggins",
+    "promotion_kevin_jimenez",
+    "promotion_lauren_green"
   ],
   "limits": {
     "max_dm_per_day_per_account": 2,
@@ -140,9 +148,17 @@
       "promotion_shanon_armstrong": 3,
       "promotion_daniil_birg": 1,
       "promotion_tony_mack": 1,
-      "promotion_sabrina_morgan": 1
+      "promotion_sabrina_morgan": 1,
+      "promotion_jessica_oconnor": 1,
+      "promotion_kevin_lopez": 1,
+      "promotion_suzzane_pearson": 1,
+      "promotion_james_benjamin": 1,
+      "promotion_hannah_mann": 1,
+      "promotion_anna_wiggins": 1,
+      "promotion_kevin_jimenez": 1,
+      "promotion_lauren_green": 1
     },
-    "max_dm_per_run": 1,
+    "max_dm_per_run": 2,
     "min_delay_between_dm_sec": 90,
     "max_delay_between_dm_sec": 180,
     "min_lead_age_minutes": 10,
@@ -182,7 +198,7 @@
       },
       {
         "id": "search_looking_short",
-        "text": "Привет{name_part}! Искали {topic} - вопрос ещё открыт?"
+        "text": "Привет{name_part}! В чате искали {topic} - вопрос ещё открыт?"
       },
       {
         "id": "search_one_q",

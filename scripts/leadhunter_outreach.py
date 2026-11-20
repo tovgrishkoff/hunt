@@ -535,32 +535,39 @@ def _strip_lead_greetings(text: str) -> str:
 def _topic_from_lead(lead: Dict[str, Any]) -> str:
     """Short human topic, not a pasted ad block."""
     raw = _strip_lead_greetings((lead.get("message_text") or "").strip())
-    text = re.sub(r"[🏡🌴📍💵💰🔥✅•|🙏❤️]+", " ", raw)
+    # Drop markdown/noise so patterns see «автомобиль», not **автомобиль**.
+    text = re.sub(r"[*_`~]+", " ", raw)
+    text = re.sub(r"[🏡🌴📍💵💰🔥✅•|🙏❤️]+", " ", text)
     text = re.sub(r"\s+", " ", text).strip(" .,-")
     low = text.lower()
 
+    place = ""
+    m_place = re.search(
+        r"(dubai\s*marina|сесех|ченгу|чангу|кута|убуд|будук|переренан|сеими|бо\s*пхут)",
+        low,
+    )
+    if m_place:
+        raw_place = m_place.group(1)
+        if "dubai" in raw_place:
+            place = " в Dubai Marina"
+        else:
+            place = f" в {_place_locative(raw_place)}"
+
     # Pattern-based compact topics for common intents.
     if re.search(r"ищу\s+сосед", low):
-        place = ""
-        m = re.search(r"(сесех|ченгу|чангу|кута|убуд|будук|переренан|сеими)", low)
-        if m:
-            place = f" в {_place_locative(m.group(1))}"
         return f"соседку на виллу{place}"
-    if re.search(r"\b(car|auto|автомобил|машин[аыуе]?|xenia|avanza|innova|xpander)\b", low) and re.search(
+    # «автомобиль» / «машину» — не полагаться на \b после корня (мешает «ь»).
+    if re.search(r"(автомоб\w*|машин\w*|\bcar\b|\bauto\b|xenia|avanza|innova|xpander)", low) and re.search(
         r"need|ищу|нужн|арен|rent|сдам|for\s+\d", low
     ):
-        return "аренду машины"
+        return f"аренду машины{place}"
     if re.search(r"байк|scooter|nmax|xmax|scoopy|vario|filano|fazio|pcx", low):
-        return "аренду байка"
+        return f"аренду байка{place}"
     if (
         re.search(r"(сдам|сдаётся|сдается|таунхаус|вилл[аыу]|квартир)", low)
         and _is_offer(lead)
-        and not re.search(r"байк|scooter|nmax|xmax|scoopy|vario|машин|\bcar\b", low)
+        and not re.search(r"байк|scooter|nmax|xmax|scoopy|vario|машин|автомоб|\bcar\b", low)
     ):
-        place = ""
-        m = re.search(r"(сесех|ченгу|чангу|кута|убуд|будук|переренан|сеими|бо\s*пхут)", low)
-        if m:
-            place = f" в {_place_locative(m.group(1))}"
         kind = "жильё"
         if "таунхаус" in low:
             kind = "таунхаус"
@@ -571,11 +578,14 @@ def _topic_from_lead(lead: Dict[str, Any]) -> str:
         return f"{kind}{place} в аренду"
     if re.search(r"банковск\w*\s+счет|открыть\s+счет", low):
         return "как открыть банковский счёт по турвизе"
+    if re.search(r"менеджер|сотрудник|в команду|на процент|sales|hiring|вакан", low) and re.search(
+        r"ищу|ищем|нужн|требуется|looking for|need", low
+    ):
+        return "сотрудников / менеджеров"
     if re.search(r"экскур|тур(а|ы|истов)?", low) and "виз" not in low:
         return "экскурсии / локальные туры"
 
     niches = [str(n).strip() for n in (lead.get("niches") or []) if str(n).strip()]
-    # Take a short verb phrase if present (RU/EN).
     m = re.search(
         r"((?:ищу|ищем|нужен|нужна|нужно|подскажите|looking for|i need|need)[^.!?]{0,60})",
         text,
@@ -583,14 +593,21 @@ def _topic_from_lead(lead: Dict[str, Any]) -> str:
     )
     if m:
         phrase = m.group(1).strip(" ,;-")
-        # Soft-normalize noisy EN into short RU-ish topic when possible.
+        # Drop leading «Нужен/Ищу» so templates like «Искали {topic}» read clean.
+        phrase = re.sub(
+            r"^(?:ищу|ищем|нужен|нужна|нужно|looking for|i need|need)\s+",
+            "",
+            phrase,
+            flags=re.I,
+        ).strip(" ,;-")
         pl = phrase.lower()
-        if re.search(r"\bcar\b|машин", pl):
-            return "аренду машины"
+        if re.search(r"\bcar\b|машин|автомоб", pl):
+            return f"аренду машины{place}"
         if re.search(r"bike|scooter|байк", pl):
-            return "аренду байка"
-        return _snip(phrase, 70)
+            return f"аренду байка{place}"
+        return _snip(phrase or "ваш запрос", 70)
     first = re.split(r"[.!?\n]", text)[0].strip()
+    first = re.sub(r"^(?:срочно!?\s*)", "", first, flags=re.I)
     first = _snip(first, 60)
     if niches and first:
         return _snip(f"{niches[0].lower()}: {first}", 70)
