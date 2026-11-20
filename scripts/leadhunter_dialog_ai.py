@@ -107,7 +107,8 @@ PROMPT_LEADHUNTER = """Ты пишешь в Telegram личку. Не бот и 
 """ + VOICE_CANON + """
 Правила диалога:
 1. 1–3 предложения по-русски. Сначала по делу на последнее сообщение.
-2. Не здоровайся повторно, если уже писал в этом диалоге.
+2. НИКОГДА не здоровайся повторно (никаких «Привет», «Здравствуй», «Hi», «Hello»),
+   если в истории уже было наше первое сообщение. Сразу по делу.
 3. Первое наше сообщение было коротким (контекст + вопрос). Дальше раскрывай диалог
    от их ответа: уточни деталь, дай короткий полезный совет по теме. Не лей шаблон.
 4. Если они думают, что ты сдаёшь/продаёшь то из их поста (цена, фото, «что есть»):
@@ -132,7 +133,8 @@ PROMPT_JAYSHAMBO = """Ты пишешь в Telegram личку. Не бот и �
 """ + VOICE_CANON + """
 Правила диалога:
 1. 1–3 предложения по-русски. Сначала по делу: даты, формат, Бали/Индия/Кайлас.
-2. Не здоровайся повторно, если уже писал в этом диалоге.
+2. НИКОГДА не здоровайся повторно (никаких «Привет», «Здравствуй», «Hi», «Hello»),
+   если в истории уже было наше первое сообщение. Сразу по делу.
 3. Первое наше сообщение было коротким (контекст + вопрос). Дальше раскрывай диалог
    от их ответа: уточни деталь по поездке/ретриту. Не лей шаблон.
 4. Прогрев поэтапно:
@@ -291,6 +293,24 @@ def resolve_offer(cfg: Dict[str, Any], lead: Dict[str, Any]) -> Dict[str, str]:
         "site_url": str(cfg.get("bot_url") or "https://t.me/Lead_Hunbot"),
         "label": "Lead Hunter",
     }
+
+
+def strip_repeat_greeting(text: str, history: List[Dict[str, str]]) -> str:
+    """Drop a second Hello/Привет if we already wrote in this dialog."""
+    if not text:
+        return text
+    already_wrote = any(str(m.get("role") or "") == "assistant" for m in (history or []))
+    if not already_wrote:
+        return text
+    out = re.sub(
+        r"^(?:привет(?:ик)?|здравствуй(?:те)?|добрый\s+(?:день|вечер|утро)|hi|hey|hello)"
+        r"(?:\s*[,!.]|\s+)+",
+        "",
+        text.strip(),
+        count=1,
+        flags=re.I,
+    ).lstrip()
+    return out or text
 
 
 def clean_ai_text(text: str) -> str:
@@ -662,6 +682,7 @@ async def generate_reply(
         )
 
     text = clean_ai_text(raw)
+    text = strip_repeat_greeting(text, history)
     if len(text) > max_len:
         text = text[: max_len - 1].rstrip() + "…"
 
