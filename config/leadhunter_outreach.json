@@ -118,7 +118,8 @@
       "start_hour": 9,
       "end_hour": 21
     },
-    "stop_after_consecutive_complaints": 2
+    "stop_after_consecutive_complaints": 2,
+    "one_contact_one_writer": true
   },
   "recovery": {
     "auto_resume_hours": 6,
@@ -158,7 +159,7 @@
       "promotion_kevin_jimenez": 1,
       "promotion_lauren_green": 1
     },
-    "max_dm_per_run": 2,
+    "max_dm_per_run": 1,
     "min_delay_between_dm_sec": 90,
     "max_delay_between_dm_sec": 180,
     "min_lead_age_minutes": 10,

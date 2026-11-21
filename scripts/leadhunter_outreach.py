@@ -898,6 +898,15 @@ def cmd_ingest(cfg: Dict[str, Any], state: Dict[str, Any]) -> int:
             ingested[lead_id] = {"at": _now().isoformat(), "skip": "already_contacted"}
             bump("already_contacted")
             continue
+        # One contact -> one queue slot (different posts by same user share contact_key).
+        if ckey and any(
+            _lead_contact_key((q.get("lead") or {})) == ckey
+            and q.get("status") in {"new", "planned"}
+            for q in queue
+        ):
+            ingested[lead_id] = {"at": _now().isoformat(), "skip": "contact_already_queued"}
+            bump("contact_already_queued")
+            continue
         item = {
             "lead_id": lead_id,
             "status": "new",
@@ -935,6 +944,7 @@ def plan_batch(cfg: Dict[str, Any], state: Dict[str, Any], limit: int) -> List[D
     run_cap = min(limit, int(limits.get("max_dm_per_run") or 5))
     planned: List[Dict[str, Any]] = []
     writer_load: Dict[str, int] = {}
+    reserved_contacts: set[str] = set()
 
     for item in list(state.get("queue") or []):
         if len(planned) >= run_cap:
@@ -956,6 +966,10 @@ def plan_batch(cfg: Dict[str, Any], state: Dict[str, Any], limit: int) -> List[D
         if ckey and _contacted_recently(state, ckey, months):
             item["status"] = "skipped"
             item["skip_reason"] = "already_contacted"
+            continue
+        if ckey in reserved_contacts:
+            item["status"] = "skipped"
+            item["skip_reason"] = "duplicate_contact_in_batch"
             continue
 
         # choose writer with remaining daily room including this plan
@@ -993,6 +1007,8 @@ def plan_batch(cfg: Dict[str, Any], state: Dict[str, Any], limit: int) -> List[D
         item["variant_id"] = variant_id
         item["planned_at"] = _now().isoformat()
         writer_load[chosen] = writer_load.get(chosen, 0) + 1
+        if ckey:
+            reserved_contacts.add(ckey)
         planned.append(plan)
 
     save_state(cfg, state)
@@ -1343,6 +1359,24 @@ async def cmd_send_async(cfg: Dict[str, Any], state: Dict[str, Any], limit: int,
         if writer and _is_account_paused(state, writer):
             results["writer_paused"] = results.get("writer_paused", 0) + 1
             continue
+        # Hard rule: 1 contact -> 1 account. Re-check after earlier sends in this run.
+        ckey = str(plan.get("contact_key") or "")
+        months = float((_rules(cfg).get("do_not_rewrite_months") or 6))
+        if ckey and _contacted_recently(state, ckey, months):
+            prev = (state.get("contacted") or {}).get(ckey) or {}
+            if str(prev.get("lead_id") or "") != str(plan.get("lead_id") or ""):
+                logger.warning(
+                    "skip duplicate contact %s (already by %s)",
+                    ckey,
+                    prev.get("writer"),
+                )
+                for item in state.get("queue") or []:
+                    if item.get("lead_id") == plan.get("lead_id"):
+                        item["status"] = "skipped"
+                        item["skip_reason"] = "already_contacted"
+                        break
+                results["duplicate_contact"] = results.get("duplicate_contact", 0) + 1
+                continue
         if i > 0 and live:
             delay = random.uniform(lo, hi)
             logger.info("sleep %.1fs before next DM", delay)
