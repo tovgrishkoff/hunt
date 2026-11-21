@@ -1,7 +1,5 @@
 {
-  "allowed_accounts": [
-    "promotion_Nicegram"
-  ],
+  "allowed_accounts": [],
   "join_accounts": [
     "promotion_suzan_thompson",
     "promotion_luic_bruce",
@@ -57,5 +55,14 @@
     "rule": "American numbers (+1) only on American proxies (socks5 ResZcz @ 196.19.*).",
     "us_proxy_prefix": "196.19.",
     "non_us_proxy_prefix": "170.168."
-  }
+  },
+  "contacts_view_accounts": [
+    "promotion_Nicegram",
+    "promotion_daniil_birg",
+    "promotion_luic_bruce",
+    "promotion_shanon_armstrong",
+    "promotion_suzan_thompson"
+  ],
+  "nicegram_mode": "join_stories",
+  "notes_nicegram": "Nicegram: join groups + story views only (no group posting until write-ready)."
 }

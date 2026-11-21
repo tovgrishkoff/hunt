@@ -85,8 +85,14 @@ class StoryViewer:
                         with open(p, 'r', encoding='utf-8') as f:
                             data = json.load(f)
                         allowed = data.get('allowed_accounts') or []
-                        if allowed:
-                            self.contacts_view_accounts |= {s for s in allowed if s}
+                        join_extra = data.get('join_accounts') or []
+                        contacts_extra = data.get('contacts_view_accounts') or []
+                        merged = {
+                            s for s in list(allowed) + list(join_extra) + list(contacts_extra)
+                            if s
+                        }
+                        if merged:
+                            self.contacts_view_accounts |= merged
                             logger.info(
                                 "Bali: аккаунты из bali_accounts_config добавлены в просмотр сторис: %s",
                                 sorted(self.contacts_view_accounts),
