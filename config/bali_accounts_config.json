@@ -1,17 +1,54 @@
 {
   "allowed_accounts": [
-    "promotion_lisa_soak",
-    "promotion_anna_truncher",
-    "promotion_artur_biggest",
-    "promotion_oleg_petrov",
-    "promotion_Masha Sinugina",
-    "promotion_lev_moiseev",
-    "promotion_lera_katina",
-    "promotion_new_account",
-    "promotion_new_account_2"
+    "promotion_dao_bro",
+    "promotion_alex_ever",
+    "promotion_Nicegram"
+  ],
+  "join_accounts": [
+    "promotion_suzan_thompson",
+    "promotion_luic_bruce",
+    "promotion_daniil_birg",
+    "promotion_shanon_armstrong",
+    "promotion_Nicegram"
   ],
   "description": "Конфигурация аккаунтов для системы Bali - аккаунты для постинга",
   "allowed_accounts_description": "Список session_name аккаунтов, которые ДОЛЖНЫ использоваться в системе Bali для постинга",
-  "last_updated": "2026-02-10",
-  "note": "Добавлены promotion_lev_moiseev (Lev Moiseev), promotion_lera_katina (Lera Katina). promotion_new_account_2 = @grishkoff (аккаунт владельца)"
+  "join_accounts_description": "PeerFlood / join-only: только вступления + просмотр сторис без реакций и без инициации ЛС. Marketer их не берёт.",
+  "last_updated": "2026-11-16",
+  "note": "Маркетолог не трогает fresh-тройку и шестёрку «Путь к себе». Их ведёт scripts/guerrilla_put_k_sebe.py. | Nicegram parked hold — не трогать, не stories/outreach/listen. | 2026-11-16: Suzan+Luic в join_accounts (PeerFlood на ЛС).",
+  "excluded_accounts": [
+    "promotion_artem_knyazev",
+    "promotion_daniil_birg",
+    "promotion_luic_bruce",
+    "promotion_shanon_armstrong",
+    "promotion_suzan_thompson",
+    "promotion_anna_truncher",
+    "promotion_artur_biggest",
+    "promotion_lisa_soak",
+    "promotion_Masha Sinugina",
+    "promotion_lera_katina",
+    "promotion_oleg_petrov",
+    "promotion_igor_veru",
+    "promotion_valeri_samb",
+    "promotion_new_account",
+    "promotion_lev_moiseev",
+    "promotion_rod_shaihutdinov",
+    "promotion_olesya_slobogenko"
+  ],
+  "excluded_reason": "fresh soft pipeline и guerrilla_put_k_sebe держатся вне основного marketer; Suzan/Luic — join-only через join_accounts",
+  "listener_accounts": [
+    "promotion_Masha Sinugina",
+    "promotion_anna_truncher",
+    "promotion_artur_biggest",
+    "promotion_igor_veru",
+    "promotion_lera_katina",
+    "promotion_lev_moiseev",
+    "promotion_lisa_soak",
+    "promotion_new_account",
+    "promotion_oleg_petrov",
+    "promotion_olesya_slobogenko",
+    "promotion_rod_shaihutdinov",
+    "promotion_valeri_samb"
+  ],
+  "notes_listener": "Accounts that cannot write/post go to Lead Hunter listen + story views; not used for group posting."
 }

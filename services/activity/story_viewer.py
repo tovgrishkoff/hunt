@@ -12,6 +12,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func, and_
 
 from telethon.tl.functions.stories import (
+    GetAllStoriesRequest,
     GetPeerStoriesRequest,
     IncrementStoryViewsRequest,
     ReadStoriesRequest,
@@ -66,21 +67,65 @@ class StoryViewer:
         self.MIN_DELAY_BETWEEN_USERS = 5
         self.MAX_DELAY_BETWEEN_USERS = 15
         
-        # Аккаунты для просмотра Stories контактов (диалоги). Для Bali при необходимости подгружаем всех из bali_accounts_config
+        # Аккаунты для просмотра Stories контактов (диалоги).
+        # Для Bali нам важно, чтобы сторис смотрели те же промо-аккаунты, что постят.
         self.contacts_view_accounts = set(activity_config.get('contacts_view_accounts', []))
+        # Снимок явного списка из JSON до merge — не даём story_view_excluded_accounts выкинуть эти сессии
+        self.explicit_contacts_view_session_names = set(self.contacts_view_accounts)
         if self.niche_config.get('name') == 'bali':
-            for p in [Path('/app/config/bali_accounts_config.json'), Path('/app/bali_accounts_config.json'), Path('config/bali_accounts_config.json'), Path('bali_accounts_config.json')]:
+            # 1) Подтягиваем allowed_accounts из bali_accounts_config.json (как было)
+            for p in [
+                Path('/app/config/bali_accounts_config.json'),
+                Path('/app/bali_accounts_config.json'),
+                Path('config/bali_accounts_config.json'),
+                Path('bali_accounts_config.json'),
+            ]:
                 if p.exists():
                     try:
                         with open(p, 'r', encoding='utf-8') as f:
                             data = json.load(f)
                         allowed = data.get('allowed_accounts') or []
                         if allowed:
-                            self.contacts_view_accounts = self.contacts_view_accounts | {s for s in allowed if s}
-                            logger.info("Bali: все аккаунты из bali_accounts_config добавлены в просмотр сторис: %s", sorted(self.contacts_view_accounts))
+                            self.contacts_view_accounts |= {s for s in allowed if s}
+                            logger.info(
+                                "Bali: аккаунты из bali_accounts_config добавлены в просмотр сторис: %s",
+                                sorted(self.contacts_view_accounts),
+                            )
                             break
                     except Exception as e:
                         logger.warning("Не удалось загрузить %s: %s", p, e)
+
+            # 2) Дополнительно расширяем список всеми active+niche='bali' аккаунтами из БД,
+            # чтобы охватить promotion_new_account (@grishkoff) и остальных постящих.
+            try:
+                db = SessionLocal()
+                try:
+                    bali_accounts = (
+                        db.query(Account.session_name)
+                        .filter(
+                            Account.status.in_(("active", "cooldown", "listener")),
+                            Account.niche == "bali",
+                        )
+                        .all()
+                    )
+                    from_db = {row[0] for row in bali_accounts if row[0]}
+                    if from_db:
+                        self.contacts_view_accounts |= from_db
+                        logger.info(
+                            "Bali: добавлены active и cooldown niche='bali' для просмотра сторис: %s",
+                            sorted(from_db),
+                        )
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.warning("Не удалось загрузить Bali-аккаунты из БД для сторис: %s", e)
+
+            # Усиливаем активность по умолчанию для Bali (если в конфиге не задано жёстко)
+            if self.STORY_VIEW_PROBABILITY < 0.8:
+                self.STORY_VIEW_PROBABILITY = 0.8
+            if self.STORY_REACTION_PROBABILITY < 0.3:
+                self.STORY_REACTION_PROBABILITY = 0.3
+
         self.contacts_dialogs_limit = activity_config.get('contacts_dialogs_limit', 300)
         # Юзернеймы, которых не смотрим и не лайкаем (бан-лист)
         self.story_view_exclude_usernames = set(
@@ -96,6 +141,15 @@ class StoryViewer:
             1.0,
             max(0.0, float(activity_config.get('story_view_priority_reaction_probability', 1.0)))
         )
+        # PeerFlood / join-only: смотрят сторис, но не ставят реакции и не инициируют ЛС.
+        self.story_no_reaction_accounts = set(
+            s for s in activity_config.get('story_no_reaction_accounts', []) if s
+        )
+        if self.story_no_reaction_accounts:
+            logger.info(
+                "Story reactions disabled for accounts: %s",
+                sorted(self.story_no_reaction_accounts),
+            )
     
     def get_viewed_stories_today(self, db, account_id: int) -> set:
         """
@@ -225,15 +279,47 @@ class StoryViewer:
                 if not getattr(p, 'bot', False) and hasattr(p, 'id')
             ]
             
-            logger.debug(f"  👥 Получено {len(filtered)} участников из {group.username}")
+            logger.info(f"  👥 {group.username}: участников {len(filtered)}")
             return filtered
             
         except (ChannelPrivateError, ChatAdminRequiredError, UserNotParticipantError) as e:
-            logger.debug(f"  ⚠️ Не удалось получить участников из {group.username}: {e}")
+            logger.info(f"  👥 {group.username}: список участников закрыт ({e.__class__.__name__})")
             return []
         except Exception as e:
             logger.warning(f"  ⚠️ Ошибка получения участников из {group.username}: {e}")
             return []
+
+    async def view_story_feed(self, client, account: Account, remaining_views: int) -> Tuple[int, int]:
+        """Смотрит сторис из ленты аккаунта, а не только из случайных участников чата."""
+        viewed = 0
+        reactions = 0
+        try:
+            result = await client(GetAllStoriesRequest())
+        except FloodWaitError as e:
+            logger.warning(f"  ⏳ FloodWait {e.seconds}с на ленту сторис {account.session_name}")
+            return 0, 0
+        except RPCError as e:
+            logger.info(f"  📖 {account.session_name}: лента сторис недоступна ({e.__class__.__name__})")
+            return 0, 0
+
+        peer_stories = getattr(result, "peer_stories", None) or []
+        users = {
+            user.id: user
+            for user in (getattr(result, "users", None) or [])
+            if getattr(user, "id", None)
+        }
+        logger.info(f"  📖 {account.session_name}: в ленте {len(peer_stories)} человек со сторис")
+        for item in peer_stories:
+            if viewed >= remaining_views:
+                break
+            user_id = getattr(getattr(item, "peer", None), "user_id", None)
+            user = users.get(user_id)
+            if user is None or getattr(user, "bot", False):
+                continue
+            v, r = await self.view_user_stories(client, account, user, group=None)
+            viewed += v
+            reactions += r
+        return viewed, reactions
     
     async def view_user_stories(
         self,
@@ -336,8 +422,20 @@ class StoryViewer:
                             viewed_at=datetime.utcnow()
                         )
                         
-                        # Ставим реакцию с вероятностью (для приоритетных — своя, обычно 1.0)
-                        reaction_prob = self.story_view_priority_reaction_probability if is_priority else self.STORY_REACTION_PROBABILITY
+                        # Ставим реакцию с вероятностью (для приоритетных — своя, обычно 1.0).
+                        # join-only / PeerFlood-аккаунты только смотрят, без лайков.
+                        no_react = account.session_name in getattr(
+                            self, "story_no_reaction_accounts", set()
+                        )
+                        reaction_prob = (
+                            0.0
+                            if no_react
+                            else (
+                                self.story_view_priority_reaction_probability
+                                if is_priority
+                                else self.STORY_REACTION_PROBABILITY
+                            )
+                        )
                         if random.random() <= reaction_prob:
                             try:
                                 reaction = random.choice(self.STORY_REACTIONS)
@@ -413,7 +511,7 @@ class StoryViewer:
         groups = db.query(Group).filter(
             and_(
                 Group.assigned_account_id == account_id,
-                Group.status == 'active',
+                Group.status.in_(('active', 'joined')),
                 Group.can_post == True
             )
         ).limit(limit).all()
@@ -458,8 +556,15 @@ class StoryViewer:
             
             total_viewed = 0
             total_reactions = 0
+
+            feed_viewed, feed_reactions = await self.view_story_feed(
+                client, account, remaining_views
+            )
+            total_viewed += feed_viewed
+            total_reactions += feed_reactions
             
             # Проверяем, является ли аккаунт аккаунтом для просмотра контактов
+            contacts = []
             if account.session_name in self.contacts_view_accounts:
                 # Режим просмотра Stories контактов (диалогов)
                 logger.info(f"  📱 Аккаунт {account.session_name}: режим просмотра Stories контактов")
@@ -468,8 +573,10 @@ class StoryViewer:
                 contacts = await self.get_contacts_from_dialogs(client, limit=self.contacts_dialogs_limit)
                 
                 if not contacts:
-                    logger.info(f"  ℹ️ Аккаунт {account.session_name}: нет контактов в диалогах")
-                    return 0, 0
+                    logger.info(
+                        f"  ℹ️ Аккаунт {account.session_name}: нет контактов в диалогах, "
+                        "смотрю сторис участников групп"
+                    )
                 
                 logger.info(f"  📋 Аккаунт {account.session_name}: найдено {len(contacts)} контактов")
                 
@@ -504,8 +611,8 @@ class StoryViewer:
                 
                 logger.info(f"  ✅ Аккаунт {account.session_name}: обработано {processed_count} контактов")
                 
-            else:
-                # Режим просмотра Stories участников групп (стандартный)
+            if total_viewed == 0:
+                # В личке нечего смотреть — сторис участников своих групп.
                 # Получаем группы, закрепленные за аккаунтом
                 groups = self.get_active_groups_for_account(db, account.id, limit=10)
                 
@@ -575,7 +682,14 @@ class StoryViewer:
         db = SessionLocal()
         try:
             # Получаем активные аккаунты
-            accounts = db.query(Account).filter(Account.status == 'active').all()
+            accounts = (
+                db.query(Account)
+                .filter(
+                    Account.status.in_(("active", "cooldown")),
+                    Account.niche == "bali",
+                )
+                .all()
+            )
             
             if not accounts:
                 logger.warning("⚠️ Нет активных аккаунтов")
@@ -584,6 +698,14 @@ class StoryViewer:
             # Исключения из просмотра (опционально из конфига ниши; по умолчанию никого не исключаем)
             activity_cfg = (self.niche_config or {}).get('activity', {})
             excluded_sessions = set(activity_cfg.get('story_view_excluded_accounts', []))
+            protected = getattr(self, "explicit_contacts_view_session_names", set())
+            overlap = excluded_sessions & protected
+            if overlap:
+                logger.warning(
+                    "Снято с story_view_excluded_accounts (явные contacts_view_accounts): %s",
+                    sorted(overlap),
+                )
+                excluded_sessions -= protected
             if excluded_sessions:
                 accounts = [a for a in accounts if a.session_name not in excluded_sessions]
                 logger.info("Исключены из просмотра сторис: %s", sorted(excluded_sessions))
@@ -608,7 +730,15 @@ class StoryViewer:
             other_accounts = [
                 a for a in account_snapshots if a.session_name not in self.contacts_view_accounts
             ]
-            ordered_accounts = [*contacts_accounts, *other_accounts]
+            # @grishkoff (promotion_new_account) долго идёт по сотне диалогов.
+            # Остальных пускаем первыми, иначе они ждут весь цикл.
+            def _story_order(snapshot: AccountSnapshot) -> tuple:
+                return (snapshot.session_name == "promotion_new_account", snapshot.session_name)
+
+            ordered_accounts = sorted(
+                [*contacts_accounts, *other_accounts],
+                key=_story_order,
+            )
 
             logger.info(f"📋 Обработка {len(account_snapshots)} активных аккаунтов...")
             
@@ -620,9 +750,18 @@ class StoryViewer:
                     # Если клиент не загрузился (часто из-за AuthKeyDuplicatedError),
                     # пропускаем без задержек.
                     if account.session_name not in self.client_manager.clients:
-                        logger.warning(
-                            f"⚠️ Клиент {account.session_name} не загружен, пропускаем"
-                        )
+                        if account.session_name in getattr(
+                            self, "explicit_contacts_view_session_names", set()
+                        ):
+                            logger.warning(
+                                "⚠️ Клиент %s не загружен — сторис из контактов пропущены. "
+                                "Проверьте прокси/сессию (Telethon не подключился при старте activity).",
+                                account.session_name,
+                            )
+                        else:
+                            logger.warning(
+                                f"⚠️ Клиент {account.session_name} не загружен, пропускаем"
+                            )
                         continue
 
                     viewed, reactions = await self.process_account(account)
