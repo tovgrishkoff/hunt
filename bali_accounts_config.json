@@ -50,5 +50,10 @@
     "promotion_rod_shaihutdinov",
     "promotion_valeri_samb"
   ],
-  "notes_listener": "Accounts that cannot write/post go to Lead Hunter listen + story views; not used for group posting."
+  "notes_listener": "Accounts that cannot write/post go to Lead Hunter listen + story views; not used for group posting.",
+  "proxy_policy": {
+    "rule": "American numbers (+1) only on American proxies (socks5 ResZcz @ 196.19.*).",
+    "us_proxy_prefix": "196.19.",
+    "non_us_proxy_prefix": "170.168."
+  }
 }

@@ -1,8 +1,21 @@
 {
-  "description": "US soft warmup: validated American groups only (resolve+search). Prefer new finds first.",
-  "day": 2,
+  "description": "US soft warmup: home channel + RU-US groups + stories/photos. No posts/DMs for write_disabled.",
+  "day": 4,
   "source": "config/us_groups_validated.json + DB seed cleaned",
+  "home_channel": "LeadHunterNews",
   "go_live_after": "2026-11-19",
+  "write_disabled_accounts": [
+    "promotion_us_claim_848",
+    "promotion_clara_smith",
+    "promotion_us_claim_785",
+    "promotion_veronica_us",
+    "promotion_kayle_spears",
+    "promotion_amy_acosta",
+    "promotion_deborah_clark",
+    "promotion_jason_osborne",
+    "promotion_rhona_cole",
+    "promotion_troy_jones"
+  ],
   "dm_pilot": {
     "enabled": true,
     "started_at": "2026-11-18",
@@ -17,13 +30,8 @@
     "note": "Soft DM pilot: 5 US accounts at 1 DM/day via leadhunter writers; rest stay warmup-only."
   },
   "accounts": [
-    "promotion_tony_mack",
-    "promotion_sabrina_morgan",
-    "promotion_jessica_oconnor",
     "promotion_james_benjamin",
     "promotion_hannah_mann",
-    "promotion_kevin_lopez",
-    "promotion_suzzane_pearson",
     "promotion_kevin_jimenez",
     "promotion_lauren_green",
     "promotion_amy_acosta",
@@ -31,7 +39,17 @@
     "promotion_anna_wiggins",
     "promotion_rhona_cole",
     "promotion_troy_jones",
-    "promotion_jason_osborne"
+    "promotion_jason_osborne",
+    "promotion_tony_mack",
+    "promotion_sabrina_morgan",
+    "promotion_jessica_oconnor",
+    "promotion_kevin_lopez",
+    "promotion_suzzane_pearson",
+    "promotion_clara_smith",
+    "promotion_veronica_us",
+    "promotion_us_claim_848",
+    "promotion_us_claim_785",
+    "promotion_kayle_spears"
   ],
   "priority_for_go_live": [
     "promotion_tony_mack",
@@ -40,6 +58,7 @@
   "limits": {
     "max_joins_per_account": 1,
     "max_story_views_per_account": 8,
+    "max_channel_posts_to_view": 12,
     "messages_to_scan_for_story_peers": 40,
     "delay_within_account_min_sec": 15.5,
     "delay_within_account_max_sec": 40.5,
@@ -86,6 +105,18 @@
     "Groups chosen ONLY after live Telethon validation / search.",
     "Not from stale targets_usa.txt dead usernames.",
     "American accounts -> American RU chats.",
-    "2026-11-18: dm_pilot on 5 accounts @ 1 DM/day; others continue join+stories only."
-  ]
+    "2026-11-18: dm_pilot on 5 accounts @ 1 DM/day; others continue join+stories only.",
+    "2026-11-20: claim5 (848/Clara/785/Veronica/Kayle) warmup-only: join @LeadHunterNews + photos + 1 US group + stories. NO writers/DMs.",
+    "US phone numbers (+1) MUST use US proxies only (196.19.*/ResZcz socks5). Never 170.168.*/UENrLA."
+  ],
+  "proxy_policy": {
+    "us_phones": "+1",
+    "allowed_proxy_hosts_prefix": [
+      "196.19."
+    ],
+    "allowed_proxy_user": "ResZcz",
+    "forbidden_proxy_hosts_prefix": [
+      "170.168."
+    ]
+  }
 }
