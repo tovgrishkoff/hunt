@@ -41,6 +41,9 @@ NEGATIVES: List[str] = [
     # Грузчики ≠ SMM (local sniper semantic FP)
     "нужны грузчики",
     "Нужны грузчики на переезд",
+    # BDSM seek ≠ Аренда байков (local sniper semantic FP)
+    "Ищу госпожу",
+    "ищу госпожу",
 ]
 
 

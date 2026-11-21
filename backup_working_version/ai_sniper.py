@@ -202,6 +202,10 @@ class SemanticSniper:
                 "Заказы по AI",
                 "Удаленная работа",
                 "Тех. специалисты",
+                # Иначе «ищу госпожу» → Аренда байков на 84% без байк-слов
+                "Аренда байков",
+                "Аренда авто",
+                "Транспорт",
             }
 
             # Грузчики / movers — не digital-ниши
@@ -210,6 +214,17 @@ class SemanticSniper:
                 r"грузчик\w*|movers?|loaders?|"
                 r"(?:погруз|выгруз|разгруз)\w*.{0,40}(?:вещ|мебел|квартир|грузовик)|"
                 r"(?:нужны|ищем|требуется).{0,60}(?:на\s+)?переезд"
+                r")"
+            )
+
+            # BDSM/эскорт-поиск — не услуга ниши
+            self.adult_seek_re = re.compile(
+                r"(?i)("
+                r"госпож\w*|"
+                r"(?:ищу|ищем|нужн\w*|хочу).{0,40}"
+                r"(?:господин\w*|рабын\w*|раба\b|доминант\w*|сабмиссив\w*|"
+                r"mistress|dominatrix)|"
+                r"\bbdsm\b|\bбдсм\b"
                 r")"
             )
 
@@ -482,6 +497,8 @@ class SemanticSniper:
             return {"is_lead": False, "niche": None, "score": 0, "reason": "hard_spam"}
         if self.movers_job_re.search(text.lower()):
             return {"is_lead": False, "niche": None, "score": 0, "reason": "movers_job"}
+        if self.adult_seek_re.search(text.lower()):
+            return {"is_lead": False, "niche": None, "score": 0, "reason": "adult_seek"}
 
         try:
             best_niche, max_score, _, _ = self._best_niche(text)
@@ -545,6 +562,10 @@ class SemanticSniper:
 
         if self.movers_job_re.search(text_lower):
             empty["reason"] = "sniper: movers_job"
+            return empty
+
+        if self.adult_seek_re.search(text_lower):
+            empty["reason"] = "sniper: adult_seek"
             return empty
 
         if not self.intent_re.search(text_lower):
