@@ -18,6 +18,7 @@ from telethon.tl.functions.stories import (
     ReadStoriesRequest,
     SendReactionRequest,
 )
+from telethon.tl.functions.contacts import AddContactRequest
 from telethon.tl.types import ReactionEmoji
 from telethon.errors import (
     FloodWaitError,
@@ -524,6 +525,75 @@ class StoryViewer:
         
         return groups
     
+    async def ensure_and_view_priority_stories(
+        self, client, account: Account, remaining_views: int
+    ) -> Tuple[int, int]:
+        """Добавить приоритетных юзеров в контакты и сразу посмотреть их сторис."""
+        if not self.story_view_priority_usernames or remaining_views <= 0:
+            return 0, 0
+
+        me = await client.get_me()
+        my_username = (getattr(me, "username", None) or "").lower()
+        viewed_total = 0
+        reactions_total = 0
+
+        for uname in sorted(self.story_view_priority_usernames):
+            if viewed_total >= remaining_views:
+                break
+            if not uname or uname == my_username:
+                continue
+            try:
+                entity = await client.get_entity(uname)
+            except Exception as e:
+                logger.warning(
+                    "  ⚠️ %s: не резолвится приоритет @%s: %s",
+                    account.session_name,
+                    uname,
+                    e,
+                )
+                continue
+
+            # В контакты — чтобы стабильно попадал в ленту Stories.
+            try:
+                await client(
+                    AddContactRequest(
+                        id=await client.get_input_entity(entity),
+                        first_name=(getattr(entity, "first_name", None) or uname)[:64],
+                        last_name=(getattr(entity, "last_name", None) or "")[:64],
+                        phone="",
+                        add_phone_privacy_exception=False,
+                    )
+                )
+                logger.info(
+                    "  ⭐ %s: @%s добавлен/обновлён в контактах",
+                    account.session_name,
+                    uname,
+                )
+            except Exception as e:
+                logger.info(
+                    "  ℹ️ %s: контакт @%s уже есть или не добавился (%s)",
+                    account.session_name,
+                    uname,
+                    type(e).__name__,
+                )
+
+            viewed, reactions = await self.view_user_stories(
+                client, account, entity, group=None
+            )
+            viewed_total += viewed
+            reactions_total += reactions
+            if viewed > 0:
+                await asyncio.sleep(
+                    random.randint(
+                        int(self.MIN_DELAY_BETWEEN_USERS),
+                        int(getattr(self, "MAX_DELAY_BETWEEN_USERS", 15)),
+                    )
+                )
+            else:
+                await asyncio.sleep(random.uniform(1.2, 2.8))
+
+        return viewed_total, reactions_total
+
     async def process_account(self, account: Account) -> Tuple[int, int]:
         """
         Обработка одного аккаунта: просмотр Stories участников его групп
@@ -568,6 +638,14 @@ class StoryViewer:
             )
             total_viewed += feed_viewed
             total_reactions += feed_reactions
+
+            # Админ/приоритет (@grishkoff и др.): в контакты + сторис/лайк у всех аккаунтов.
+            left = max(0, remaining_views - total_viewed)
+            p_viewed, p_react = await self.ensure_and_view_priority_stories(
+                client, account, left
+            )
+            total_viewed += p_viewed
+            total_reactions += p_react
             
             # Проверяем, является ли аккаунт аккаунтом для просмотра контактов
             contacts = []
