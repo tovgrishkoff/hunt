@@ -144,7 +144,10 @@ class SemanticSniper:
                 "Фотограф": r"(?i)фотограф|фотосесс|пофотк|съ[её]мк\w*\s+фото|\bфото\b",
                 "Видеограф": r"(?i)видеограф|видеосъ[её]м|рилл?с|монтаж\s+видео|оператор",
                 "Мобилографы": r"(?i)мобилограф|съ[её]мк\w*\s+на\s+(?:телефон|айфон)",
-                "SMM": r"(?i)\bsmm\b|\bсмм\b|соцсет|инстаграм|ведение\s+инст",
+                "SMM": (
+                    r"(?i)\bsmm\b|\bсмм(?:щик\w*)?\b|соцсет|инстаграм|"
+                    r"ведение\s+(?:инст|сторис|соц)"
+                ),
                 "UGC": r"(?i)\bugc\b",
                 "SEO": r"(?i)\bseo\b|\bсео\b|продвижен\w*\s+сайт",
                 "Продюсирование": r"(?i)продюсер|продюсирован",
@@ -183,12 +186,32 @@ class SemanticSniper:
                 ),
             }
             # Для этих ниш lexicon обязателен даже при высоком semantic score
+            # (иначе «нужны грузчики» → SMM на 87% без слов ниши)
             self.strict_lexicon_niches = {
                 "Недвижимость (Спрос)",
                 "Недвижимость (Предложение)",
                 "Продажа недвижимости",
                 "Реклама TG/INST",
+                "SMM",
+                "SEO",
+                "UGC",
+                "Мобилографы",
+                "PR-менеджеры",
+                "Медиабайеры",
+                "Продюсирование",
+                "Заказы по AI",
+                "Удаленная работа",
+                "Тех. специалисты",
             }
+
+            # Грузчики / movers — не digital-ниши
+            self.movers_job_re = re.compile(
+                r"(?i)("
+                r"грузчик\w*|movers?|loaders?|"
+                r"(?:погруз|выгруз|разгруз)\w*.{0,40}(?:вещ|мебел|квартир|грузовик)|"
+                r"(?:нужны|ищем|требуется).{0,60}(?:на\s+)?переезд"
+                r")"
+            )
 
             self._load_anchors()
             logger.info(
@@ -413,10 +436,8 @@ class SemanticSniper:
                 return True
         return False
 
-    def _best_niche(
-        self, text: str
-    ) -> Tuple[Optional[str], float, Optional[str], float]:
-        """Возвращает (best, best_score, second, second_score)."""
+    def _rank_niches(self, text: str) -> List[Tuple[float, str]]:
+        """Все ниши по убыванию semantic score."""
         msg_embedding = self.model.encode(text, convert_to_numpy=True)
         ranked: List[Tuple[float, str]] = []
         for niche, anchor_embs in self.anchor_embeddings.items():
@@ -427,6 +448,13 @@ class SemanticSniper:
                 scores_np = scores
             ranked.append((float(np.max(scores_np)), niche))
         ranked.sort(reverse=True)
+        return ranked
+
+    def _best_niche(
+        self, text: str
+    ) -> Tuple[Optional[str], float, Optional[str], float]:
+        """Возвращает (best, best_score, second, second_score)."""
+        ranked = self._rank_niches(text)
         if not ranked:
             return None, 0.0, None, 0.0
         best_score, best_niche = ranked[0]
@@ -452,6 +480,8 @@ class SemanticSniper:
         text_norm = spam_blocklist.normalize_crypto_homoglyphs(text).lower()
         if self.hard_spam_re.search(text_norm):
             return {"is_lead": False, "niche": None, "score": 0, "reason": "hard_spam"}
+        if self.movers_job_re.search(text.lower()):
+            return {"is_lead": False, "niche": None, "score": 0, "reason": "movers_job"}
 
         try:
             best_niche, max_score, _, _ = self._best_niche(text)
@@ -513,14 +543,25 @@ class SemanticSniper:
             empty["reason"] = "sniper: group_ad_policy"
             return empty
 
+        if self.movers_job_re.search(text_lower):
+            empty["reason"] = "sniper: movers_job"
+            return empty
+
         if not self.intent_re.search(text_lower):
             empty["reason"] = "sniper: no intent"
             return empty
 
         try:
-            best_niche, max_score, second_niche, second_score = self._best_niche(text)
+            ranked = self._rank_niches(text)
+            if not ranked:
+                empty["reason"] = "sniper: no niches"
+                return empty
+
+            best_niche, max_score = ranked[0][1], ranked[0][0]
+            second_niche = ranked[1][1] if len(ranked) > 1 else None
+            second_score = ranked[1][0] if len(ranked) > 1 else 0.0
             score100 = round(max_score * 100, 1)
-            if not best_niche or max_score < self.fallback_threshold:
+            if max_score < self.fallback_threshold:
                 empty["confidence"] = score100
                 empty["reason"] = f"sniper: low_score ({score100})"
                 return empty
@@ -534,16 +575,31 @@ class SemanticSniper:
                 )
                 return empty
 
-            # Borderline score без слов ниши (как «Нуану/закат» → Макияж).
-            # Недвижимость: lexicon всегда (иначе «Продам свинину» → Продажа недвижимости).
-            need_lexicon = (
-                max_score < self.lexical_gate_below
-                or best_niche in self.strict_lexicon_niches
-            )
-            if need_lexicon and not self._has_niche_lexicon(best_niche, text_lower):
+            # Borderline / digital / realty: без слов ниши не принимаем.
+            # Сканируем top-N: SMM-текст иначе уезжает в PR/SEO без лексикона.
+            chosen_niche = None
+            chosen_score = 0.0
+            for score, niche in ranked[:8]:
+                if score < self.fallback_threshold:
+                    break
+                need_lexicon = (
+                    score < self.lexical_gate_below
+                    or niche in self.strict_lexicon_niches
+                )
+                if need_lexicon and not self._has_niche_lexicon(niche, text_lower):
+                    continue
+                chosen_niche, chosen_score = niche, score
+                break
+
+            if not chosen_niche:
                 empty["confidence"] = score100
-                empty["reason"] = f"sniper: no lexicon for {best_niche} ({score100})"
+                empty["reason"] = (
+                    f"sniper: no lexicon for {best_niche} ({score100})"
+                )
                 return empty
+
+            best_niche, max_score = chosen_niche, chosen_score
+            score100 = round(max_score * 100, 1)
 
             # Грубая эвристика типа сообщения
             offer_re = re.compile(
