@@ -1,7 +1,5 @@
 {
   "allowed_accounts": [
-    "promotion_dao_bro",
-    "promotion_alex_ever",
     "promotion_Nicegram"
   ],
   "join_accounts": [
@@ -33,13 +31,17 @@
     "promotion_new_account",
     "promotion_lev_moiseev",
     "promotion_rod_shaihutdinov",
-    "promotion_olesya_slobogenko"
+    "promotion_olesya_slobogenko",
+    "promotion_dao_bro",
+    "promotion_alex_ever"
   ],
   "excluded_reason": "fresh soft pipeline и guerrilla_put_k_sebe держатся вне основного marketer; Suzan/Luic — join-only через join_accounts",
   "listener_accounts": [
     "promotion_Masha Sinugina",
+    "promotion_alex_ever",
     "promotion_anna_truncher",
     "promotion_artur_biggest",
+    "promotion_dao_bro",
     "promotion_igor_veru",
     "promotion_lera_katina",
     "promotion_lev_moiseev",
