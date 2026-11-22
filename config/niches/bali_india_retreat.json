@@ -44,7 +44,7 @@
     ],
     "contacts_dialogs_limit": 300,
     "story_view_exclude_usernames": ["Luxury_Car9", "Elkozadefensis", "MargoMusaeva", "bykdasha"],
-    "story_view_priority_usernames": ["Andrey_Birzhin", "Alex_Abramov_Everest"],
+    "story_view_priority_usernames": ["grishkoff"],
     "story_view_priority_reaction_probability": 1.0
   },
 

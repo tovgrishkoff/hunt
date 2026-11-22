@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Add admin/priority usernames as Telegram contacts on all working accounts.
 
-So story feed includes @grishkoff (and other priority peers) and activity can
-view/like their stories even when there was no prior dialog.
+So story feed includes @grishkoff and activity can view/like his stories
+even when there was no prior dialog. Priority list is grishkoff-only.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from telethon.tl.functions.contacts import AddContactRequest
 
 load_dotenv(ROOT / ".env")
 
-DEFAULT_PRIORITY = ["grishkoff", "Andrey_Birzhin", "Alex_Abramov_Everest"]
+DEFAULT_PRIORITY = ["grishkoff"]
 
 
 def _load_priority() -> List[str]:
