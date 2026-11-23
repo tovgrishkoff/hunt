@@ -2,6 +2,7 @@ from telethon import TelegramClient, events
 from telethon.tl.types import PeerChannel, PeerChat, PeerUser
 import re
 import html
+import os
 from patterns import PATTERNS, NICHES_KEYWORDS
 import spam_blocklist
 from datetime import datetime, timezone
@@ -1244,7 +1245,21 @@ class MessageMonitor:
                 "reason": "Pre-filter: FX/crypto без жилья, AI пропущен",
             }
 
-        # 4. AI FALLBACK (дорого) → при недоступности GPT — локальный sniper
+        # 4. Локальный sniper ДО GPT (экономит бюджет при росте потока listeners)
+        prefer_sniper_first = os.getenv(
+            "AI_PREFER_SNIPER_FIRST", "1"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        if prefer_sniper_first:
+            sniper_first = self._classify_with_sniper(message_text)
+            if sniper_first is not None and sniper_first.get("niches"):
+                logger.info(
+                    "🎯 Sniper-first: ниши без GPT %s (score=%s)",
+                    sniper_first.get("niches"),
+                    sniper_first.get("confidence"),
+                )
+                return self._apply_demand_only_filter(sniper_first, message_text)
+
+        # 5. AI FALLBACK (дорого) → при недоступности GPT — локальный sniper
         if self.ai_classifier:
             logger.info("🤔 Паттерны не справились, но есть intent. Вызываем AI...")
             try:

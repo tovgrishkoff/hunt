@@ -1,14 +1,16 @@
 from telethon import TelegramClient, events
+from telethon.sessions import StringSession
 from telethon.tl.types import PeerChannel, PeerChat, PeerUser
 from telethon.tl.functions.messages import ExportChatInviteRequest
 import re
 from patterns import PATTERNS
-from datetime import datetime
+from datetime import datetime, timedelta
 import asyncio
 import logging
 import json
 from config import API_ID, API_HASH, PHONE_NUMBER, MONITORING_CONFIG, BOT_TOKEN, DB_DSN
 import os
+from urllib.parse import urlparse
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from database import Database
@@ -53,6 +55,109 @@ STOP_PHRASES = [
 
 # Кэш инвайт-ссылок, чтобы не экспортировать заново на каждое сообщение
 INVITE_LINK_CACHE: dict[str, str] = {}
+
+# Дедуп: несколько слушателей могут сидеть в одних чатах
+_SEEN_MSG_LOCK: asyncio.Lock | None = None
+_SEEN_MSG_KEYS: dict[tuple[str, int], datetime] = {}
+_SEEN_MSG_TTL = timedelta(minutes=30)
+
+LISTENER_ACCOUNTS_FILE = os.getenv(
+    "LISTENER_ACCOUNTS_FILE", "/app/data/listener_accounts.json"
+)
+# Cap extra Telethon clients (RAM). 0 = unlimited from JSON.
+MAX_EXTRA_LISTENERS = int(os.getenv("MAX_EXTRA_LISTENERS", "14"))
+# Pause between connecting listeners to avoid burst CPU/proxy load.
+LISTENER_CONNECT_DELAY_SEC = float(os.getenv("LISTENER_CONNECT_DELAY_SEC", "1.5"))
+# Truncate noisy per-message body logs (full text still goes to classifier).
+MONITOR_LOG_TEXT_CHARS = int(os.getenv("MONITOR_LOG_TEXT_CHARS", "160"))
+
+
+def _proxy_from_cfg(proxy_cfg) -> tuple | None:
+    """Telethon HTTP proxy tuple from dict or URL string."""
+    if not proxy_cfg:
+        return None
+    try:
+        import socks
+    except ImportError as e:
+        raise RuntimeError("PySocks is required for listener proxies") from e
+
+    if isinstance(proxy_cfg, str):
+        u = urlparse(proxy_cfg)
+        if not u.hostname or not u.port:
+            return None
+        return (
+            socks.HTTP,
+            u.hostname,
+            int(u.port),
+            True,
+            u.username,
+            u.password,
+        )
+
+    if isinstance(proxy_cfg, dict):
+        return (
+            socks.HTTP,
+            proxy_cfg["addr"],
+            int(proxy_cfg["port"]),
+            True,
+            proxy_cfg.get("username"),
+            proxy_cfg.get("password"),
+        )
+    return None
+
+
+def _load_extra_listeners(path: str) -> list[dict]:
+    if not path or not os.path.exists(path):
+        logger.info(f"[Monitor] Extra listeners file not found: {path}")
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        if not isinstance(raw, list):
+            logger.warning("[Monitor] listener_accounts.json must be a list")
+            return []
+        out = []
+        for row in raw:
+            if not isinstance(row, dict):
+                continue
+            if not row.get("string_session") or not row.get("session_name"):
+                continue
+            out.append(row)
+        total = len(out)
+        if MAX_EXTRA_LISTENERS > 0 and total > MAX_EXTRA_LISTENERS:
+            logger.warning(
+                "[Monitor] Truncating listeners %s → %s (MAX_EXTRA_LISTENERS)",
+                total,
+                MAX_EXTRA_LISTENERS,
+            )
+            out = out[:MAX_EXTRA_LISTENERS]
+        logger.info(
+            f"[Monitor] Loaded {len(out)} extra listener account(s) from {path}"
+            + (f" (of {total} in file)" if total != len(out) else "")
+        )
+        return out
+    except Exception as e:
+        logger.error(f"[Monitor] Failed to load listeners from {path}: {e}")
+        return []
+
+
+async def _mark_message_seen(chat_id: str, message_id: int) -> bool:
+    """True если сообщение новое и его надо обработать; False если дубль."""
+    global _SEEN_MSG_LOCK
+    if _SEEN_MSG_LOCK is None:
+        _SEEN_MSG_LOCK = asyncio.Lock()
+    key = (str(chat_id), int(message_id))
+    now = datetime.utcnow()
+    async with _SEEN_MSG_LOCK:
+        # garbage collect
+        stale = [k for k, ts in _SEEN_MSG_KEYS.items() if now - ts > _SEEN_MSG_TTL]
+        for k in stale:
+            _SEEN_MSG_KEYS.pop(k, None)
+        if key in _SEEN_MSG_KEYS:
+            return False
+        _SEEN_MSG_KEYS[key] = now
+        return True
+
 
 def is_spam(text: str) -> bool:
     """
@@ -162,160 +267,223 @@ async def _get_join_link_if_available(client: TelegramClient, chat) -> str | Non
     return None
 
 async def main():
-    # Инициализация Telethon клиента
-    # Используем сессию из корневой директории, если она есть и авторизована
-    session_path = '../monitor_session.session'
+    # Primary file-session listener (legacy single monitor account)
+    session_path = "../monitor_session.session"
     if not os.path.exists(session_path):
-        session_path = 'monitor_session'
-    
-    client = TelegramClient(session_path, API_ID, API_HASH)
-    await client.connect()
-    if not await client.is_user_authorized():
-        await client.start(phone=PHONE_NUMBER)
-    logger.info("Telethon клиент успешно запущен")
+        session_path = "monitor_session"
 
-    # Инициализация базы данных
+    primary = TelegramClient(session_path, API_ID, API_HASH)
+    await primary.connect()
+    if not await primary.is_user_authorized():
+        await primary.start(phone=PHONE_NUMBER)
+    me = await primary.get_me()
+    logger.info(
+        "Primary Telethon listener up as %s (id=%s)",
+        getattr(me, "username", None) or getattr(me, "first_name", "?"),
+        getattr(me, "id", "?"),
+    )
+
+    clients: list[TelegramClient] = [primary]
+    listener_labels: dict[int, str] = {id(primary): "primary_monitor_session"}
+
+    # Extra write-banned / spam-limited accounts → listen-only
+    for idx, row in enumerate(_load_extra_listeners(LISTENER_ACCOUNTS_FILE)):
+        name = row["session_name"]
+        if idx > 0 and LISTENER_CONNECT_DELAY_SEC > 0:
+            await asyncio.sleep(LISTENER_CONNECT_DELAY_SEC)
+        try:
+            proxy = _proxy_from_cfg(row.get("proxy"))
+            api_id = int(row.get("api_id") or API_ID)
+            api_hash = str(row.get("api_hash") or API_HASH)
+            client = TelegramClient(
+                StringSession(row["string_session"]),
+                api_id,
+                api_hash,
+                proxy=proxy,
+            )
+            await client.connect()
+            if not await client.is_user_authorized():
+                logger.error("[Monitor] Listener %s not authorized — skip", name)
+                await client.disconnect()
+                continue
+            me = await client.get_me()
+            clients.append(client)
+            listener_labels[id(client)] = name
+            logger.info(
+                "[Monitor] Extra listener UP: %s as %s (id=%s)",
+                name,
+                getattr(me, "username", None) or getattr(me, "first_name", "?"),
+                getattr(me, "id", "?"),
+            )
+        except Exception as e:
+            logger.error("[Monitor] Failed to start listener %s: %s", name, e)
+
+    logger.info("[Monitor] Total live listeners: %s", len(clients))
+
     db = Database(DB_DSN)
     await db.connect()
-    
-    # Получаем OpenAI API ключ из переменной окружения
-    openai_api_key = os.getenv('OPENAI_API_KEY')
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     if openai_api_key:
         logger.info("🔑 OpenAI API ключ найден, AI классификатор будет активирован")
     else:
-        logger.info("⚠️ OpenAI API ключ не найден, будет использована только базовая классификация")
-    
-    # Создаем бота ТОЛЬКО для отправки сообщений (без polling).
-    # Токен только из env/config — хардкод отозванного токена давал Unauthorized на все алерты.
+        logger.info(
+            "⚠️ OpenAI API ключ не найден, будет использована только базовая классификация"
+        )
+
     main_bot_token = BOT_TOKEN or os.getenv("BOT_TOKEN")
     if not main_bot_token:
         raise RuntimeError("BOT_TOKEN is not set — cannot send lead notifications")
     bot = Bot(token=main_bot_token)
     logger.info("🔔 Бот уведомлений инициализирован (token from env/config)")
-    
-    # Создаем монитор
+
     monitor = MessageMonitor(bot, db, openai_api_key)
     await monitor.initialize()
     logger.info("База данных и монитор успешно инициализированы")
 
-    # Выводим всех подписчиков и их категории
     subscribers = await db.get_all_users()
     for user in subscribers:
         logger.info(f"Пользователь {user['user_id']} подписан на: {user['categories']}")
 
-    # Убираем диспетчер и polling - кнопки будут обрабатываться в основном боте
-
-    @client.on(events.NewMessage())
     async def handler(event):
+        client = event.client
+        label = listener_labels.get(id(client), "unknown")
         try:
             chat = await event.get_chat()
             chat_id = str(chat.id)
-            chat_title = chat.title if hasattr(chat, 'title') else 'Private Chat'
-            logger.info(f"[Monitor] Получено сообщение в чате: {chat_title} (ID: {chat_id})")
-            logger.info(f"[Monitor] Текст сообщения: {event.message.text}")
+            msg_id = int(getattr(event.message, "id", 0) or 0)
+            if msg_id and not await _mark_message_seen(chat_id, msg_id):
+                logger.debug(
+                    "[Monitor/%s] skip duplicate chat=%s msg=%s",
+                    label,
+                    chat_id,
+                    msg_id,
+                )
+                return
 
-            # Получаем информацию об отправителе
+            chat_title = chat.title if hasattr(chat, "title") else "Private Chat"
+            logger.info(
+                f"[Monitor/{label}] Получено сообщение в чате: {chat_title} (ID: {chat_id})"
+            )
+            raw_text = event.message.text or ""
+            if MONITOR_LOG_TEXT_CHARS > 0 and len(raw_text) > MONITOR_LOG_TEXT_CHARS:
+                log_text = raw_text[:MONITOR_LOG_TEXT_CHARS] + "…"
+            else:
+                log_text = raw_text
+            logger.info(f"[Monitor/{label}] Текст сообщения: {log_text}")
+
             sender = await event.get_sender()
-            sender_username = sender.username if hasattr(sender, 'username') else None
-            sender_id = sender.id if hasattr(sender, 'id') else None
-            sender_first_name = sender.first_name if hasattr(sender, 'first_name') else None
-            sender_last_name = sender.last_name if hasattr(sender, 'last_name') else None
+            sender_username = sender.username if hasattr(sender, "username") else None
+            sender_id = sender.id if hasattr(sender, "id") else None
+            sender_first_name = (
+                sender.first_name if hasattr(sender, "first_name") else None
+            )
+            sender_last_name = (
+                sender.last_name if hasattr(sender, "last_name") else None
+            )
             sender_is_bot = bool(getattr(sender, "bot", False))
 
-            # 1) Проверка is_bot: сообщения от ботов игнорируем сразу (приветствия/админ-боты)
             if sender_is_bot:
                 logger.info(
                     f"🚫 Пропускаем сообщение от бота @{sender_username or ''} (ID: {sender_id})"
                 )
                 return
 
-            # Сохраняем новый чат, если он ещё не известен
             if chat_id not in known_chats:
                 known_chats[chat_id] = {
-                    'title': chat_title,
-                    'type': 'Private',
-                    'first_seen': str(event.message.date)
+                    "title": chat_title,
+                    "type": "Private",
+                    "first_seen": str(event.message.date),
                 }
                 monitored_chats.append(chat_id)
-                with open('known_chats.json', 'w', encoding='utf-8') as f:
+                with open("known_chats.json", "w", encoding="utf-8") as f:
                     json.dump(known_chats, f, ensure_ascii=False, indent=2)
                 logger.info(f"Добавлен новый чат: {chat_title} (ID: {chat_id})")
 
-            # Только для чатов из списка мониторинга
             if chat_id not in monitored_chats:
                 logger.info(f"Чат {chat_id} не в списке мониторинга, пропускаем")
                 return
 
-            # --- БЫСТРАЯ ПРОВЕРКА НА СПАМ (до всех остальных проверок) ---
             if event.message.text and is_spam(event.message.text):
-                logger.info(f"🚫 Спам отфильтрован на раннем этапе, сообщение пропущено: {event.message.text[:100]}...")
+                logger.info(
+                    f"🚫 Спам отфильтрован на раннем этапе, сообщение пропущено: {event.message.text[:100]}..."
+                )
                 return
-            # -----------------------------------------------------------------
 
-            # Формируем ссылку на конкретное сообщение
             message_link = None
             chat_username = None
             chat_join_link = None
-            if hasattr(event.message, 'id'):
+            if hasattr(event.message, "id"):
                 try:
                     thread_id = _get_thread_id_from_event(event)
-                    # Пытаемся получить username чата через get_entity
                     try:
                         entity = await client.get_entity(chat.id)
-                        if hasattr(entity, 'username') and entity.username:
+                        if hasattr(entity, "username") and entity.username:
                             chat_username = entity.username
                             chat_join_link = f"https://t.me/{chat_username}"
                             if thread_id:
                                 message_link = f"https://t.me/{chat_username}/{thread_id}/{event.message.id}"
                             else:
-                                message_link = f"https://t.me/{chat_username}/{event.message.id}"
-                            logger.info(f"[Monitor] Сформирована ссылка для публичного чата: {message_link}")
+                                message_link = (
+                                    f"https://t.me/{chat_username}/{event.message.id}"
+                                )
+                            logger.info(
+                                f"[Monitor] Сформирована ссылка для публичного чата: {message_link}"
+                            )
                         else:
-                            # Для приватных чатов используем правильный формат
                             chat_id_int = abs(chat.id) if chat.id < 0 else chat.id
-                            # Убираем префикс -100 для супергрупп
                             if chat_id_int >= 1000000000000:
-                                chat_id_for_link = str(chat_id_int)[4:]  # Убираем первые 4 цифры (1000)
+                                chat_id_for_link = str(chat_id_int)[4:]
                             else:
                                 chat_id_for_link = str(chat_id_int)
-                            
+
                             if chat_id_for_link.isdigit():
                                 if thread_id:
                                     message_link = f"https://t.me/c/{chat_id_for_link}/{thread_id}/{event.message.id}"
                                 else:
                                     message_link = f"https://t.me/c/{chat_id_for_link}/{event.message.id}"
-                                logger.info(f"[Monitor] Сформирована ссылка для приватного чата: {message_link} (ID чата: {chat_id_for_link})")
-                                chat_join_link = await _get_join_link_if_available(client, chat)
+                                logger.info(
+                                    f"[Monitor] Сформирована ссылка для приватного чата: {message_link} (ID чата: {chat_id_for_link})"
+                                )
+                                chat_join_link = await _get_join_link_if_available(
+                                    client, chat
+                                )
                             else:
-                                logger.warning(f"[Monitor] Некорректный ID чата для ссылки: {chat_id_for_link}")
+                                logger.warning(
+                                    f"[Monitor] Некорректный ID чата для ссылки: {chat_id_for_link}"
+                                )
                     except Exception as e:
-                        logger.warning(f"[Monitor] Не удалось получить entity для чата {chat.id}: {e}")
-                        # Fallback: используем старый метод
-                        if hasattr(chat, 'username') and chat.username:
+                        logger.warning(
+                            f"[Monitor] Не удалось получить entity для чата {chat.id}: {e}"
+                        )
+                        if hasattr(chat, "username") and chat.username:
                             chat_username = chat.username
                             chat_join_link = f"https://t.me/{chat_username}"
                             if thread_id:
                                 message_link = f"https://t.me/{chat_username}/{thread_id}/{event.message.id}"
                             else:
-                                message_link = f"https://t.me/{chat_username}/{event.message.id}"
+                                message_link = (
+                                    f"https://t.me/{chat_username}/{event.message.id}"
+                                )
                         else:
                             chat_id_str = str(abs(chat.id))
-                            if chat_id_str.startswith('100'):
-                                chat_id_for_link = chat_id_str[3:]  # Убираем '100'
+                            if chat_id_str.startswith("100"):
+                                chat_id_for_link = chat_id_str[3:]
                             else:
                                 chat_id_for_link = chat_id_str
-                            
+
                             if chat_id_for_link.isdigit():
                                 if thread_id:
                                     message_link = f"https://t.me/c/{chat_id_for_link}/{thread_id}/{event.message.id}"
                                 else:
                                     message_link = f"https://t.me/c/{chat_id_for_link}/{event.message.id}"
-                                chat_join_link = await _get_join_link_if_available(client, chat)
+                                chat_join_link = await _get_join_link_if_available(
+                                    client, chat
+                                )
                 except Exception as e:
                     logger.error(f"[Monitor] Ошибка при формировании ссылки: {e}")
                     message_link = None
 
-            # Обрабатываем сообщение через монитор
             await monitor.process_message_from_subscriber(
                 message_text=event.message.text,
                 chat_title=chat_title,
@@ -331,14 +499,22 @@ async def main():
             logger.info("Сообщение успешно обработано монитором")
 
         except Exception as e:
-            logger.error(f"Ошибка при обработке сообщения: {e}")
+            logger.error(f"Ошибка при обработке сообщения ({label}): {e}")
 
-    logger.info("[Monitor] Запуск Telethon-клиента...")
-    
-    # Запускаем Telethon клиент
-    await client.run_until_disconnected()
-    await db.close()
-    await bot.close()
+    for client in clients:
+        client.add_event_handler(handler, events.NewMessage())
+
+    logger.info("[Monitor] Запуск %s Telethon listener(s)...", len(clients))
+    try:
+        await asyncio.gather(*(c.run_until_disconnected() for c in clients))
+    finally:
+        for client in clients:
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
+        await db.close()
+        await bot.close()
 
 if __name__ == "__main__":
     try:

@@ -25,6 +25,7 @@ RUN pip install --no-cache-dir \
     "aiogram==2.25.1" \
     aiohttp \
     telethon \
+    pysocks \
     openai
 
 # Создаем директории для логов и данных
