@@ -117,12 +117,21 @@ def _load_extra_listeners(path: str) -> list[dict]:
             logger.warning("[Monitor] listener_accounts.json must be a list")
             return []
         out = []
+        skipped_disabled = 0
         for row in raw:
             if not isinstance(row, dict):
+                continue
+            if row.get("disabled") is True:
+                skipped_disabled += 1
                 continue
             if not row.get("string_session") or not row.get("session_name"):
                 continue
             out.append(row)
+        if skipped_disabled:
+            logger.info(
+                "[Monitor] Skipped %s disabled listener account(s)",
+                skipped_disabled,
+            )
         total = len(out)
         if MAX_EXTRA_LISTENERS > 0 and total > MAX_EXTRA_LISTENERS:
             logger.warning(
