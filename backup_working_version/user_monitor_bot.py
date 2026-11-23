@@ -3,6 +3,7 @@ from telethon.sessions import StringSession
 from telethon.tl.types import PeerChannel, PeerChat, PeerUser
 from telethon.tl.functions.messages import ExportChatInviteRequest
 import re
+import hashlib
 from patterns import PATTERNS
 from datetime import datetime, timedelta
 import asyncio
@@ -56,10 +57,16 @@ STOP_PHRASES = [
 # Кэш инвайт-ссылок, чтобы не экспортировать заново на каждое сообщение
 INVITE_LINK_CACHE: dict[str, str] = {}
 
-# Дедуп: несколько слушателей могут сидеть в одних чатах
-_SEEN_MSG_LOCK: asyncio.Lock | None = None
+# Дедуп: несколько слушателей могут сидеть в одних чатах.
+# Lock MUST be created once at import — lazy init raced and let duplicates through.
+_SEEN_MSG_LOCK = asyncio.Lock()
 _SEEN_MSG_KEYS: dict[tuple[str, int], datetime] = {}
+_SEEN_TEXT_KEYS: dict[tuple[str, str], datetime] = {}
+_CHAT_OWNER: dict[str, str] = {}
 _SEEN_MSG_TTL = timedelta(minutes=30)
+_SEEN_TEXT_TTL = timedelta(minutes=15)
+_DEDUP_SKIP_LOG_EVERY = int(os.getenv("DEDUP_SKIP_LOG_EVERY", "50"))
+_dedup_skip_count = 0
 
 LISTENER_ACCOUNTS_FILE = os.getenv(
     "LISTENER_ACCOUNTS_FILE", "/app/data/listener_accounts.json"
@@ -70,6 +77,10 @@ MAX_EXTRA_LISTENERS = int(os.getenv("MAX_EXTRA_LISTENERS", "14"))
 LISTENER_CONNECT_DELAY_SEC = float(os.getenv("LISTENER_CONNECT_DELAY_SEC", "1.5"))
 # Truncate noisy per-message body logs (full text still goes to classifier).
 MONITOR_LOG_TEXT_CHARS = int(os.getenv("MONITOR_LOG_TEXT_CHARS", "160"))
+# One listener owns a chat for the process lifetime (others ignore that chat).
+CROSS_LISTENER_CHAT_OWNER = os.getenv(
+    "CROSS_LISTENER_CHAT_OWNER", "1"
+).strip().lower() in ("1", "true", "yes", "on")
 
 
 def _proxy_from_cfg(proxy_cfg) -> tuple | None:
@@ -150,21 +161,91 @@ def _load_extra_listeners(path: str) -> list[dict]:
         return []
 
 
-async def _mark_message_seen(chat_id: str, message_id: int) -> bool:
-    """True если сообщение новое и его надо обработать; False если дубль."""
-    global _SEEN_MSG_LOCK
-    if _SEEN_MSG_LOCK is None:
-        _SEEN_MSG_LOCK = asyncio.Lock()
-    key = (str(chat_id), int(message_id))
-    now = datetime.utcnow()
+def _normalize_chat_id(raw_chat_id) -> str:
+    """Unify Telethon chat ids across clients (-100… / positive channel id)."""
+    if raw_chat_id is None:
+        return "0"
+    if hasattr(raw_chat_id, "channel_id"):
+        raw_chat_id = raw_chat_id.channel_id
+    elif hasattr(raw_chat_id, "chat_id"):
+        raw_chat_id = raw_chat_id.chat_id
+    elif hasattr(raw_chat_id, "user_id"):
+        raw_chat_id = raw_chat_id.user_id
+    try:
+        n = abs(int(raw_chat_id))
+    except (TypeError, ValueError):
+        return str(raw_chat_id)
+    s = str(n)
+    if len(s) > 3 and s.startswith("100"):
+        s = s[3:]
+    return s
+
+
+def _text_fingerprint(text: str) -> str:
+    normalized = " ".join((text or "").lower().split())
+    if not normalized:
+        return ""
+    if len(normalized) > 500:
+        normalized = normalized[:500]
+    return hashlib.md5(normalized.encode("utf-8")).hexdigest()
+
+
+def _log_dedup_skip(reason: str, label: str, chat_id: str, detail: str = "") -> None:
+    global _dedup_skip_count
+    _dedup_skip_count += 1
+    if _dedup_skip_count == 1 or _dedup_skip_count % _DEDUP_SKIP_LOG_EVERY == 0:
+        logger.info(
+            "[Monitor/%s] dedup-skip #%s (%s) chat=%s %s",
+            label,
+            _dedup_skip_count,
+            reason,
+            chat_id,
+            detail,
+        )
+
+
+async def _claim_chat_owner(chat_id: str, label: str) -> bool:
+    """True если этот listener владеет чатом; False — чат уже за другим."""
+    if not CROSS_LISTENER_CHAT_OWNER:
+        return True
     async with _SEEN_MSG_LOCK:
-        # garbage collect
-        stale = [k for k, ts in _SEEN_MSG_KEYS.items() if now - ts > _SEEN_MSG_TTL]
-        for k in stale:
+        owner = _CHAT_OWNER.get(chat_id)
+        if owner is None:
+            _CHAT_OWNER[chat_id] = label
+            return True
+        return owner == label
+
+
+async def _mark_message_seen(
+    chat_id: str, message_id: int, text: str = ""
+) -> bool:
+    """True если сообщение новое и его надо обработать; False если дубль."""
+    now = datetime.utcnow()
+    msg_key = (str(chat_id), int(message_id)) if message_id else None
+    fp = _text_fingerprint(text) if text else ""
+    text_key = (str(chat_id), fp) if fp else None
+
+    async with _SEEN_MSG_LOCK:
+        stale_msg = [
+            k for k, ts in _SEEN_MSG_KEYS.items() if now - ts > _SEEN_MSG_TTL
+        ]
+        for k in stale_msg:
             _SEEN_MSG_KEYS.pop(k, None)
-        if key in _SEEN_MSG_KEYS:
+        stale_text = [
+            k for k, ts in _SEEN_TEXT_KEYS.items() if now - ts > _SEEN_TEXT_TTL
+        ]
+        for k in stale_text:
+            _SEEN_TEXT_KEYS.pop(k, None)
+
+        if msg_key and msg_key in _SEEN_MSG_KEYS:
             return False
-        _SEEN_MSG_KEYS[key] = now
+        if text_key and text_key in _SEEN_TEXT_KEYS:
+            return False
+
+        if msg_key:
+            _SEEN_MSG_KEYS[msg_key] = now
+        if text_key:
+            _SEEN_TEXT_KEYS[text_key] = now
         return True
 
 
@@ -358,23 +439,36 @@ async def main():
         client = event.client
         label = listener_labels.get(id(client), "unknown")
         try:
-            chat = await event.get_chat()
-            chat_id = str(chat.id)
+            # Dedup BEFORE get_chat/get_sender — cheap, no await race window.
+            chat_id = _normalize_chat_id(
+                getattr(event, "chat_id", None)
+                or getattr(event.message, "peer_id", None)
+                or 0
+            )
             msg_id = int(getattr(event.message, "id", 0) or 0)
-            if msg_id and not await _mark_message_seen(chat_id, msg_id):
-                logger.debug(
-                    "[Monitor/%s] skip duplicate chat=%s msg=%s",
+            raw_text = event.message.text or ""
+
+            if not await _claim_chat_owner(chat_id, label):
+                owner = _CHAT_OWNER.get(chat_id, "?")
+                _log_dedup_skip("chat-owner", label, chat_id, f"owner={owner}")
+                return
+
+            if not await _mark_message_seen(chat_id, msg_id, raw_text):
+                _log_dedup_skip(
+                    "msg",
                     label,
                     chat_id,
-                    msg_id,
+                    f"msg_id={msg_id}",
                 )
                 return
 
+            chat = await event.get_chat()
+            # Keep known_chats key stable with normalized id
+            chat_id = _normalize_chat_id(getattr(chat, "id", chat_id))
             chat_title = chat.title if hasattr(chat, "title") else "Private Chat"
             logger.info(
                 f"[Monitor/{label}] Получено сообщение в чате: {chat_title} (ID: {chat_id})"
             )
-            raw_text = event.message.text or ""
             if MONITOR_LOG_TEXT_CHARS > 0 and len(raw_text) > MONITOR_LOG_TEXT_CHARS:
                 log_text = raw_text[:MONITOR_LOG_TEXT_CHARS] + "…"
             else:
