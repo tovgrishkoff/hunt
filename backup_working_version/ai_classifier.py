@@ -22,9 +22,9 @@ class AIClassifier:
         self.cache_duration = cache_duration
         self.cache: Dict[str, Tuple[Dict, datetime]] = {}
 
-        # Лимиты стоимости: ~gpt-4o-mini ≈ $0.0002/вызов → 1500/день ≈ $0.30
-        self.max_calls_per_day = int(os.getenv("AI_MAX_CALLS_PER_DAY", "1500"))
-        self.max_calls_per_hour = int(os.getenv("AI_MAX_CALLS_PER_HOUR", "80"))
+        # Лимиты стоимости: ~gpt-4o-mini ≈ $0.0002/вызов → 2500/день ≈ $0.50
+        self.max_calls_per_day = int(os.getenv("AI_MAX_CALLS_PER_DAY", "2500"))
+        self.max_calls_per_hour = int(os.getenv("AI_MAX_CALLS_PER_HOUR", "100"))
         self._calls_day_key: Optional[str] = None
         self._calls_day_count = 0
         self._calls_hour_key: Optional[str] = None
