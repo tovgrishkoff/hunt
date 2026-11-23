@@ -4,6 +4,7 @@ from telethon.tl.types import PeerChannel, PeerChat, PeerUser
 from telethon.tl.functions.messages import ExportChatInviteRequest
 import re
 import hashlib
+import threading
 from patterns import PATTERNS
 from datetime import datetime, timedelta
 import asyncio
@@ -12,6 +13,7 @@ import json
 from config import API_ID, API_HASH, PHONE_NUMBER, MONITORING_CONFIG, BOT_TOKEN, DB_DSN
 import os
 from urllib.parse import urlparse
+from typing import Any
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from database import Database
@@ -57,12 +59,15 @@ STOP_PHRASES = [
 # Кэш инвайт-ссылок, чтобы не экспортировать заново на каждое сообщение
 INVITE_LINK_CACHE: dict[str, str] = {}
 
-# Дедуп: несколько слушателей могут сидеть в одних чатах.
-# Lock MUST be created once at import — lazy init raced and let duplicates through.
-_SEEN_MSG_LOCK = asyncio.Lock()
+# Дедуп / уникальные чаты между listeners.
+# asyncio.Lock создаём лениво под running loop + threading guard (без гонки).
+_lock_guard = threading.Lock()
+_SEEN_MSG_LOCK: asyncio.Lock | None = None
 _SEEN_MSG_KEYS: dict[tuple[str, int], datetime] = {}
 _SEEN_TEXT_KEYS: dict[tuple[str, str], datetime] = {}
 _CHAT_OWNER: dict[str, str] = {}
+# label -> exclusive chat ids this listener feeds into the monitor queue
+_LISTENER_CHATS: dict[str, set[str]] = {}
 _SEEN_MSG_TTL = timedelta(minutes=30)
 _SEEN_TEXT_TTL = timedelta(minutes=15)
 _DEDUP_SKIP_LOG_EVERY = int(os.getenv("DEDUP_SKIP_LOG_EVERY", "50"))
@@ -77,10 +82,29 @@ MAX_EXTRA_LISTENERS = int(os.getenv("MAX_EXTRA_LISTENERS", "14"))
 LISTENER_CONNECT_DELAY_SEC = float(os.getenv("LISTENER_CONNECT_DELAY_SEC", "1.5"))
 # Truncate noisy per-message body logs (full text still goes to classifier).
 MONITOR_LOG_TEXT_CHARS = int(os.getenv("MONITOR_LOG_TEXT_CHARS", "160"))
-# One listener owns a chat for the process lifetime (others ignore that chat).
-CROSS_LISTENER_CHAT_OWNER = os.getenv(
-    "CROSS_LISTENER_CHAT_OWNER", "1"
+# Partition overlapping dialogs so each chat has exactly one owner listener.
+PARTITION_CHATS_ON_START = os.getenv(
+    "PARTITION_CHATS_ON_START", "1"
 ).strip().lower() in ("1", "true", "yes", "on")
+# Prefer primary_monitor_session when it is also in the chat.
+PREFER_PRIMARY_CHAT_OWNER = os.getenv(
+    "PREFER_PRIMARY_CHAT_OWNER", "1"
+).strip().lower() in ("1", "true", "yes", "on")
+PRIMARY_LISTENER_LABEL = "primary_monitor_session"
+# Single ingress queue → one consumer → MessageMonitor (unique msgs only).
+INGRESS_QUEUE_MAX = int(os.getenv("INGRESS_QUEUE_MAX", "2000"))
+PARTITION_STATE_PATH = os.getenv(
+    "PARTITION_STATE_PATH", "/app/data/listener_chat_partition.json"
+)
+
+
+def _seen_lock() -> asyncio.Lock:
+    global _SEEN_MSG_LOCK
+    if _SEEN_MSG_LOCK is None:
+        with _lock_guard:
+            if _SEEN_MSG_LOCK is None:
+                _SEEN_MSG_LOCK = asyncio.Lock()
+    return _SEEN_MSG_LOCK
 
 
 def _proxy_from_cfg(proxy_cfg) -> tuple | None:
@@ -206,14 +230,24 @@ def _log_dedup_skip(reason: str, label: str, chat_id: str, detail: str = "") -> 
 
 async def _claim_chat_owner(chat_id: str, label: str) -> bool:
     """True если этот listener владеет чатом; False — чат уже за другим."""
-    if not CROSS_LISTENER_CHAT_OWNER:
-        return True
-    async with _SEEN_MSG_LOCK:
+    async with _seen_lock():
         owner = _CHAT_OWNER.get(chat_id)
         if owner is None:
             _CHAT_OWNER[chat_id] = label
+            _LISTENER_CHATS.setdefault(label, set()).add(chat_id)
             return True
         return owner == label
+
+
+def _listener_owns_chat(label: str, chat_id: str) -> bool | None:
+    """
+    None = chat ещё не в partition (новый) → нужен claim.
+    True/False = уже назначен.
+    """
+    owner = _CHAT_OWNER.get(chat_id)
+    if owner is None:
+        return None
+    return owner == label
 
 
 async def _mark_message_seen(
@@ -225,7 +259,7 @@ async def _mark_message_seen(
     fp = _text_fingerprint(text) if text else ""
     text_key = (str(chat_id), fp) if fp else None
 
-    async with _SEEN_MSG_LOCK:
+    async with _seen_lock():
         stale_msg = [
             k for k, ts in _SEEN_MSG_KEYS.items() if now - ts > _SEEN_MSG_TTL
         ]
@@ -247,6 +281,85 @@ async def _mark_message_seen(
         if text_key:
             _SEEN_TEXT_KEYS[text_key] = now
         return True
+
+
+async def _collect_group_chat_ids(client: TelegramClient, label: str) -> set[str]:
+    """All groups/channels this Telethon session is in."""
+    ids: set[str] = set()
+    try:
+        async for dialog in client.iter_dialogs():
+            if dialog.is_group or dialog.is_channel:
+                ids.add(_normalize_chat_id(dialog.id))
+    except Exception as e:
+        logger.error("[Monitor] Failed to list dialogs for %s: %s", label, e)
+    return ids
+
+
+async def _partition_listener_chats(
+    clients: list[TelegramClient],
+    listener_labels: dict[int, str],
+) -> dict[str, set[str]]:
+    """
+    Build exclusive chat lists: each chat_id → exactly one listener.
+    Overlaps: prefer primary, else the listener with currently fewest chats.
+    """
+    membership: dict[str, list[str]] = {}
+    labels_order = [listener_labels[id(c)] for c in clients]
+
+    for client in clients:
+        label = listener_labels[id(client)]
+        chats = await _collect_group_chat_ids(client, label)
+        logger.info(
+            "[Monitor] %s raw group/channel dialogs=%s", label, len(chats)
+        )
+        for cid in chats:
+            membership.setdefault(cid, []).append(label)
+        await asyncio.sleep(0.3)
+
+    exclusive: dict[str, set[str]] = {lab: set() for lab in labels_order}
+    load = {lab: 0 for lab in labels_order}
+
+    for cid, owners in membership.items():
+        if PREFER_PRIMARY_CHAT_OWNER and PRIMARY_LISTENER_LABEL in owners:
+            chosen = PRIMARY_LISTENER_LABEL
+        else:
+            chosen = min(owners, key=lambda lab: (load[lab], lab))
+        exclusive[chosen].add(cid)
+        load[chosen] += 1
+        _CHAT_OWNER[cid] = chosen
+
+    _LISTENER_CHATS.clear()
+    _LISTENER_CHATS.update(exclusive)
+
+    overlap_chats = sum(1 for owners in membership.values() if len(owners) > 1)
+    unique_total = sum(len(s) for s in exclusive.values())
+    logger.info(
+        "[Monitor] Chat partition done: unique_chats=%s overlap_resolved=%s listeners=%s",
+        unique_total,
+        overlap_chats,
+        len(exclusive),
+    )
+    for lab in labels_order:
+        logger.info(
+            "[Monitor] exclusive feed %s → %s chats", lab, len(exclusive[lab])
+        )
+
+    try:
+        payload = {
+            "updated_at": datetime.utcnow().isoformat() + "Z",
+            "unique_chats": unique_total,
+            "overlap_resolved": overlap_chats,
+            "listeners": {lab: sorted(exclusive[lab]) for lab in labels_order},
+            "owners": dict(_CHAT_OWNER),
+        }
+        os.makedirs(os.path.dirname(PARTITION_STATE_PATH) or ".", exist_ok=True)
+        with open(PARTITION_STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+        logger.info("[Monitor] Wrote partition map → %s", PARTITION_STATE_PATH)
+    except Exception as e:
+        logger.warning("[Monitor] Could not write partition map: %s", e)
+
+    return exclusive
 
 
 def is_spam(text: str) -> bool:
@@ -410,6 +523,13 @@ async def main():
 
     logger.info("[Monitor] Total live listeners: %s", len(clients))
 
+    if PARTITION_CHATS_ON_START:
+        logger.info("[Monitor] Building exclusive chat lists per listener...")
+        await _partition_listener_chats(clients, listener_labels)
+    else:
+        for client in clients:
+            _LISTENER_CHATS.setdefault(listener_labels[id(client)], set())
+
     db = Database(DB_DSN)
     await db.connect()
 
@@ -435,35 +555,18 @@ async def main():
     for user in subscribers:
         logger.info(f"Пользователь {user['user_id']} подписан на: {user['categories']}")
 
-    async def handler(event):
-        client = event.client
-        label = listener_labels.get(id(client), "unknown")
+    # Единая очередь уникальных сообщений на входе в MessageMonitor
+    ingress_queue: asyncio.Queue = asyncio.Queue(maxsize=max(1, INGRESS_QUEUE_MAX))
+
+    async def process_ingress_job(job: dict[str, Any]) -> None:
+        """Single consumer: unique chat/msg → monitor."""
+        client: TelegramClient = job["client"]
+        event = job["event"]
+        label: str = job["label"]
+        chat_id: str = job["chat_id"]
+        raw_text: str = job["raw_text"]
         try:
-            # Dedup BEFORE get_chat/get_sender — cheap, no await race window.
-            chat_id = _normalize_chat_id(
-                getattr(event, "chat_id", None)
-                or getattr(event.message, "peer_id", None)
-                or 0
-            )
-            msg_id = int(getattr(event.message, "id", 0) or 0)
-            raw_text = event.message.text or ""
-
-            if not await _claim_chat_owner(chat_id, label):
-                owner = _CHAT_OWNER.get(chat_id, "?")
-                _log_dedup_skip("chat-owner", label, chat_id, f"owner={owner}")
-                return
-
-            if not await _mark_message_seen(chat_id, msg_id, raw_text):
-                _log_dedup_skip(
-                    "msg",
-                    label,
-                    chat_id,
-                    f"msg_id={msg_id}",
-                )
-                return
-
             chat = await event.get_chat()
-            # Keep known_chats key stable with normalized id
             chat_id = _normalize_chat_id(getattr(chat, "id", chat_id))
             chat_title = chat.title if hasattr(chat, "title") else "Private Chat"
             logger.info(
@@ -600,17 +703,93 @@ async def main():
                 sender_is_bot=sender_is_bot,
             )
             logger.info("Сообщение успешно обработано монитором")
-
         except Exception as e:
-            logger.error(f"Ошибка при обработке сообщения ({label}): {e}")
+            logger.error(f"Ошибка ingress worker ({label}): {e}")
+
+    async def ingress_worker() -> None:
+        logger.info(
+            "[Monitor] Ingress queue worker started (maxsize=%s)", INGRESS_QUEUE_MAX
+        )
+        while True:
+            job = await ingress_queue.get()
+            try:
+                await process_ingress_job(job)
+            finally:
+                ingress_queue.task_done()
+
+    async def handler(event):
+        """Listeners only gate+enqueue unique chats/msgs; monitor runs in worker."""
+        client = event.client
+        label = listener_labels.get(id(client), "unknown")
+        try:
+            chat_id = _normalize_chat_id(
+                getattr(event, "chat_id", None)
+                or getattr(event.message, "peer_id", None)
+                or 0
+            )
+            msg_id = int(getattr(event.message, "id", 0) or 0)
+            raw_text = event.message.text or ""
+
+            owns = _listener_owns_chat(label, chat_id)
+            if owns is False:
+                _log_dedup_skip(
+                    "not-owner",
+                    label,
+                    chat_id,
+                    f"owner={_CHAT_OWNER.get(chat_id, '?')}",
+                )
+                return
+            if owns is None:
+                # New chat after partition — first listener to see it claims it.
+                if not await _claim_chat_owner(chat_id, label):
+                    _log_dedup_skip(
+                        "chat-owner",
+                        label,
+                        chat_id,
+                        f"owner={_CHAT_OWNER.get(chat_id, '?')}",
+                    )
+                    return
+
+            if not await _mark_message_seen(chat_id, msg_id, raw_text):
+                _log_dedup_skip("msg", label, chat_id, f"msg_id={msg_id}")
+                return
+
+            job = {
+                "client": client,
+                "event": event,
+                "label": label,
+                "chat_id": chat_id,
+                "raw_text": raw_text,
+            }
+            try:
+                ingress_queue.put_nowait(job)
+            except asyncio.QueueFull:
+                logger.warning(
+                    "[Monitor/%s] ingress queue full (%s) — drop chat=%s msg=%s",
+                    label,
+                    INGRESS_QUEUE_MAX,
+                    chat_id,
+                    msg_id,
+                )
+        except Exception as e:
+            logger.error(f"Ошибка при enqueue сообщения ({label}): {e}")
 
     for client in clients:
         client.add_event_handler(handler, events.NewMessage())
 
-    logger.info("[Monitor] Запуск %s Telethon listener(s)...", len(clients))
+    worker_task = asyncio.create_task(ingress_worker(), name="monitor-ingress-worker")
+    logger.info(
+        "[Monitor] Запуск %s Telethon listener(s) → unique ingress queue...",
+        len(clients),
+    )
     try:
         await asyncio.gather(*(c.run_until_disconnected() for c in clients))
     finally:
+        worker_task.cancel()
+        try:
+            await worker_task
+        except asyncio.CancelledError:
+            pass
         for client in clients:
             try:
                 await client.disconnect()
